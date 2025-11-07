@@ -3,6 +3,7 @@
 #include <exception>
 #include <iostream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace hart
@@ -27,6 +28,11 @@ public:
 
     void add (const std::string& name, const std::string& tags, void(*func)())
     {
+        const auto insertResult = registeredTestNames.insert (name);
+
+        if (const bool wasInserted = insertResult.second != true)
+            throw std::runtime_error ("Duplicate test case name found: " + name);
+
         tests.emplace_back (TestInfo {name, tags, func});
     }
 
@@ -85,6 +91,7 @@ public:
 private:
     TestRegistry() = default;  // Private ctor for singleton
     std::vector<TestInfo> tests;
+    std::unordered_set<std::string> registeredTestNames;
 };
 
 }  // namespace hart
