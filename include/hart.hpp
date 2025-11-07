@@ -2,8 +2,10 @@
 
 #include <exception>
 
-#include "hart_test_registry.hpp"
+#include "hart_process_audio.hpp"
+#include "hart_signal.hpp"
 #include "hart_tested_audio_processor.hpp"
+#include "hart_test_registry.hpp"
 
 namespace hart
 {

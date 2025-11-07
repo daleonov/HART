@@ -44,4 +44,13 @@ HART_TEST ("Booster: Silence in - Silence out")
 {
     hart::examples::LinearStereoBooster booster;
     TestedBoosterProcessor testedBoosterProcessor (booster);
+
+    const auto silence = hart::Silence<float> (0.1);  // 100ms
+
+    hart::processAudioWith (testedBoosterProcessor)
+        .withInputSignal (silence)
+        .withSampleRate (44100)
+        .withBlockSize (1024)
+        .withValue ("Gain Db", 10.0f)
+        .process();
 }
