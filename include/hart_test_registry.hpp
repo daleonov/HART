@@ -3,11 +3,12 @@
 #include <exception>
 #include <iostream>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace hart
 {
+
+static std::vector<std::string> expectationFailureMessages;
 
 struct TestInfo
 {
@@ -37,8 +38,9 @@ public:
         for (const TestInfo& test : tests)
         {
             std::cout << "[  ...   ] Running " << test.name;
-            bool passed = true;
-            std::string failMessage;
+            bool assertionFailed = false;
+            std::string assertionFailMessage;
+            expectationFailureMessages.clear();
 
             try
             {
@@ -46,22 +48,29 @@ public:
             }
             catch (const std::exception& e)
             {
-                failMessage = e.what();
-                passed = false;
+                assertionFailMessage = e.what();
+                assertionFailed = true;
             }
 
             std::cout << '\r';
-            if (passed)
+            if (assertionFailed || expectationFailureMessages.size() != 0)
             {
-                std::cout << "[   <3   ] " << test.name << " passed" << std::endl;
-                ++numPassed;
+                std::cout << "[  </3   ] " << test.name << " - failed" << std::endl;
+
+                if (assertionFailed)
+                    std::cout << "           " << assertionFailMessage << std::endl;
+
+                for (const std::string& expectationFailureMessage : expectationFailureMessages)
+                    std::cout << "           "  << expectationFailureMessage << std::endl;
+
+                ++numFailed;
             }
             else
             {
-                std::cout << "[  </3   ] " << test.name << " failed" << std::endl;
-                std::cout << failMessage << std::endl;
-                ++numFailed;
+                std::cout << "[   <3   ] " << test.name << " - passed" << std::endl;
+                ++numPassed;
             }
+
         }
 
         std::cout << std::endl;

@@ -13,6 +13,9 @@ namespace hart
 #define HART_ASSERT_TRUE(cond) \
     if (!(cond)) throw std::runtime_error ("HART_ASSERT_TRUE() failed: \"" #cond "\"");
 
+#define HART_EXPECT_TRUE(cond) \
+    if (!(cond)) hart::expectationFailureMessages.emplace_back ("HART_EXPECT_TRUE() failed: \"" #cond "\"");
+
 #define HART_CONCAT_IMPL(x, y) x##y
 #define HART_CONCAT(x, y) HART_CONCAT_IMPL(x, y)
 #define HART_UNIQUE_ID(x) HART_CONCAT(x, __LINE__)
