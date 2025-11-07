@@ -7,14 +7,14 @@
 namespace hart
 {
 #define HART_THROW(msg) throw std::runtime_error (msg)
-#define HART_FAIL_TEST_MSG(msg) HART_THROW (msg)
-#define HART_FAIL_TEST HART_THROW ("HART_FAIL_TEST triggered test fail")
+#define HART_FAIL_TEST_MSG(msg) HART_THROW (std::string ("HART_FAIL_TEST_MSG() triggered test fail at line ") + std::to_string (__LINE__) + " with message: \"" + msg + '\"')
+#define HART_FAIL_TEST() HART_THROW (std::string ("HART_FAIL_TEST() triggered test fail at line ") + std::to_string (__LINE__))
 
 #define HART_ASSERT_TRUE(cond) \
-    if (!(cond)) throw std::runtime_error ("HART_ASSERT_TRUE() failed: \"" #cond "\"");
+    if (!(cond)) HART_THROW (std::string ("HART_ASSERT_TRUE() failed at line ") + std::to_string (__LINE__) + ": \"" #cond "\"");
 
 #define HART_EXPECT_TRUE(cond) \
-    if (!(cond)) hart::expectationFailureMessages.emplace_back ("HART_EXPECT_TRUE() failed: \"" #cond "\"");
+    if (!(cond)) hart::expectationFailureMessages.emplace_back (std::string ("HART_EXPECT_TRUE() failed at line ") + std::to_string (__LINE__) + ": \"" #cond "\"");
 
 #define HART_CONCAT_IMPL(x, y) x##y
 #define HART_CONCAT(x, y) HART_CONCAT_IMPL(x, y)
