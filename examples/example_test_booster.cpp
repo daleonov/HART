@@ -12,10 +12,10 @@ public:
     {
     }
 
-    void prepare (double sampleRateHz, size_t numChannels, size_t maxBlockSizeFrames) override
+    void prepare (double sampleRateHz, size_t numInputChannels, size_t numOutputChannels, size_t maxBlockSizeFrames) override
     {
-        if (numChannels != 2)
-            throw std::runtime_error ("Booster only supports stereo (2 channels)");
+        if (numInputChannels != 2 || numOutputChannels != 2)
+            throw std::runtime_error ("Booster only supports stereo (2 in, 2 out channels)");
     }
 
     void process (const float* const* inputs, float** outputs, size_t numFrames) override

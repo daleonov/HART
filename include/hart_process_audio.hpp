@@ -68,26 +68,58 @@ public:
         return *this;
     }
 
-    AudioTestBuilder& withChannels (size_t numChannels)
+    AudioTestBuilder& withInputChannels (size_t numInputChannels)
     {   
-        if (numChannels == 0)
+        if (numInputChannels == 0)
             HART_THROW ("There should be at least one (mono) audio channel");
 
-        if (numChannels > 128)
+        if (numInputChannels > 128)
             HART_THROW ("The number of channels is unexpectedly large... Do people really use so many channels?");
 
-        m_numChannels = numChannels;
+        m_numInputChannels = numInputChannels;
         return *this;
+    }
+
+    AudioTestBuilder& withOutputChannels (size_t numOutputChannels)
+    {   
+        if (numOutputChannels == 0)
+            HART_THROW ("There should be at least one (mono) audio channel");
+
+        if (numOutputChannels > 128)
+            HART_THROW ("The number of channels is unexpectedly large... Do people really use so many channels?");
+
+        m_numOutputChannels = numOutputChannels;
+        return *this;
+    }
+
+    AudioTestBuilder& withStereoInput()
+    {
+        return this->withInputChannels (2);
+    }
+
+    AudioTestBuilder& withStereoOutput()
+    {
+        return this->withOutputChannels (2);
+    }
+
+    AudioTestBuilder& withMonoInput()
+    {
+        return this->withInputChannels (1);
+    }
+
+    AudioTestBuilder& withMonoOutput()
+    {
+        return this->withOutputChannels (1);
     }
 
     AudioTestBuilder& inMono()
     {
-        return this->withChannels (1);
+        return this->withMonoInput().withMonoIOutput();
     }
 
     AudioTestBuilder& inStereo()
     {
-        return this->withChannels (2);
+        return this->withStereoInput().withStereoOutput();
     }
 
     void process()
@@ -99,7 +131,7 @@ public:
 
         // TODO: Add support for different number of input and output channels
         m_processor.reset();
-        m_processor.prepare (m_sampleRateHz, m_numChannels, m_blockSizeFrames);
+        m_processor.prepare (m_sampleRateHz, m_numInputChannels, m_numOutputChannels, m_blockSizeFrames);
 
         for (const ParamValue& paramValue : paramValues)
         {
@@ -117,8 +149,8 @@ public:
         {
             const size_t blockSizeFrames = std::min (m_blockSizeFrames, m_durationFrames - offsetFrames);
 
-            hart::AudioBuffer<SampleType> inputBlock (m_numChannels, m_durationFrames);
-            hart::AudioBuffer<SampleType> outputBlock (m_numChannels, m_durationFrames);
+            hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, m_durationFrames);
+            hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, m_durationFrames);
             m_inputSignal->renderNextBlock (inputBlock.getArrayOfWritePointers(), m_durationFrames);
 
             // TODO: Process audio with m_processor
@@ -139,7 +171,8 @@ private:
     std::unique_ptr<Signal<SampleType>> m_inputSignal;
     double m_sampleRateHz = (ParamType) 44100;
     size_t m_blockSizeFrames = 1024;
-    size_t m_numChannels = 1;
+    size_t m_numInputChannels = 1;
+    size_t m_numOutputChannels = 1;
     std::vector<ParamValue> paramValues;
     double m_durationSeconds = 0.0;
     size_t m_durationFrames = 0;
