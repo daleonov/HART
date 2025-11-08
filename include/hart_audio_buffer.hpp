@@ -28,6 +28,24 @@ public:
         return m_channelPtrs.data();
     }
 
+    static AudioBuffer emptyLike (const AudioBuffer& other)
+    {
+        return AudioBuffer (other.getNumChannels(), other.getNumFrames());
+    }
+
+    size_t getNumChannels() const { return m_numChannels; }
+    size_t getNumFrames() const { return m_numFrames; }
+
+    SampleType* operator[] (size_t channel)
+    {
+        return m_channelPtrs[channel];
+    }
+
+    const SampleType* operator[] (size_t channel) const
+    {
+        return m_channelPtrs[channel];
+    }
+
 private:
     const size_t m_numChannels = 0;
     const size_t m_numFrames = 0;

@@ -8,6 +8,7 @@
 
 #include "hart.hpp"
 #include "hart_audio_buffer.hpp"
+#include "hart_matchers.hpp"
 #include "hart_tested_audio_processor.hpp"
 #include "hart_signal.hpp"
 
@@ -122,12 +123,36 @@ public:
         return this->withStereoInput().withStereoOutput();
     }
 
+    AudioTestBuilder& expectTrue (const Matcher<SampleType>& matcher)
+    {
+        checks.emplace_back (SignalAssertionLevel::expect, matcher.copy());
+        return *this;
+    }
+
+    template <typename MatcherType>
+    AudioTestBuilder& expectTrue (MatcherType&& matcher)
+    {
+        static_assert (std::is_base_of_v<Matcher<SampleType>, std::decay_t<MatcherType>>, "MatcherType must be a hart::Matcher subclass");
+        checks.emplace_back (SignalAssertionLevel::expect, std::make_unique<std::decay_t<MatcherType>> (std::forward<MatcherType> (matcher)));
+        return *this;
+    }
+
     void process()
     {
         m_durationFrames = (size_t) std::round (m_sampleRateHz * m_durationSeconds);
 
         if (m_durationFrames == 0)
             HART_THROW ("Nothing to process");
+
+        if (checks.size() == 0)
+            HART_THROW ("Nothing to check");
+
+        for (auto& check : checks)
+        {
+            auto& matcher = check.second;
+            matcher->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
+            matcher->reset();
+        }
 
         // TODO: Add support for different number of input and output channels
         m_processor.reset();
@@ -152,9 +177,26 @@ public:
             hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, m_durationFrames);
             hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, m_durationFrames);
             m_inputSignal->renderNextBlock (inputBlock.getArrayOfWritePointers(), m_durationFrames);
+            m_processor.process (inputBlock.getArrayOfReadPointers(), outputBlock.getArrayOfWritePointers(), blockSizeFrames);
+            
+            for (auto& check : checks)
+            {
+                auto& assertionLevel = check.first;
+                auto& matcher = check.second;
 
-            // TODO: Process audio with m_processor
-            // TODO: Run all the requested assertions
+                const bool matchFailed = ! matcher->match (outputBlock);
+
+                if (matchFailed)
+                {
+                    if (assertionLevel == SignalAssertionLevel::assert)
+                        throw hart::TestAssertException (std::string ("Assert failed: ") + matcher->describe());
+                    else
+                        hart::expectationFailureMessages.emplace_back (std::string ("Expect failed: ") + matcher->describe());
+                }
+
+                matcher->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
+                matcher->reset();
+            }
 
             offsetFrames += blockSizeFrames;
         }
@@ -167,6 +209,12 @@ private:
         ParamType value;
     };
 
+    enum class SignalAssertionLevel
+    {
+        expect,
+        assert,
+    };
+
     TestedAudioProcessor<SampleType, ParamType>& m_processor;
     std::unique_ptr<Signal<SampleType>> m_inputSignal;
     double m_sampleRateHz = (ParamType) 44100;
@@ -176,6 +224,8 @@ private:
     std::vector<ParamValue> paramValues;
     double m_durationSeconds = 0.0;
     size_t m_durationFrames = 0;
+
+    std::vector<std::pair<SignalAssertionLevel, std::unique_ptr<Matcher<SampleType>>>> checks;
 };
 
 template <typename SampleType, typename ParamType>

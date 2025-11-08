@@ -18,7 +18,7 @@ public:
             throw std::runtime_error ("Booster only supports stereo (2 in, 2 out channels)");
     }
 
-    void process (const float* const* inputs, float** outputs, size_t numFrames) override
+    void process (const float* const* inputs, float* const* outputs, size_t numFrames) override
     {
         m_booster.process (inputs, outputs, numFrames);
     }
@@ -48,6 +48,8 @@ HART_TEST ("Booster: Silence in - Silence out")
     hart::examples::LinearStereoBooster booster;
     TestedBoosterProcessor testedBoosterProcessor (booster);
 
+    const hart::Silence<float> silence;
+
     hart::processAudioWith (testedBoosterProcessor)
         .withInputSignal (hart::Silence<float>())
         .withSampleRate (44100.0)
@@ -55,5 +57,6 @@ HART_TEST ("Booster: Silence in - Silence out")
         .withDuration (0.1)
         .withValue ("Gain Db", 10.0f)
         .inStereo()
+        .expectTrue (hart::equalsTo (hart::Silence<float>()))
         .process();
 }

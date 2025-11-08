@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 namespace hart {
 
@@ -15,14 +16,18 @@ public:
         m_numChannels = numChannels;
     }
 
-    virtual int getNumChannels()
+    virtual int getNumChannels() const
     {
         return m_numChannels;
     }
 
+    virtual void prepare (double sampleRateHz, size_t numOutputChannels, size_t maxBlockSizeFrames) = 0;
     virtual void renderNextBlock (SampleType* const* outputs, size_t numFrames) = 0;
     virtual void reset() = 0;
     virtual std::unique_ptr<Signal<SampleType>> copy() const = 0;
+    virtual std::string describe() const = 0;
+    
+    using m_SampleType = SampleType;
 
 protected:
     size_t m_numChannels = 1;
@@ -33,6 +38,11 @@ class Silence:
     public Signal<SampleType>
 {
 public:
+    void prepare (double /* sampleRateHz */, size_t numOutputChannels, size_t /* maxBlockSizeFrames */) override
+    {
+        setNumChannels (numOutputChannels);
+    }
+
     void renderNextBlock (SampleType* const* outputs, size_t numFrames) override
     {
         for (size_t channel = 0; channel < this->m_numChannels; ++channel)
@@ -46,6 +56,12 @@ public:
     {
         return std::make_unique<Silence<SampleType>> (*this);
     }
+
+    std::string describe() const override
+    {
+        return "Silence";
+    }
+
 };
 
 }  // namespace hart

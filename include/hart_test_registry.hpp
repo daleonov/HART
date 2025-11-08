@@ -10,7 +10,7 @@
 namespace hart
 {
 
-static std::vector<std::string> expectationFailureMessages;
+extern thread_local std::vector<std::string> expectationFailureMessages;
 
 struct TestInfo
 {
@@ -60,7 +60,9 @@ public:
             }
 
             std::cout << '\r';
-            if (assertionFailed || expectationFailureMessages.size() != 0)
+            const bool expectationsFailed = expectationFailureMessages.size() > 0;
+
+            if (assertionFailed || expectationsFailed)
             {
                 std::cout << "[  </3   ] " << test.name << " - failed" << std::endl;
 
