@@ -73,4 +73,14 @@ HART_TEST ("Booster: Gain")
         .inStereo()
         .expectTrue (hart::equalsTo (hart::SineWave<float>()))
         .process();
+
+    hart::processAudioWith (testedBoosterProcessor)
+        .withInputSignal (hart::SineWave<float>())
+        .withSampleRate (44100.0)
+        .withBlockSize (1024)
+        .withDuration (0.01)
+        .withValue ("Gain dB", -3.0f)
+        .inStereo()
+        .expectTrue (hart::peaksBelow (-2.9f))
+        .process();
 }
