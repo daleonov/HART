@@ -217,9 +217,9 @@ public:
         {
             const size_t blockSizeFrames = std::min (m_blockSizeFrames, m_durationFrames - offsetFrames);
 
-            hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, m_durationFrames);
-            hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, m_durationFrames);
-            m_inputSignal->renderNextBlock (inputBlock.getArrayOfWritePointers(), m_durationFrames);
+            hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, blockSizeFrames);
+            hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, blockSizeFrames);
+            m_inputSignal->renderNextBlock (inputBlock.getArrayOfWritePointers(), blockSizeFrames);
             m_processor.process (inputBlock.getArrayOfReadPointers(), outputBlock.getArrayOfWritePointers(), blockSizeFrames);
             
             for (auto& check : checks)
