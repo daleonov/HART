@@ -58,3 +58,19 @@ HART_TEST ("Booster: Silence in - Silence out")
         .expectTrue (hart::equalsTo (hart::Silence<float>()))
         .process();
 }
+
+HART_TEST ("Booster: Gain")
+{
+    hart::examples::LinearStereoBooster booster;
+    TestedBoosterProcessor testedBoosterProcessor (booster);
+
+    hart::processAudioWith (testedBoosterProcessor)
+        .withInputSignal (hart::SineWave<float>())
+        .withSampleRate (44100.0)
+        .withBlockSize (1024)
+        .withDuration (0.01)
+        .withValue ("Gain dB", 0.0f)
+        .inStereo()
+        .expectTrue (hart::equalsTo (hart::SineWave<float>()))
+        .process();
+}
