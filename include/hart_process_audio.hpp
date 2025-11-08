@@ -147,14 +147,17 @@ public:
         if (checks.size() == 0)
             HART_THROW ("Nothing to check");
 
-        for (auto& check : checks)
+        checksToSkip = std::vector<bool> (checks.size());
+
+        for (size_t i = 0; i < checks.size(); ++i)
         {
+            auto& check = checks[i];
             auto& matcher = check.second;
             matcher->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
             matcher->reset();
+            checksToSkip[i] = false;
         }
 
-        // TODO: Add support for different number of input and output channels
         m_processor.reset();
         m_processor.prepare (m_sampleRateHz, m_numInputChannels, m_numOutputChannels, m_blockSizeFrames);
 
@@ -179,19 +182,26 @@ public:
             m_inputSignal->renderNextBlock (inputBlock.getArrayOfWritePointers(), m_durationFrames);
             m_processor.process (inputBlock.getArrayOfReadPointers(), outputBlock.getArrayOfWritePointers(), blockSizeFrames);
             
-            for (auto& check : checks)
+            for (size_t i = 0; i < checks.size(); ++i)
             {
-                auto& assertionLevel = check.first;
-                auto& matcher = check.second;
+                if (checksToSkip[i])
+                    continue;
+
+                auto& assertionLevel = checks[i].first;
+                auto& matcher = checks[i].second;
 
                 const bool matchFailed = ! matcher->match (outputBlock);
 
                 if (matchFailed)
                 {
+                    checksToSkip[i] = true;
+
                     if (assertionLevel == SignalAssertionLevel::assert)
                         throw hart::TestAssertException (std::string ("Assert failed: ") + matcher->describe());
                     else
                         hart::expectationFailureMessages.emplace_back (std::string ("Expect failed: ") + matcher->describe());
+
+                    // TODO: Export failed audio on demand
                 }
 
                 matcher->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
@@ -226,6 +236,7 @@ private:
     size_t m_durationFrames = 0;
 
     std::vector<std::pair<SignalAssertionLevel, std::unique_ptr<Matcher<SampleType>>>> checks;
+    std::vector<bool> checksToSkip;
 };
 
 template <typename SampleType, typename ParamType>
