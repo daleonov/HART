@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include "hart_exceptions.hpp"
+#include "hart_expectation_failure_messages.hpp"
 #include "hart_signal.hpp"
 #include "hart_tested_audio_processor.hpp"
 #include "hart_test_registry.hpp"
@@ -18,7 +19,7 @@ namespace hart
     if (!(cond)) throw hart::TestAssertException (std::string ("HART_ASSERT_TRUE() failed at line ") + std::to_string (__LINE__) + ": \"" #cond "\"");
 
 #define HART_EXPECT_TRUE(cond) \
-    if (!(cond)) hart::expectationFailureMessages.emplace_back (std::string ("HART_EXPECT_TRUE() failed at line ") + std::to_string (__LINE__) + ": \"" #cond "\"");
+    if (!(cond)) hart::ExpectationFailureMessages::get().emplace_back (std::string ("HART_EXPECT_TRUE() failed at line ") + std::to_string (__LINE__) + ": \"" #cond "\"");
 
 #define HART_CONCAT_IMPL(x, y) x##y
 #define HART_CONCAT(x, y) HART_CONCAT_IMPL(x, y)

@@ -8,6 +8,7 @@
 
 #include "hart.hpp"
 #include "hart_audio_buffer.hpp"
+#include "hart_expectation_failure_messages.hpp"
 #include "hart_matchers.hpp"
 #include "hart_tested_audio_processor.hpp"
 #include "hart_signal.hpp"
@@ -199,7 +200,7 @@ public:
                     if (assertionLevel == SignalAssertionLevel::assert)
                         throw hart::TestAssertException (std::string ("Assert failed: ") + matcher->describe());
                     else
-                        hart::expectationFailureMessages.emplace_back (std::string ("Expect failed: ") + matcher->describe());
+                        hart::ExpectationFailureMessages::get().emplace_back (std::string ("Expect failed: ") + matcher->describe());
 
                     // TODO: Export failed audio on demand
                 }

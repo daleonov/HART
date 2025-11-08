@@ -6,11 +6,10 @@
 #include <vector>
 
 #include "hart_exceptions.hpp"
+#include "hart_expectation_failure_messages.hpp"
 
 namespace hart
 {
-
-extern thread_local std::vector<std::string> expectationFailureMessages;
 
 struct TestInfo
 {
@@ -47,7 +46,7 @@ public:
             std::cout << "[  ...   ] Running " << test.name;
             bool assertionFailed = false;
             std::string assertionFailMessage;
-            expectationFailureMessages.clear();
+            ExpectationFailureMessages::clear();
 
             try
             {
@@ -60,7 +59,7 @@ public:
             }
 
             std::cout << '\r';
-            const bool expectationsFailed = expectationFailureMessages.size() > 0;
+            const bool expectationsFailed = ExpectationFailureMessages::get().size() > 0;
 
             if (assertionFailed || expectationsFailed)
             {
@@ -69,7 +68,7 @@ public:
                 if (assertionFailed)
                     std::cout << "           " << assertionFailMessage << std::endl;
 
-                for (const std::string& expectationFailureMessage : expectationFailureMessages)
+                for (const std::string& expectationFailureMessage : ExpectationFailureMessages::get())
                     std::cout << "           "  << expectationFailureMessage << std::endl;
 
                 ++numFailed;
