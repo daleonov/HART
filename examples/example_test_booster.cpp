@@ -31,7 +31,7 @@ public:
             m_booster.setGainDb (value);
     }
 
-    float getValue(const std::string& id) override
+    float getValue (const std::string& id) override
     {
         if (id == "Gain dB")
             return m_booster.getGainDb();
@@ -48,14 +48,12 @@ HART_TEST ("Booster: Silence in - Silence out")
     hart::examples::LinearStereoBooster booster;
     TestedBoosterProcessor testedBoosterProcessor (booster);
 
-    const hart::Silence<float> silence;
-
     hart::processAudioWith (testedBoosterProcessor)
         .withInputSignal (hart::Silence<float>())
         .withSampleRate (44100.0)
         .withBlockSize (1024)
         .withDuration (0.1)
-        .withValue ("Gain Db", 10.0f)
+        .withValue ("Gain dB", 10.0f)
         .inStereo()
         .expectTrue (hart::equalsTo (hart::Silence<float>()))
         .process();

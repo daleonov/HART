@@ -56,8 +56,8 @@ public:
         auto referenceAudio = AudioBuffer<SampleType>::emptyLike (observedAudio);
         m_referenceSignal->renderNextBlock (referenceAudio.getArrayOfWritePointers(), referenceAudio.getNumFrames());
 
-        for (int channel = 0; channel < referenceAudio.getNumChannels(); ++channel)
-            for (int frame = 0; frame < referenceAudio.getNumFrames(); ++frame)
+        for (size_t channel = 0; channel < referenceAudio.getNumChannels(); ++channel)
+            for (size_t frame = 0; frame < referenceAudio.getNumFrames(); ++frame)
                 if (notEqual (observedAudio[channel][frame], referenceAudio[channel][frame]))
                     return false;
 
