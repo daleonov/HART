@@ -172,6 +172,7 @@ public:
             HART_THROW ("No input signal - call withInputSignal() first!");
 
         m_inputSignal->reset();
+        m_inputSignal->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
         size_t offsetFrames = 0;
 
         while (offsetFrames < m_durationFrames)
