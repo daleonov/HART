@@ -10,9 +10,10 @@ class TestedAudioProcessor
 public:
     virtual ~TestedAudioProcessor() = default;
     virtual void prepare (double sampleRateHz, size_t numChannels, size_t maxBlockSizeFrames) = 0;
-    virtual void process (const SampleType** inputs, SampleType** outputs, size_t numFrames) = 0;
+    virtual void process (const SampleType* const* inputs, SampleType** outputs, size_t numFrames) = 0;
+    virtual void reset() = 0;
     virtual void setValue (const std::string& id, ParamType value) = 0;
-    virtual ParamType getValue (const std::string& id) = 0;
+    virtual ParamType getValue (const std::string& id) { return (ParamType) 0; };
 };
 
 }  // namespace hart

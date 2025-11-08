@@ -1,6 +1,7 @@
 #include <iostream>
 #include "hart.hpp"
 #include "example_processors.hpp"
+#include "hart_process_audio.hpp"
 
 class TestedBoosterProcessor:
     public hart::TestedAudioProcessor<float, float>
@@ -17,10 +18,12 @@ public:
             throw std::runtime_error ("Booster only supports stereo (2 channels)");
     }
 
-    void process (const float** inputs, float** outputs, size_t numFrames) override
+    void process (const float* const* inputs, float** outputs, size_t numFrames) override
     {
         m_booster.process (inputs, outputs, numFrames);
     }
+
+    void reset() override {}
 
     void setValue (const std::string& id, float value) override
     {
@@ -45,12 +48,12 @@ HART_TEST ("Booster: Silence in - Silence out")
     hart::examples::LinearStereoBooster booster;
     TestedBoosterProcessor testedBoosterProcessor (booster);
 
-    const auto silence = hart::Silence<float> (0.1);  // 100ms
-
     hart::processAudioWith (testedBoosterProcessor)
-        .withInputSignal (silence)
-        .withSampleRate (44100)
+        .withInputSignal (hart::Silence<float>())
+        .withSampleRate (44100.0)
         .withBlockSize (1024)
+        .withDuration (0.1)
         .withValue ("Gain Db", 10.0f)
+        .inStereo()
         .process();
 }

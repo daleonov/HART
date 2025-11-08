@@ -8,23 +8,24 @@ template<typename SampleType>
 class Signal
 {
 public:
-    Signal (double durationSeconds = 0.0):
-        m_durationSeconds (durationSeconds)
-    {
-    }
-
     virtual ~Signal() = default;
 
-    virtual std::unique_ptr<Signal<SampleType>> copy() const
+    virtual void setNumChannels (size_t numChannels)
     {
-        return std::make_unique<Signal<SampleType>> (*this);
+        m_numChannels = numChannels;
     }
 
+    virtual int getNumChannels()
+    {
+        return m_numChannels;
+    }
+
+    virtual void renderNextBlock (SampleType* const* outputs, size_t numFrames) = 0;
+    virtual void reset() = 0;
+    virtual std::unique_ptr<Signal<SampleType>> copy() const = 0;
+
 protected:
-    const double m_durationSeconds;
-    size_t m_durationFrames = 0;
-    size_t m_blockSizeFrames = 0;
-    double m_sampleRateHz = 44100.0;
+    size_t m_numChannels = 1;
 };
 
 template<typename SampleType>
@@ -32,10 +33,14 @@ class Silence:
     public Signal<SampleType>
 {
 public:
-    Silence (double durationSeconds):
-        Signal (durationSeconds)
+    void renderNextBlock (SampleType* const* outputs, size_t numFrames) override
     {
+        for (size_t channel = 0; channel < this->m_numChannels; ++channel)
+            for (size_t frame = 0; frame < numFrames; ++frame)
+                outputs[channel][frame] = (SampleType) 0;
     }
+
+    void reset() override {}
 
     std::unique_ptr<Signal<SampleType>> copy() const override
     {

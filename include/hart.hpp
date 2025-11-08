@@ -1,20 +1,21 @@
 #pragma once
 
-#include <exception>
+#include <stdexcept>
 
-#include "hart_process_audio.hpp"
+#include "hart_exceptions.hpp"
 #include "hart_signal.hpp"
 #include "hart_tested_audio_processor.hpp"
 #include "hart_test_registry.hpp"
 
 namespace hart
 {
+
 #define HART_THROW(msg) throw std::runtime_error (msg)
-#define HART_FAIL_TEST_MSG(msg) HART_THROW (std::string ("HART_FAIL_TEST_MSG() triggered test fail at line ") + std::to_string (__LINE__) + " with message: \"" + msg + '\"')
-#define HART_FAIL_TEST() HART_THROW (std::string ("HART_FAIL_TEST() triggered test fail at line ") + std::to_string (__LINE__))
+#define HART_FAIL_TEST_MSG(msg) throw hart::TestAssertException (std::string ("HART_FAIL_TEST_MSG() triggered test fail at line ") + std::to_string (__LINE__) + " with message: \"" + msg + '\"')
+#define HART_FAIL_TEST() throw hart::TestAssertException (std::string ("HART_FAIL_TEST() triggered test fail at line ") + std::to_string (__LINE__))
 
 #define HART_ASSERT_TRUE(cond) \
-    if (!(cond)) HART_THROW (std::string ("HART_ASSERT_TRUE() failed at line ") + std::to_string (__LINE__) + ": \"" #cond "\"");
+    if (!(cond)) throw hart::TestAssertException (std::string ("HART_ASSERT_TRUE() failed at line ") + std::to_string (__LINE__) + ": \"" #cond "\"");
 
 #define HART_EXPECT_TRUE(cond) \
     if (!(cond)) hart::expectationFailureMessages.emplace_back (std::string ("HART_EXPECT_TRUE() failed at line ") + std::to_string (__LINE__) + ": \"" #cond "\"");

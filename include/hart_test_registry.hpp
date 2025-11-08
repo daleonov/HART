@@ -1,10 +1,11 @@
 #pragma once
 
-#include <exception>
 #include <iostream>
 #include <string>
 #include <unordered_set>
 #include <vector>
+
+#include "hart_exceptions.hpp"
 
 namespace hart
 {
@@ -52,7 +53,7 @@ public:
             {
                 test.func();
             }
-            catch (const std::exception& e)
+            catch (const hart::TestAssertException& e)
             {
                 assertionFailMessage = e.what();
                 assertionFailed = true;

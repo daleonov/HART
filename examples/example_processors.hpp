@@ -11,7 +11,7 @@ namespace examples
 class LinearStereoBooster
 {
 public:
-    void process (const float** inputs, float** outputs, size_t numFrames)
+    void process (const float* const* inputs, float** outputs, size_t numFrames)
     {
         for (size_t frame = 0; frame < numFrames; ++frame)
         {
