@@ -126,7 +126,7 @@ public:
 
     AudioTestBuilder& expectTrue (const Matcher<SampleType>& matcher)
     {
-        checks.emplace_back (SignalAssertionLevel::expect, matcher.copy());
+        addCheck (matcher, SignalAssertionLevel::expect, true);
         return *this;
     }
 
@@ -134,7 +134,49 @@ public:
     AudioTestBuilder& expectTrue (MatcherType&& matcher)
     {
         static_assert (std::is_base_of_v<Matcher<SampleType>, std::decay_t<MatcherType>>, "MatcherType must be a hart::Matcher subclass");
-        checks.emplace_back (SignalAssertionLevel::expect, std::make_unique<std::decay_t<MatcherType>> (std::forward<MatcherType> (matcher)));
+        addCheck (std::forward<MatcherType>(matcher), SignalAssertionLevel::expect, true);
+        return *this;
+    }
+
+    AudioTestBuilder& expectFalse (const Matcher<SampleType>& matcher)
+    {
+        addCheck (matcher, SignalAssertionLevel::expect, false);
+        return *this;
+    }
+
+    template <typename MatcherType>
+    AudioTestBuilder& expectFalse (MatcherType&& matcher)
+    {
+        static_assert (std::is_base_of_v<Matcher<SampleType>, std::decay_t<MatcherType>>, "MatcherType must be a hart::Matcher subclass");
+        addCheck (std::forward<MatcherType>(matcher), SignalAssertionLevel::expect, false);
+        return *this;
+    }
+
+    AudioTestBuilder& assertTrue (const Matcher<SampleType>& matcher)
+    {
+        addCheck (matcher, SignalAssertionLevel::assert, true);
+        return *this;
+    }
+
+    template <typename MatcherType>
+    AudioTestBuilder& assertTrue (MatcherType&& matcher)
+    {
+        static_assert (std::is_base_of_v<Matcher<SampleType>, std::decay_t<MatcherType>>, "MatcherType must be a hart::Matcher subclass");
+        addCheck (std::forward<MatcherType>(matcher), SignalAssertionLevel::assert, true);
+        return *this;
+    }
+
+    AudioTestBuilder& assertFalse (const Matcher<SampleType>& matcher)
+    {
+        addCheck (matcher, SignalAssertionLevel::assert, false);
+        return *this;
+    }
+
+    template <typename MatcherType>
+    AudioTestBuilder& assertFalse (MatcherType&& matcher)
+    {
+        static_assert (std::is_base_of_v<Matcher<SampleType>, std::decay_t<MatcherType>>, "MatcherType must be a hart::Matcher subclass");
+        addCheck (std::forward<MatcherType>(matcher), SignalAssertionLevel::assert, false);
         return *this;
     }
 
@@ -148,15 +190,11 @@ public:
         if (checks.size() == 0)
             HART_THROW ("Nothing to check");
 
-        checksToSkip = std::vector<bool> (checks.size());
-
-        for (size_t i = 0; i < checks.size(); ++i)
+        for (auto& check : checks)
         {
-            auto& check = checks[i];
-            auto& matcher = check.second;
-            matcher->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
-            matcher->reset();
-            checksToSkip[i] = false;
+            check.matcher->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
+            check.matcher->reset();
+            check.shouldSkip = false;
         }
 
         m_processor.reset();
@@ -184,19 +222,19 @@ public:
             m_inputSignal->renderNextBlock (inputBlock.getArrayOfWritePointers(), m_durationFrames);
             m_processor.process (inputBlock.getArrayOfReadPointers(), outputBlock.getArrayOfWritePointers(), blockSizeFrames);
             
-            for (size_t i = 0; i < checks.size(); ++i)
+            for (auto& check : checks)
             {
-                if (checksToSkip[i])
+                if (check.shouldSkip)
                     continue;
 
-                auto& assertionLevel = checks[i].first;
-                auto& matcher = checks[i].second;
+                auto& assertionLevel = check.signalAssertionLevel;
+                auto& matcher = check.matcher;
 
-                const bool matchFailed = ! matcher->match (outputBlock);
+                const bool matchPassed = matcher->match (outputBlock);
 
-                if (matchFailed)
+                if (matchPassed != check.shouldPass)
                 {
-                    checksToSkip[i] = true;
+                    check.shouldSkip = true;
 
                     if (assertionLevel == SignalAssertionLevel::assert)
                         throw hart::TestAssertException (std::string ("Assert failed: ") + matcher->describe());
@@ -227,6 +265,14 @@ private:
         assert,
     };
 
+    struct Check
+    {
+        std::unique_ptr<Matcher<SampleType>> matcher;
+        SignalAssertionLevel signalAssertionLevel;
+        bool shouldSkip;
+        bool shouldPass;
+    };
+
     TestedAudioProcessor<SampleType, ParamType>& m_processor;
     std::unique_ptr<Signal<SampleType>> m_inputSignal;
     double m_sampleRateHz = (ParamType) 44100;
@@ -237,8 +283,30 @@ private:
     double m_durationSeconds = 0.0;
     size_t m_durationFrames = 0;
 
-    std::vector<std::pair<SignalAssertionLevel, std::unique_ptr<Matcher<SampleType>>>> checks;
-    std::vector<bool> checksToSkip;
+    std::vector<Check> checks;
+
+
+    void addCheck (const Matcher<SampleType>& matcher, SignalAssertionLevel signalAssertionLevel, bool shouldPass)
+    {
+        checks.emplace_back (AudioTestBuilder::Check {
+            matcher.copy(),
+            signalAssertionLevel,
+            false,  // shouldSkip
+            shouldPass
+        });
+    }
+
+    template <typename MatcherType>
+    void addCheck (MatcherType&& matcher, SignalAssertionLevel signalAssertionLevel, bool shouldPass)
+    {
+        static_assert (std::is_base_of_v<Matcher<SampleType>, std::decay_t<MatcherType>>, "MatcherType must be a hart::Matcher subclass");
+        checks.emplace_back (AudioTestBuilder::Check {
+            std::make_unique<std::decay_t<MatcherType>> (std::forward<MatcherType> (matcher)),
+            signalAssertionLevel,
+            false,  // shouldSkip
+            shouldPass
+        });
+    }
 };
 
 template <typename SampleType, typename ParamType>
