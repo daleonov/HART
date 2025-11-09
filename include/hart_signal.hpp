@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cmath>  // sin()
+#include <cstdint>
 #include <memory>
+#include <random>
 #include <string>
 
 namespace hart {
@@ -119,6 +121,51 @@ private:
     const double m_initialPhaseRadians;
     double m_phaseRadians;
     double m_sampleRateHz;
+};
+
+template<typename SampleType>
+class WhiteNoise : public Signal<SampleType>
+{
+public:
+    // TODO: Use global random seed as default
+    WhiteNoise (uint_fast32_t randomSeed = 0):
+        m_randomSeed (randomSeed)
+    {
+        reset();
+    }
+
+    void prepare (double /*sampleRateHz*/, size_t numOutputChannels, size_t /*maxBlockSizeFrames*/) override
+    {
+        this->setNumChannels (numOutputChannels);
+    }
+
+    void renderNextBlock (SampleType* const* outputs, size_t numFrames) override
+    {
+        for (size_t frame = 0; frame < numFrames; ++frame)
+            for (size_t channel = 0; channel < this->m_numChannels; ++channel)
+                outputs[channel][frame] = m_uniformRealDistribution (m_randomNumberGenerator);
+    }
+
+    void reset() override
+    {
+        m_randomNumberGenerator = std::mt19937 (m_randomSeed);
+        m_uniformRealDistribution.reset();
+    }
+
+    std::unique_ptr<Signal<SampleType>> copy() const override
+    {
+        return std::make_unique <WhiteNoise<SampleType>> (*this);
+    }
+
+    std::string describe() const override
+    {
+        return std::string ("WhiteNoise (" + std::to_string (m_randomSeed) + ")");
+    }
+
+private:
+    const uint_fast32_t m_randomSeed;
+    std::mt19937 m_randomNumberGenerator;
+    std::uniform_real_distribution<SampleType> m_uniformRealDistribution {(SampleType) -1, (SampleType) 1};
 };
 
 }  // namespace hart
