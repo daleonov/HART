@@ -1,5 +1,10 @@
 #pragma once
 
+#ifndef HART_IMPLEMENTATION
+// Wav single header library's implementation
+#define DR_WAV_IMPLEMENTATION
+#endif
+
 #include <stdexcept>
 
 #include "hart_exceptions.hpp"

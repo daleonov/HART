@@ -1,0 +1,3 @@
+[submodule "dependencies/dr_libs"]
+	path = dependencies/dr_libs
+	url = https://github.com/mackron/dr_libs.git

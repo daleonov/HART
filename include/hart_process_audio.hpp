@@ -11,9 +11,17 @@
 #include "hart_expectation_failure_messages.hpp"
 #include "hart_matchers.hpp"
 #include "hart_tested_audio_processor.hpp"
+#include "hart_wavwriter.hpp"
 #include "signals/hart_signals_all.hpp"
 
 namespace hart {
+
+enum class Save
+{
+    always,
+    whenFails,
+    never
+};
 
 template <typename SampleType, typename ParamType>
 class AudioTestBuilder
@@ -116,7 +124,7 @@ public:
 
     AudioTestBuilder& inMono()
     {
-        return this->withMonoInput().withMonoIOutput();
+        return this->withMonoInput().withMonoOutput();
     }
 
     AudioTestBuilder& inStereo()
@@ -180,6 +188,14 @@ public:
         return *this;
     }
 
+    AudioTestBuilder& saveOutputTo (const std::string& path, Save mode = Save::always, WavFormat wavFormat = WavFormat::PCM24)
+    {
+        m_saveOutputPath = path;
+        m_saveOutputMode = mode;
+        m_saveOutputWavFormat = wavFormat;
+        return *this;
+    }
+
     void process()
     {
         m_durationFrames = (size_t) std::round (m_sampleRateHz * m_durationSeconds);
@@ -213,15 +229,23 @@ public:
         m_inputSignal->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
         size_t offsetFrames = 0;
 
+        AudioBuffer<SampleType> m_fullOutputBuffer (m_numOutputChannels);
+        bool atLeastOneCheckFailed = false;
+
         while (offsetFrames < m_durationFrames)
         {
+            // TODO: Do not continue if there are no checks, or all checks should skip and there's no input and output file to write
+
             const size_t blockSizeFrames = std::min (m_blockSizeFrames, m_durationFrames - offsetFrames);
 
             hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, blockSizeFrames);
             hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, blockSizeFrames);
             m_inputSignal->renderNextBlock (inputBlock.getArrayOfWritePointers(), blockSizeFrames);
             m_processor.process (inputBlock.getArrayOfReadPointers(), outputBlock.getArrayOfWritePointers(), blockSizeFrames);
-            
+
+            if (m_saveOutputMode == Save::always)
+                m_fullOutputBuffer.appendFrom (outputBlock);
+
             for (auto& check : checks)
             {
                 if (check.shouldSkip)
@@ -235,13 +259,19 @@ public:
                 if (matchPassed != check.shouldPass)
                 {
                     check.shouldSkip = true;
+                    atLeastOneCheckFailed = true;
+
+                    if (m_saveOutputMode == Save::whenFails)
+                        m_fullOutputBuffer.appendFrom (outputBlock);
 
                     if (assertionLevel == SignalAssertionLevel::assert)
                         throw hart::TestAssertException (std::string ("Assert failed: ") + matcher->describe());
                     else
                         hart::ExpectationFailureMessages::get().emplace_back (std::string ("Expect failed: ") + matcher->describe());
 
-                    // TODO: Export failed audio on demand
+                    // TODO: FIXME: Do not throw here if requested to write input or output to a wav file, throw after the loop instead
+                    // TODO: Stop processing if expect has failed and outputting to a file wasn't requested
+                    // TODO: Skip all checks if check failed, but asked to output a wav file
                 }
 
                 matcher->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
@@ -250,6 +280,9 @@ public:
 
             offsetFrames += blockSizeFrames;
         }
+
+        if (! m_saveOutputPath.empty() && (m_saveOutputMode == Save::always || (m_saveOutputMode == Save::whenFails && atLeastOneCheckFailed)))
+            WavWriter<SampleType>::writeBuffer (m_fullOutputBuffer, m_saveOutputPath, m_sampleRateHz, m_saveOutputWavFormat);
     }
 
 private:
@@ -285,6 +318,9 @@ private:
 
     std::vector<Check> checks;
 
+    std::string m_saveOutputPath;
+    Save m_saveOutputMode = Save::never;
+    WavFormat m_saveOutputWavFormat = WavFormat::pcm24;
 
     void addCheck (const Matcher<SampleType>& matcher, SignalAssertionLevel signalAssertionLevel, bool shouldPass)
     {

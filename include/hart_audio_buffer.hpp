@@ -132,6 +132,11 @@ public:
     {
         m_numFrames = 0;
         m_frames.clear();
+
+        // If m_channelPointers was std::move'd, its size will be zero
+        if (m_channelPointers.size() != m_numChannels)
+            m_channelPointers.resize (m_numChannels);
+
         updateChannelPointers();
     }
 
@@ -146,7 +151,7 @@ private:
     void updateChannelPointers()
     {
         for (size_t channel = 0; channel < m_numChannels; ++channel)
-            m_channelPointers[channel] = &m_frames[channel * m_numFrames];
+            m_channelPointers[channel] = m_numFrames > 0 ? &m_frames[channel * m_numFrames] : nullptr;
     }
 };
 

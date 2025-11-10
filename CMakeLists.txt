@@ -10,4 +10,5 @@ add_executable(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME} PRIVATE
     include/
     examples/
+    dependencies/dr_libs/
 )
