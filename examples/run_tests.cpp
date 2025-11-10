@@ -22,7 +22,7 @@ HART_TEST ("Example3")
     HART_EXPECT_TRUE (2 * 2 == 4);
 }
 
-int main()
+int main (int argc, char** argv)
 {
-    return HART_RUN_ALL_TESTS();
+    return HART_RUN_ALL_TESTS (argc, argv);
 }

@@ -190,7 +190,10 @@ public:
 
     AudioTestBuilder& saveOutputTo (const std::string& path, Save mode = Save::always, WavFormat wavFormat = WavFormat::PCM24)
     {
-        m_saveOutputPath = path;
+        if (path.empty())
+            return *this;
+
+        m_saveOutputPath = toAbsolutePath (path);
         m_saveOutputMode = mode;
         m_saveOutputWavFormat = wavFormat;
         return *this;
@@ -281,7 +284,7 @@ public:
             offsetFrames += blockSizeFrames;
         }
 
-        if (! m_saveOutputPath.empty() && (m_saveOutputMode == Save::always || (m_saveOutputMode == Save::whenFails && atLeastOneCheckFailed)))
+        if (m_saveOutputMode == Save::always || (m_saveOutputMode == Save::whenFails && atLeastOneCheckFailed))
             WavWriter<SampleType>::writeBuffer (m_fullOutputBuffer, m_saveOutputPath, m_sampleRateHz, m_saveOutputWavFormat);
     }
 

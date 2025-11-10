@@ -44,6 +44,6 @@ namespace hart
 
 #define HART_TEST(name) HART_TEST_WITH_TAGS(name, "")
 
-#define HART_RUN_ALL_TESTS() hart::TestRegistry::getInstance().runAll()
+#define HART_RUN_ALL_TESTS(argc, argv) hart::TestRegistry::getInstance().runAll (argc, argv)
 
 } // namespace hart

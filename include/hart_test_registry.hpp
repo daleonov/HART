@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "hart_cliconfig.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_expectation_failure_messages.hpp"
 
@@ -36,8 +37,13 @@ public:
         tests.emplace_back (TestInfo {name, tags, func});
     }
 
-    int runAll()
+    int runAll (int argc, char** argv)
     {
+        const int parseCommandLineArgsResult = hart::CLIConfig::get().parseCommandLineArgs (argc, argv);
+    
+        if (parseCommandLineArgsResult != 0)
+            return parseCommandLineArgsResult;
+
         size_t numPassed = 0;
         size_t numFailed = 0;
 
