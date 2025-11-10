@@ -19,6 +19,64 @@ public:
         updateChannelPointers();
     }
 
+    AudioBuffer(const AudioBuffer& other) :
+        m_numChannels (other.m_numChannels),
+        m_numFrames (other.m_numFrames),
+        m_frames (other.m_frames),
+        m_channelPointers (m_numChannels)
+    {
+        if (m_numChannels != other.m_numChannels)
+            throw hart::ChannelMismatchException ("Can't copy from a buffer with different number of channels");
+
+        updateChannelPointers();
+    }
+
+    AudioBuffer (AudioBuffer&& other) :
+        m_numChannels (other.m_numChannels),
+        m_numFrames (other.m_numFrames),
+        m_frames (std::move (other.m_frames)),
+        m_channelPointers (std::move (other.m_channelPointers))
+    {
+        if (m_numChannels != other.m_numChannels)
+            throw hart::ChannelMismatchException ("Can't move from a buffer with different number of channels");
+
+        other.clear();
+    }
+
+    ~AudioBuffer() = default;
+
+    AudioBuffer& operator= (const AudioBuffer& other)
+    {
+        if (this == &other)
+            return *this;
+
+        if (m_numChannels != other.m_numChannels)
+            throw hart::ChannelMismatchException ("Can't copy from a buffer with different number of channels");
+
+        m_numFrames = other.m_numFrames;
+        m_frames = other.m_frames;
+        m_channelPointers.resize (m_numChannels);
+        updateChannelPointers();
+
+        return *this;
+    }
+
+    AudioBuffer& operator= (AudioBuffer&& other)
+    {
+        if (this == &other)
+            return *this;
+
+        if (m_numChannels != other.m_numChannels)
+            throw hart::ChannelMismatchException ("Can't move from a buffer with different number of channels");
+
+        m_numFrames = other.m_numFrames;
+        m_frames = std::move (other.m_frames);
+        m_channelPointers = std::move (other.m_channelPointers);
+        other.clear();
+
+        return *this;
+    }
+
     const SampleType* const* getArrayOfReadPointers() const 
     {
         return static_cast<const SampleType* const*> (m_channelPointers.data());
@@ -59,7 +117,7 @@ public:
 
         for (size_t channel = 0; channel < m_numChannels; ++channel)
         {
-            const SampleType* newChannelStart = &combinedFrames[channel * (thisNumFrames + otherNumFrames)];
+            SampleType* newChannelStart = &combinedFrames[channel * (thisNumFrames + otherNumFrames)];
             std::copy (m_channelPointers[channel], m_channelPointers[channel] + thisNumFrames, newChannelStart);
             std::copy (otherBuffer[channel], otherBuffer[channel] + otherNumFrames, newChannelStart + thisNumFrames);
         }
@@ -67,6 +125,13 @@ public:
         m_frames = std::move (combinedFrames);
         m_numFrames += otherNumFrames;
 
+        updateChannelPointers();
+    }
+
+    void clear()
+    {
+        m_numFrames = 0;
+        m_frames.clear();
         updateChannelPointers();
     }
 
