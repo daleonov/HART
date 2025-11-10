@@ -5,6 +5,7 @@
 #include <random>
 #include <string>
 
+#include "hart_cliconfig.hpp"
 #include "signals/hart_signal.hpp"
 
 namespace hart
@@ -15,7 +16,7 @@ class WhiteNoise : public Signal<SampleType>
 {
 public:
     // TODO: Use global random seed as default
-    WhiteNoise (uint_fast32_t randomSeed = 0):
+    WhiteNoise (uint_fast32_t randomSeed = CLIConfig::get().getRandomSeed()):
         m_randomSeed (randomSeed)
     {
         reset();
