@@ -11,7 +11,7 @@
 #include "hart_expectation_failure_messages.hpp"
 #include "hart_matchers.hpp"
 #include "hart_tested_audio_processor.hpp"
-#include "hart_signal.hpp"
+#include "signals/hart_signals_all.hpp"
 
 namespace hart {
 

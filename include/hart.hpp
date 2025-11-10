@@ -4,7 +4,7 @@
 
 #include "hart_exceptions.hpp"
 #include "hart_expectation_failure_messages.hpp"
-#include "hart_signal.hpp"
+#include "signals/hart_signals_all.hpp"
 #include "hart_tested_audio_processor.hpp"
 #include "hart_test_registry.hpp"
 

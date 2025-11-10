@@ -5,7 +5,7 @@
 #include <string>
 
 #include "hart_audio_buffer.hpp"
-#include "hart_signal.hpp"
+#include "signals/hart_signals_all.hpp"
 #include "hart_utils.hpp"
 
 namespace hart
