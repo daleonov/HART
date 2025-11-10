@@ -3,10 +3,17 @@
 #include <algorithm>  // min(), max()
 #include <cctype>  // isalpha()
 #include <cmath>  // pow()
+#include <limits>  // infinity()
 #include <string>
 
 namespace hart
 {
+
+constexpr double inf = std::numeric_limits<double>::infinity();
+constexpr double oo = inf;
+constexpr double pi = 3.14159265358979323846;
+constexpr double twoPi = 2.0 * pi;
+constexpr double halfPi = pi / 2.0;
 
 template <typename NumericType>
 NumericType clamp (const NumericType& value, const NumericType& low, const NumericType& high)

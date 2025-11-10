@@ -12,6 +12,7 @@
 #include "signals/hart_signals_all.hpp"
 #include "hart_tested_audio_processor.hpp"
 #include "hart_test_registry.hpp"
+#include "hart_units.hpp"
 
 namespace hart
 {
