@@ -8,9 +8,9 @@
 
 #include "hart.hpp"
 #include "hart_audio_buffer.hpp"
+#include "dsp/hart_dsp_all.hpp"
 #include "hart_expectation_failure_messages.hpp"
 #include "hart_matchers.hpp"
-#include "hart_tested_audio_processor.hpp"
 #include "hart_wavwriter.hpp"
 #include "signals/hart_signals_all.hpp"
 
@@ -27,7 +27,7 @@ template <typename SampleType, typename ParamType>
 class AudioTestBuilder
 {
 public:
-    AudioTestBuilder (TestedAudioProcessor<SampleType, ParamType>& processor):
+    AudioTestBuilder (DSP<SampleType, ParamType>& processor):
         m_processor (processor)
     {
     }
@@ -216,6 +216,7 @@ public:
             check.shouldSkip = false;
         }
 
+        // TODO: Ckeck supportsChannelLayout() here
         m_processor.reset();
         m_processor.prepare (m_sampleRateHz, m_numInputChannels, m_numOutputChannels, m_blockSizeFrames);
 
@@ -244,7 +245,7 @@ public:
             hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, blockSizeFrames);
             hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, blockSizeFrames);
             m_inputSignal->renderNextBlock (inputBlock.getArrayOfWritePointers(), blockSizeFrames);
-            m_processor.process (inputBlock.getArrayOfReadPointers(), outputBlock.getArrayOfWritePointers(), blockSizeFrames);
+            m_processor.process (inputBlock, outputBlock, blockSizeFrames);
 
             if (m_saveOutputMode == Save::always)
                 m_fullOutputBuffer.appendFrom (outputBlock);
@@ -309,7 +310,7 @@ private:
         bool shouldPass;
     };
 
-    TestedAudioProcessor<SampleType, ParamType>& m_processor;
+    DSP<SampleType, ParamType>& m_processor;
     std::unique_ptr<Signal<SampleType>> m_inputSignal;
     double m_sampleRateHz = (ParamType) 44100;
     size_t m_blockSizeFrames = 1024;
@@ -349,7 +350,7 @@ private:
 };
 
 template <typename SampleType, typename ParamType>
-AudioTestBuilder<SampleType, ParamType> processAudioWith (TestedAudioProcessor<SampleType, ParamType>& processor)
+AudioTestBuilder<SampleType, ParamType> processAudioWith (DSP<SampleType, ParamType>& processor)
 {
     return { processor };
 }
