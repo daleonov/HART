@@ -99,3 +99,46 @@ HART_TEST ("Gain - Channel Layouts")
         .process();
 
 }
+
+HART_TEST ("HardClip - Threshold Values")
+{
+    hart::processAudioWith (hart::HardClip<float>())
+        .withInputSignal (hart::SineWave<float>())
+        .withSampleRate (44100.0)
+        .withBlockSize (1024)
+        .withDuration (0.1)
+        .inMono()
+        .withValue (hart::HardClip<float>::thresholdDb, -oo_dB)
+        .expectTrue (hart::equalsTo (hart::Silence<float>()))
+        .process();
+
+    hart::processAudioWith (hart::HardClip<float>())
+        .withInputSignal (hart::SineWave<float>())
+        .withSampleRate (44100.0)
+        .withBlockSize (1024)
+        .withDuration (0.1)
+        .inMono()
+        .withValue (hart::HardClip<float>::thresholdDb, 0_dB)
+        .expectTrue (hart::equalsTo (hart::SineWave<float>()))
+        .process();
+
+    hart::processAudioWith (hart::HardClip<float>())
+        .withInputSignal (hart::SineWave<float>())
+        .withSampleRate (44100.0)
+        .withBlockSize (1024)
+        .withDuration (0.1)
+        .inMono()
+        .withValue (hart::HardClip<float>::thresholdDb, -3_dB)
+        .expectTrue (hart::PeaksAt<float> (-3_dB))
+        .process();
+
+    hart::processAudioWith (hart::HardClip<float>())
+        .withInputSignal (hart::SineWave<float>())
+        .withSampleRate (44100.0)
+        .withBlockSize (1024)
+        .withDuration (0.1)
+        .inMono()
+        .withValue (hart::HardClip<float>::thresholdDb, -10_dB)
+        .expectTrue (hart::PeaksAt<float> (-10_dB))
+        .process();
+}
