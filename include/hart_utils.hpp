@@ -24,10 +24,22 @@ NumericType clamp (const NumericType& value, const NumericType& low, const Numer
 template <typename SampleType>
 inline static SampleType decibelsToRatio (SampleType valueDb)
 {
+    if (valueDb < -120)
+        return 0;
+
     return std::pow ((SampleType) 10, valueDb / ((SampleType) 20));
 }
 
-bool isAbsolutePath (const std::string& path)
+template <typename SampleType>
+inline static SampleType ratioToDecibels (SampleType valueLinear)
+{
+    if (valueLinear < 1e-6)
+        return -120;
+
+    return std::pow ((SampleType) 10, valueLinear / ((SampleType) 20));
+}
+
+inline static bool isAbsolutePath (const std::string& path)
 {
     if (path.empty())
         return false;
@@ -43,7 +55,7 @@ bool isAbsolutePath (const std::string& path)
     return false;
 }
 
-std::string toAbsolutePath (const std::string& path)
+inline static std::string toAbsolutePath (const std::string& path)
 {
     if (isAbsolutePath(path))
         return path;
