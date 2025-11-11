@@ -17,6 +17,7 @@ class Matcher
 public:
     virtual void prepare (double sampleRateHz, size_t numOutputChannels, size_t maxBlockSizeFrames) = 0;
     virtual bool match (const AudioBuffer<SampleType>& observedAudio) = 0;
+    virtual bool canOperatePerBlock() = 0;
     virtual void reset() = 0;
     virtual std::unique_ptr<Matcher<SampleType>> copy() const = 0;
     virtual std::string describe() const = 0;
@@ -62,6 +63,11 @@ public:
                 if (notEqual (observedAudio[channel][frame], referenceAudio[channel][frame]))
                     return false;
 
+        return true;
+    }
+
+    bool canOperatePerBlock() override
+    {
         return true;
     }
 
@@ -127,6 +133,11 @@ public:
         return true;
     }
 
+    bool canOperatePerBlock() override
+    {
+        return true;
+    }
+
     void reset() override {}
 
     virtual std::unique_ptr<Matcher<SampleType>> copy() const override
@@ -148,6 +159,60 @@ template <typename SampleType>
 PeaksBelow<SampleType> peaksBelow (SampleType tresholdDb)
 {
     return PeaksBelow<SampleType> (tresholdDb);
+}
+
+template<typename SampleType>
+class PeaksAt:
+    public Matcher<SampleType>
+{
+public:
+    PeaksAt (SampleType targetDb, SampleType toleranceLinear = 1e-3):
+        m_targetDb (targetDb),
+        m_targetLinear (decibelsToRatio (targetDb)),
+        m_toleranceLinear (toleranceLinear)
+    {
+    }
+
+    void prepare (double /*sampleRateHz*/, size_t /* numOutputChannels */, size_t /* maxBlockSizeFrames */) override {}
+
+    bool match (const AudioBuffer<SampleType>& observedAudio) override
+    {
+        SampleType observedPeakLinear = 0;
+
+        for (size_t channel = 0; channel < observedAudio.getNumChannels(); ++channel)
+            for (size_t frame = 0; frame < observedAudio.getNumFrames(); ++frame)
+                observedPeakLinear = std::max (observedPeakLinear, std::abs (observedAudio[channel][frame]));
+
+        return std::abs (observedPeakLinear - m_targetLinear) < m_toleranceLinear;
+    }
+
+    bool canOperatePerBlock() override
+    {
+        return false;
+    }
+
+    void reset() override {}
+
+    virtual std::unique_ptr<Matcher<SampleType>> copy() const override
+    {
+        return std::make_unique<PeaksAt<SampleType>> (*this);
+    }
+
+    std::string describe() const override
+    {
+        return std::string ("PeaksAt (") + std::to_string (m_targetDb) + ")";
+    }
+
+private:
+    const SampleType m_targetDb;
+    const SampleType m_targetLinear;
+    const SampleType m_toleranceLinear;
+};
+
+template <typename SampleType>
+PeaksAt<SampleType> peaksAt (SampleType tresholdDb)
+{
+    return PeaksAt<SampleType> (tresholdDb);
 }
 
 }  // namespace hart

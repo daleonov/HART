@@ -206,10 +206,14 @@ public:
         if (m_durationFrames == 0)
             HART_THROW ("Nothing to process");
 
-        if (checks.size() == 0)
-            HART_THROW ("Nothing to check");
+        for (auto& check : perBlockChecks)
+        {
+            check.matcher->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
+            check.matcher->reset();
+            check.shouldSkip = false;
+        }
 
-        for (auto& check : checks)
+        for (auto& check : fullSignalChecks)
         {
             check.matcher->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
             check.matcher->reset();
@@ -230,17 +234,11 @@ public:
             HART_THROW ("No input signal - call withInputSignal() first!");
 
         m_inputSignal->reset();
-        m_inputSignal->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
+        m_inputSignal->prepare (m_sampleRateHz, m_numInputChannels, m_blockSizeFrames);
         size_t offsetFrames = 0;
 
-        AudioBuffer<SampleType> m_fullOutputBuffer (m_numOutputChannels);
+        AudioBuffer<SampleType> fullOutputBuffer (m_numOutputChannels);
         bool atLeastOneCheckFailed = false;
-
-        for (auto& check : checks)
-        {
-            check.matcher->prepare(m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
-            check.matcher->reset();
-        }
 
         while (offsetFrames < m_durationFrames)
         {
@@ -253,43 +251,18 @@ public:
             m_inputSignal->renderNextBlock (inputBlock.getArrayOfWritePointers(), blockSizeFrames);
             m_processor.process (inputBlock, outputBlock);
 
-            if (m_saveOutputMode == Save::always)
-                m_fullOutputBuffer.appendFrom (outputBlock);
-
-            for (auto& check : checks)
-            {
-                if (check.shouldSkip)
-                    continue;
-
-                auto& assertionLevel = check.signalAssertionLevel;
-                auto& matcher = check.matcher;
-
-                const bool matchPassed = matcher->match (outputBlock);
-
-                if (matchPassed != check.shouldPass)
-                {
-                    check.shouldSkip = true;
-                    atLeastOneCheckFailed = true;
-
-                    if (m_saveOutputMode == Save::whenFails)
-                        m_fullOutputBuffer.appendFrom (outputBlock);
-
-                    if (assertionLevel == SignalAssertionLevel::assert)
-                        throw hart::TestAssertException (std::string ("Assert failed: ") + matcher->describe());
-                    else
-                        hart::ExpectationFailureMessages::get().emplace_back (std::string ("Expect failed: ") + matcher->describe());
-
-                    // TODO: FIXME: Do not throw here if requested to write input or output to a wav file, throw after the loop instead
-                    // TODO: Stop processing if expect has failed and outputting to a file wasn't requested
-                    // TODO: Skip all checks if check failed, but asked to output a wav file
-                }
-            }
+            const bool allChecksPassed = processChecks (perBlockChecks, outputBlock);
+            atLeastOneCheckFailed |= ! allChecksPassed;
+            fullOutputBuffer.appendFrom (outputBlock);
 
             offsetFrames += blockSizeFrames;
         }
 
+        const bool allChecksPassed = processChecks (fullSignalChecks, fullOutputBuffer);
+        atLeastOneCheckFailed |= ! allChecksPassed;
+
         if (m_saveOutputMode == Save::always || (m_saveOutputMode == Save::whenFails && atLeastOneCheckFailed))
-            WavWriter<SampleType>::writeBuffer (m_fullOutputBuffer, m_saveOutputPath, m_sampleRateHz, m_saveOutputWavFormat);
+            WavWriter<SampleType>::writeBuffer (fullOutputBuffer, m_saveOutputPath, m_sampleRateHz, m_saveOutputWavFormat);
     }
 
 private:
@@ -323,7 +296,8 @@ private:
     double m_durationSeconds = 0.0;
     size_t m_durationFrames = 0;
 
-    std::vector<Check> checks;
+    std::vector<Check> perBlockChecks;
+    std::vector<Check> fullSignalChecks;
 
     std::string m_saveOutputPath;
     Save m_saveOutputMode = Save::never;
@@ -331,7 +305,8 @@ private:
 
     void addCheck (const Matcher<SampleType>& matcher, SignalAssertionLevel signalAssertionLevel, bool shouldPass)
     {
-        checks.emplace_back (AudioTestBuilder::Check {
+        auto& checksGroup = matcher.canOperatePerBlock() ? perBlockChecks : fullSignalChecks;
+        checksGroup.emplace_back (AudioTestBuilder::Check {
             matcher.copy(),
             signalAssertionLevel,
             false,  // shouldSkip
@@ -343,12 +318,44 @@ private:
     void addCheck (MatcherType&& matcher, SignalAssertionLevel signalAssertionLevel, bool shouldPass)
     {
         static_assert (std::is_base_of_v<Matcher<SampleType>, std::decay_t<MatcherType>>, "MatcherType must be a hart::Matcher subclass");
-        checks.emplace_back (AudioTestBuilder::Check {
+        auto& checksGroup = matcher.canOperatePerBlock() ? perBlockChecks : fullSignalChecks;
+        checksGroup.emplace_back (AudioTestBuilder::Check {
             std::make_unique<std::decay_t<MatcherType>> (std::forward<MatcherType> (matcher)),
             signalAssertionLevel,
             false,  // shouldSkip
             shouldPass
         });
+    }
+
+    bool processChecks (std::vector<Check>& checksGroup, AudioBuffer<SampleType>& outputBlock)
+    {
+        for (auto& check : checksGroup)
+        {
+            if (check.shouldSkip)
+                continue;
+
+            auto& assertionLevel = check.signalAssertionLevel;
+            auto& matcher = check.matcher;
+
+            const bool matchPassed = matcher->match (outputBlock);
+
+            if (matchPassed != check.shouldPass)
+            {
+                check.shouldSkip = true;
+
+                if (assertionLevel == SignalAssertionLevel::assert)
+                    throw hart::TestAssertException (std::string ("Assert failed: ") + matcher->describe());
+                else
+                    hart::ExpectationFailureMessages::get().emplace_back (std::string ("Expect failed: ") + matcher->describe());
+
+                // TODO: FIXME: Do not throw indife of per-block loop if requested to write input or output to a wav file, throw after the loop instead
+                // TODO: Stop processing if expect has failed and outputting to a file wasn't requested
+                // TODO: Skip all checks if check failed, but asked to output a wav file
+                return false;
+            }
+        }
+
+        return true;
     }
 };
 
