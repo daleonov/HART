@@ -54,7 +54,7 @@ HART_TEST ("Gain - Channel Layouts")
         .withInputSignal (hart::SineWave<float>())
         .withMonoInput()
         .withStereoOutput()
-        .withValue (hart::Gain<float>::gainDb, -0_dB)
+        .withValue (hart::Gain<float>::gainDb, -3_dB)
         .expectTrue (hart::PeaksAt<float> (-3_dB))
         .process();
 
