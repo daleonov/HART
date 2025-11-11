@@ -1,95 +1,103 @@
 #include "hart.hpp"
 #include "hart_matchers.hpp"
 
+using hart::equalsTo;
+using hart::HardClip;
+using hart::Gain;
+using hart::PeaksAt;
+using hart::processAudioWith;
+using hart::Silence;
+using hart::SineWave;
+
 HART_TEST ("Gain - Gain Values")
 {
-    hart::processAudioWith (hart::Gain<float>())
-        .withInputSignal (hart::SineWave<float>())
-        .withValue (hart::Gain<float>::gainDb, -oo_dB)
-        .expectTrue (hart::equalsTo (hart::Silence<float>()))
+    processAudioWith (Gain<float>())
+        .withInputSignal (SineWave<float>())
+        .withValue (Gain<float>::gainDb, -oo_dB)
+        .expectTrue (equalsTo (Silence<float>()))
         .process();
 
-    hart::processAudioWith (hart::Gain<float>())
-        .withInputSignal (hart::SineWave<float>())
-        .withValue (hart::Gain<float>::gainDb, 0_dB)
-        .expectTrue (hart::equalsTo (hart::SineWave<float>()))
+    processAudioWith (Gain<float>())
+        .withInputSignal (SineWave<float>())
+        .withValue (Gain<float>::gainDb, 0_dB)
+        .expectTrue (equalsTo (SineWave<float>()))
         .process();
 
-    hart::processAudioWith (hart::Gain<float>())
-        .withInputSignal (hart::SineWave<float>())
-        .withValue (hart::Gain<float>::gainDb, -3_dB)
-        .expectTrue (hart::PeaksAt<float> (-3_dB))
+    processAudioWith (Gain<float>())
+        .withInputSignal (SineWave<float>())
+        .withValue (Gain<float>::gainDb, -3_dB)
+        .expectTrue (PeaksAt<float> (-3_dB))
         .process();
 
-    hart::processAudioWith (hart::Gain<float>())
-        .withInputSignal (hart::SineWave<float>())
-        .withValue (hart::Gain<float>::gainDb, -20_dB)
-        .expectTrue (hart::PeaksAt<float> (-20_dB))
+    processAudioWith (Gain<float>())
+        .withInputSignal (SineWave<float>())
+        .withValue (Gain<float>::gainDb, -20_dB)
+        .expectTrue (PeaksAt<float> (-20_dB))
         .process();
 
-    hart::processAudioWith (hart::Gain<float>())
-        .withInputSignal (hart::SineWave<float>())
-        .withValue (hart::Gain<float>::gainDb, +6_dB)
-        .expectTrue (hart::PeaksAt<float> (+6_dB))
+    processAudioWith (Gain<float>())
+        .withInputSignal (SineWave<float>())
+        .withValue (Gain<float>::gainDb, +6_dB)
+        .expectTrue (PeaksAt<float> (+6_dB))
         .process();
 }
 
 HART_TEST ("Gain - Channel Layouts")
 {
-    hart::processAudioWith (hart::Gain<float>())
-        .withInputSignal (hart::SineWave<float>())
+    processAudioWith (Gain<float>())
+        .withInputSignal (SineWave<float>())
         .inMono()
-        .withValue (hart::Gain<float>::gainDb, -3_dB)
-        .expectTrue (hart::PeaksAt<float> (-3_dB))
+        .withValue (Gain<float>::gainDb, -3_dB)
+        .expectTrue (PeaksAt<float> (-3_dB))
         .process();
 
-    hart::processAudioWith (hart::Gain<float>())
-        .withInputSignal (hart::SineWave<float>())
+    processAudioWith (Gain<float>())
+        .withInputSignal (SineWave<float>())
         .inStereo()
-        .withValue (hart::Gain<float>::gainDb, -3_dB)
-        .expectTrue (hart::PeaksAt<float> (-3_dB))
+        .withValue (Gain<float>::gainDb, -3_dB)
+        .expectTrue (PeaksAt<float> (-3_dB))
         .process();
 
-    hart::processAudioWith (hart::Gain<float>())
-        .withInputSignal (hart::SineWave<float>())
+    processAudioWith (Gain<float>())
+        .withInputSignal (SineWave<float>())
         .withMonoInput()
         .withStereoOutput()
-        .withValue (hart::Gain<float>::gainDb, -3_dB)
-        .expectTrue (hart::PeaksAt<float> (-3_dB))
+        .withValue (Gain<float>::gainDb, -3_dB)
+        .expectTrue (PeaksAt<float> (-3_dB))
         .process();
 
-    hart::processAudioWith (hart::Gain<float>())
-        .withInputSignal (hart::SineWave<float>())
+    processAudioWith (Gain<float>())
+        .withInputSignal (SineWave<float>())
         .withMonoInput()
         .withOutputChannels (5)
-        .withValue (hart::Gain<float>::gainDb, -3_dB)
-        .expectTrue (hart::PeaksAt<float> (-3_dB))
+        .withValue (Gain<float>::gainDb, -3_dB)
+        .expectTrue (PeaksAt<float> (-3_dB))
         .process();
 }
 
 HART_TEST ("HardClip - Threshold Values")
 {
-    hart::processAudioWith (hart::HardClip<float>())
-        .withInputSignal (hart::SineWave<float>())
-        .withValue (hart::HardClip<float>::thresholdDb, -oo_dB)
-        .expectTrue (hart::equalsTo (hart::Silence<float>()))
+    processAudioWith (HardClip<float>())
+        .withInputSignal (SineWave<float>())
+        .withValue (HardClip<float>::thresholdDb, -oo_dB)
+        .expectTrue (equalsTo (Silence<float>()))
         .process();
 
-    hart::processAudioWith (hart::HardClip<float>())
-        .withInputSignal (hart::SineWave<float>())
-        .withValue (hart::HardClip<float>::thresholdDb, 0_dB)
-        .expectTrue (hart::equalsTo (hart::SineWave<float>()))
+    processAudioWith (HardClip<float>())
+        .withInputSignal (SineWave<float>())
+        .withValue (HardClip<float>::thresholdDb, 0_dB)
+        .expectTrue (equalsTo (SineWave<float>()))
         .process();
 
-    hart::processAudioWith (hart::HardClip<float>())
-        .withInputSignal (hart::SineWave<float>())
-        .withValue (hart::HardClip<float>::thresholdDb, -3_dB)
-        .expectTrue (hart::PeaksAt<float> (-3_dB))
+    processAudioWith (HardClip<float>())
+        .withInputSignal (SineWave<float>())
+        .withValue (HardClip<float>::thresholdDb, -3_dB)
+        .expectTrue (PeaksAt<float> (-3_dB))
         .process();
 
-    hart::processAudioWith (hart::HardClip<float>())
-        .withInputSignal (hart::SineWave<float>())
-        .withValue (hart::HardClip<float>::thresholdDb, -10_dB)
-        .expectTrue (hart::PeaksAt<float> (-10_dB))
+    processAudioWith (HardClip<float>())
+        .withInputSignal (SineWave<float>())
+        .withValue (HardClip<float>::thresholdDb, -10_dB)
+        .expectTrue (PeaksAt<float> (-10_dB))
         .process();
 }
