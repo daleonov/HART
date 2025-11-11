@@ -293,8 +293,8 @@ private:
     size_t m_numInputChannels = 1;
     size_t m_numOutputChannels = 1;
     std::vector<ParamValue> paramValues;
-    double m_durationSeconds = 0.0;
-    size_t m_durationFrames = 0;
+    double m_durationSeconds = 0.1;
+    size_t m_durationFrames = static_cast<size_t> (m_durationSeconds * m_sampleRateHz);
 
     std::vector<Check> perBlockChecks;
     std::vector<Check> fullSignalChecks;
