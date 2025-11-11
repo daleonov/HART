@@ -1,16 +1,17 @@
 #pragma once
 
-#ifndef HART_IMPLEMENTATION
-// Wav single header library's implementation
-#define DR_WAV_IMPLEMENTATION
+#if defined (HART_IMPLEMENTATION)
+#define DR_WAV_IMPLEMENTATION  // Wav single header library's implementation
 #endif
 
 #include <stdexcept>
 
+#include "hart_audio_buffer.hpp"
+#include "dsp/hart_dsp_all.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_expectation_failure_messages.hpp"
+#include "hart_process_audio.hpp"
 #include "signals/hart_signals_all.hpp"
-#include "hart_tested_audio_processor.hpp"
 #include "hart_test_registry.hpp"
 #include "hart_units.hpp"
 

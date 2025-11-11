@@ -1,6 +1,8 @@
 #include <iostream>
 #include "hart.hpp"
 
+#define HART_IMPLEMENTATION
+
 HART_TEST ("Example1")
 {
 }

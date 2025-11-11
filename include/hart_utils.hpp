@@ -6,6 +6,8 @@
 #include <limits>  // infinity()
 #include <string>
 
+#include "hart_cliconfig.hpp"
+
 namespace hart
 {
 
