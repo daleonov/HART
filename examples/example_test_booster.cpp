@@ -27,7 +27,7 @@ public:
 
     void process (const hart::AudioBuffer<float>& inputs, hart::AudioBuffer<float>& outputs) override
     {
-        //m_booster.process (inputs.getArrayOfReadPointers(), outputs.getArrayOfWritePointers(), inputs.getNumFrames());
+        m_booster.process (inputs.getArrayOfReadPointers(), outputs.getArrayOfWritePointers(), inputs.getNumFrames());
     }
 
     void reset() override {}
@@ -51,7 +51,7 @@ public:
 private:
     hart::examples::LinearStereoBooster& m_booster;
 };
-/*
+
 HART_TEST ("Booster: Silence in - Silence out")
 {
     hart::examples::LinearStereoBooster booster;
@@ -62,7 +62,7 @@ HART_TEST ("Booster: Silence in - Silence out")
         .withSampleRate (44100.0)
         .withBlockSize (1024)
         .withDuration (0.1)
-        .withValue ("Gain dB", 10.0f)
+        .withValue (TestedBoosterProcessor::gainDb, 10.0f)
         .inStereo()
         .expectTrue (hart::equalsTo (hart::Silence<float>()))
         .process();
@@ -78,7 +78,7 @@ HART_TEST ("Booster: Gain")
         .withSampleRate (44100.0)
         .withBlockSize (1024)
         .withDuration (0.01)
-        .withValue ("Gain dB", 0.0f)
+        .withValue (TestedBoosterProcessor::gainDb, 0.0f)
         .inStereo()
         .expectTrue (hart::equalsTo (hart::SineWave<float>()))
         .process();
@@ -88,7 +88,7 @@ HART_TEST ("Booster: Gain")
         .withSampleRate (44100.0)
         .withBlockSize (1024)
         .withDuration (0.1)
-        .withValue ("Gain dB", 0.0f)
+        .withValue (TestedBoosterProcessor::gainDb, 0.0f)
         .inStereo()
         .expectFalse (hart::equalsTo (hart::SineWave<float>()))
         .saveOutputTo ("Booster Gain Noise Out.wav", hart::Save::always, hart::WavFormat::pcm24)
@@ -99,11 +99,10 @@ HART_TEST ("Booster: Gain")
         .withSampleRate (44100.0_Hz)
         .withBlockSize (1024)
         .withDuration (0.1)
-        .withValue ("Gain dB", -3.0f)
+        .withValue (TestedBoosterProcessor::gainDb, -3.0f)
         .inStereo()
         .assertFalse (hart::equalsTo (hart::SineWave<float>()))
         .expectTrue (hart::peaksBelow (-2.9f))
         .saveOutputTo ("Booster Gain Out.wav", hart::Save::always, hart::WavFormat::pcm24)
         .process();
 }
-*/

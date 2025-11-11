@@ -50,7 +50,7 @@ public:
         return *this;
     }
 
-    AudioTestBuilder& withValue (const std::string& id, ParamType value)
+    AudioTestBuilder& withValue (int id, ParamType value)
     {
         paramValues.emplace_back (ParamValue { id, value });
         return *this;
@@ -245,7 +245,7 @@ public:
             hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, blockSizeFrames);
             hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, blockSizeFrames);
             m_inputSignal->renderNextBlock (inputBlock.getArrayOfWritePointers(), blockSizeFrames);
-            m_processor.process (inputBlock, outputBlock, blockSizeFrames);
+            m_processor.process (inputBlock, outputBlock);
 
             if (m_saveOutputMode == Save::always)
                 m_fullOutputBuffer.appendFrom (outputBlock);
@@ -292,7 +292,7 @@ public:
 private:
     struct ParamValue
     {
-        std::string id;
+        int id;
         ParamType value;
     };
 

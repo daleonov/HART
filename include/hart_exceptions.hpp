@@ -2,6 +2,8 @@
 
 #include <stdexcept>
 
+#define HART_THROW(msg) throw std::runtime_error (msg)
+
 namespace hart
 {
 

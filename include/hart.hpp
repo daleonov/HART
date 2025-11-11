@@ -14,11 +14,11 @@
 #include "signals/hart_signals_all.hpp"
 #include "hart_test_registry.hpp"
 #include "hart_units.hpp"
+#include "hart_wavwriter.hpp"
 
 namespace hart
 {
 
-#define HART_THROW(msg) throw std::runtime_error (msg)
 #define HART_FAIL_TEST_MSG(msg) throw hart::TestAssertException (std::string ("HART_FAIL_TEST_MSG() triggered test fail at line ") + std::to_string (__LINE__) + " with message: \"" + msg + '\"')
 #define HART_FAIL_TEST() throw hart::TestAssertException (std::string ("HART_FAIL_TEST() triggered test fail at line ") + std::to_string (__LINE__))
 
