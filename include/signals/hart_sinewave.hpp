@@ -5,6 +5,7 @@
 #include <string>
 
 #include "signals/hart_signal.hpp"
+#include "hart_utils.hpp"
 
 namespace hart
 {
@@ -19,6 +20,7 @@ public:
         m_initialPhaseRadians (phaseRadians),
         m_phaseRadians (phaseRadians)
         {
+            clampPhase();
         }
 
     void prepare (double sampleRateHz, size_t numOutputChannels, size_t /*maxBlockSizeFrames*/) override
@@ -39,6 +41,7 @@ public:
                 outputs[channel][frame] = value;
 
             m_phaseRadians += phaseIncrement;
+            clampPhase();
         }
     }
 
@@ -63,6 +66,15 @@ private:
     const double m_initialPhaseRadians;
     double m_phaseRadians;
     double m_sampleRateHz;
+
+    void clampPhase()
+    {
+        while (m_phaseRadians < 0)
+            m_phaseRadians += hart::twoPi;
+
+        if (m_phaseRadians > hart::twoPi)
+            m_phaseRadians = std::fmod (m_phaseRadians, hart::twoPi);
+    }
 };
 
 }  // namespace hart
