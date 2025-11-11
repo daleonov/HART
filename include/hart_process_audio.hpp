@@ -236,6 +236,12 @@ public:
         AudioBuffer<SampleType> m_fullOutputBuffer (m_numOutputChannels);
         bool atLeastOneCheckFailed = false;
 
+        for (auto& check : checks)
+        {
+            check.matcher->prepare(m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
+            check.matcher->reset();
+        }
+
         while (offsetFrames < m_durationFrames)
         {
             // TODO: Do not continue if there are no checks, or all checks should skip and there's no input and output file to write
@@ -277,9 +283,6 @@ public:
                     // TODO: Stop processing if expect has failed and outputting to a file wasn't requested
                     // TODO: Skip all checks if check failed, but asked to output a wav file
                 }
-
-                matcher->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
-                matcher->reset();
             }
 
             offsetFrames += blockSizeFrames;
