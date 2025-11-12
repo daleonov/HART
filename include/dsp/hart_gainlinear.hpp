@@ -11,7 +11,7 @@ namespace hart
 
 template <typename SampleType>
 class GainLinear:
-    public hart::DSP<typename SampleType, double>
+    public hart::DSP<typename SampleType>
 {
 public:
     enum Params

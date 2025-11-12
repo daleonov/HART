@@ -10,7 +10,7 @@ namespace hart
 
 template <typename SampleType>
 class HardClip:
-    public hart::DSP<SampleType, double>
+    public hart::DSP<SampleType>
 {
 public:
     enum Params

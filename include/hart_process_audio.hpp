@@ -23,11 +23,11 @@ enum class Save
     never
 };
 
-template <typename SampleType, typename ParamType>
+template <typename SampleType>
 class AudioTestBuilder
 {
 public:
-    AudioTestBuilder (DSP<SampleType, ParamType>& processor):
+    AudioTestBuilder (DSP<SampleType>& processor):
         m_processor (processor)
     {
     }
@@ -50,7 +50,7 @@ public:
         return *this;
     }
 
-    AudioTestBuilder& withValue (int id, ParamType value)
+    AudioTestBuilder& withValue (int id, double value)
     {
         // TODO: Handle cases when processor already has an envelope for this id
         paramValues.emplace_back (ParamValue { id, value });
@@ -270,7 +270,7 @@ private:
     struct ParamValue
     {
         int id;
-        ParamType value;
+        double value;
     };
 
     enum class SignalAssertionLevel
@@ -287,9 +287,9 @@ private:
         bool shouldPass;
     };
 
-    DSP<SampleType, ParamType>& m_processor;
+    DSP<SampleType>& m_processor;
     std::unique_ptr<Signal<SampleType>> m_inputSignal;
-    double m_sampleRateHz = (ParamType) 44100;
+    double m_sampleRateHz = (double) 44100;
     size_t m_blockSizeFrames = 1024;
     size_t m_numInputChannels = 1;
     size_t m_numOutputChannels = 1;
@@ -360,8 +360,8 @@ private:
     }
 };
 
-template <typename SampleType, typename ParamType>
-AudioTestBuilder<SampleType, ParamType> processAudioWith (DSP<SampleType, ParamType>& processor)
+template <typename SampleType>
+AudioTestBuilder<SampleType> processAudioWith (DSP<SampleType>& processor)
 {
     return { processor };
 }

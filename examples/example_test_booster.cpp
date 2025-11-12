@@ -6,7 +6,7 @@
 #include "example_processors.hpp"
 
 class TestedBoosterProcessor:
-    public hart::DSP<float, float>
+    public hart::DSP<float>
 {
 public:
     enum Params

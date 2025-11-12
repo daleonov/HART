@@ -8,9 +8,8 @@
 namespace hart
 {
 
-template <typename ParamType>
 class SegmentedEnvelope:
-    public Envelope<ParamType>
+    public Envelope
 {
 public:
     // TODO: Log curve?
@@ -21,7 +20,7 @@ public:
         sCurve
     };
 
-    SegmentedEnvelope (ParamType startValue):
+    SegmentedEnvelope (double startValue):
         m_resetValue (startValue),
         m_beginValue (startValue),
         m_endValue (startValue),
@@ -29,7 +28,7 @@ public:
     {
     }
 
-    void renderNextBlock (size_t blockSize, std::vector<ParamType>& valuesOutput) override
+    void renderNextBlock (size_t blockSize, std::vector<double>& valuesOutput) override
     {
         if (valuesOutput.size() != blockSize)
         {
@@ -63,7 +62,7 @@ public:
         return *this;
     }
 
-    SegmentedEnvelope& rampTo (ParamType targetValue, double duration_s, Shape shape = Shape::linear)
+    SegmentedEnvelope& rampTo (double targetValue, double duration_s, Shape shape = Shape::linear)
     {
         m_segments.push_back ({duration_s, targetValue, shape, false});
         m_endValue = targetValue;
@@ -72,26 +71,26 @@ public:
 
     std::unique_ptr<Envelope> copy() const
     {
-        return std::make_unique<SegmentedEnvelope<ParamType>> (*this);
+        return std::make_unique<SegmentedEnvelope> (*this);
     }
 
 private:
     struct Segment
     {
         double durationSeconds;
-        ParamType targetValue;
+        double targetValue;
         Shape shape = Shape::linear;
         bool isHold = false;
     };
 
-    const ParamType m_resetValue;
-    ParamType m_beginValue;
-    ParamType m_endValue;
+    const double m_resetValue;
+    double m_beginValue;
+    double m_endValue;
     std::vector<Segment> m_segments;
 
     double m_currentTimeSeconds = 0.0;
     size_t m_currentSegmentIndex = 0;
-    ParamType m_currentValue;
+    double m_currentValue;
 
     double m_frameTimeSeconds = 1.0 / 44100.0;
 

@@ -12,7 +12,7 @@ namespace hart
 
 template <typename SampleType>
 class GainDb:
-    public hart::DSP<typename SampleType, double>
+    public hart::DSP<typename SampleType>
 {
 public:
     enum Params

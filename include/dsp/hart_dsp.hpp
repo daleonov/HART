@@ -11,7 +11,7 @@
 namespace hart
 {
 
-template <typename SampleType, typename ParamType>
+template <typename SampleType>
 class DSP
 {
 public:
@@ -19,20 +19,20 @@ public:
     virtual void prepare (double sampleRateHz, size_t numInputChannels, size_t numOutputChannels, size_t maxBlockSizeFrames) = 0;
     virtual void process (const AudioBuffer<SampleType>& inputs, AudioBuffer<SampleType>& outputs) = 0;
     virtual void reset() = 0;
-    virtual void setValue (int paramId, ParamType value) = 0;
-    virtual ParamType getValue (int paramId) const = 0;
+    virtual void setValue (int paramId, double value) = 0;
+    virtual double getValue (int paramId) const = 0;
     virtual bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const = 0;
     virtual void print (std::ostream& stream) const = 0;
     virtual bool supportsEnvelopeFor (int paramId) const = 0;
 
-    DSP& withEnvelope (int paramId, Envelope<ParamType>&& envelope)
+    DSP& withEnvelope (int paramId, Envelope&& envelope)
     {
         // TODO: Check supportsEnvelopeFor() first
-        m_envelopes.emplace (paramId, std::make_unique<Envelope<ParamType>> (std::move (envelope)));
+        m_envelopes.emplace (paramId, std::make_unique<Envelope> (std::move (envelope)));
         return *this;
     }
 
-    DSP& withEnvelope (int paramId, const Envelope<ParamType>& envelope)
+    DSP& withEnvelope (int paramId, const Envelope& envelope)
     {
         // TODO: Check supportsEnvelopeFor() first
         m_envelopes.emplace (paramId, envelope.copy());
@@ -45,9 +45,9 @@ public:
     }
 
 protected:
-    std::unordered_map<int, std::unique_ptr<Envelope<ParamType>>> m_envelopes;
+    std::unordered_map<int, std::unique_ptr<Envelope>> m_envelopes;
 
-    void getValues (int paramId, size_t blockSize, std::vector<ParamType>& valuesOutput)
+    void getValues (int paramId, size_t blockSize, std::vector<double>& valuesOutput)
     {
         if (valuesOutput.size() != blockSize)
         {
@@ -57,7 +57,7 @@ protected:
 
         if (! hasEnvelopeFor (paramId))
         {
-            const ParamType value = getValue (paramId);
+            const double value = getValue (paramId);
             std::fill (valuesOutput.begin(), valuesOutput.end(), value);
         }
         else
@@ -66,16 +66,16 @@ protected:
         }
     }
 
-    std::vector<ParamType> getValues (int paramId, size_t blockSize)
+    std::vector<double> getValues (int paramId, size_t blockSize)
     {
-        std::vector<ParamType> values (blockSize);
+        std::vector<double> values (blockSize);
         getValues (paramId, values);
         return values;
     }
 };
 
-template <typename SampleType, typename ParamType>
-inline std::ostream& operator<< (std::ostream& stream, const DSP<SampleType, ParamType>& dsp) {
+template <typename SampleType>
+inline std::ostream& operator<< (std::ostream& stream, const DSP<SampleType>& dsp) {
     dsp.print (stream);
     return stream;
 }
