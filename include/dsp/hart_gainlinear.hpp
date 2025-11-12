@@ -27,37 +27,41 @@ public:
 
     void prepare (double /* sampleRateHz */, size_t /* numInputChannels */, size_t /* numOutputChannels */, size_t maxBlockSizeFrames) override
     {
-        m_gainEnvelopeValues.resize (maxBlockSizeFrames);
+        m_gainEnvelopeValues.resize (hasEnvelopeFor (Params::gainLinear) ? maxBlockSizeFrames : 0);
     }
 
-    void process (const AudioBuffer<SampleType>& inputs, AudioBuffer<SampleType>& outputs) override
+    void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output) override
     {
-        const size_t numInputChannels = inputs.getNumChannels();
-        const size_t numOutputChannels = outputs.getNumChannels();
+        const size_t numInputChannels = input.getNumChannels();
+        const size_t numOutputChannels = output.getNumChannels();
         // TODO: Check if number of frames is equal
 
-        const size_t blockSize = inputs.getNumFrames();
-        getValues (Params::gainLinear, blockSize, m_gainEnvelopeValues);
-
-        if (numInputChannels == numOutputChannels)
+        if (! supportsChannelLayout (numInputChannels, numOutputChannels))
         {
-            for (size_t channel = 0; channel < inputs.getNumChannels(); ++channel)
-                for (size_t frame = 0; frame < blockSize; ++frame)
-                    outputs[channel][frame] = inputs[channel][frame] * m_gainEnvelopeValues[frame];
+            // TODO: assert
+            return;
+        }
+
+        const bool hasEnvelope = ! m_gainEnvelopeValues.empty();
+        const bool multiplexerMode = numInputChannels != numOutputChannels;
+
+        if (hasEnvelope)
+        {
+            getValues (Params::gainLinear, input.getNumFrames(), m_gainEnvelopeValues);
+
+            if (multiplexerMode)
+                processEnvelopedGainAsMultiplexer (input, output);
+            else
+                processEnvelopedGainAsMultiChannel (input, output);
 
             return;
         }
 
-        if (numInputChannels == 1)
-        {
-            for (size_t channel = 0; channel < outputs.getNumChannels(); ++channel)
-                for (size_t frame = 0; frame < blockSize; ++frame)
-                    outputs[channel][frame] = inputs[0][frame] * m_gainEnvelopeValues[frame];
-
-            return;
-        }
-
-        // If we're here, the channel layout is unsupported
+        // No gain envelope
+        if (multiplexerMode)
+            processConstantGainAsMultiplexer (input, output);
+        else
+            processConstantGainAsMultiChannel (input, output);
     }
 
     void reset() override {}
@@ -103,6 +107,34 @@ private:
     double m_initialGainLinear;
     double m_gainLinear;
     std::vector<double> m_gainEnvelopeValues;
+
+    void processConstantGainAsMultiChannel (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
+    {
+        for (size_t channel = 0; channel < input.getNumChannels(); ++channel)
+            for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
+                output[channel][frame] = input[channel][frame] * m_gainLinear;
+    }
+
+    void processConstantGainAsMultiplexer (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
+    {
+        for (size_t channel = 0; channel < output.getNumChannels(); ++channel)
+            for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
+                output[channel][frame] = input[0][frame] * m_gainLinear;
+    }
+
+    void processEnvelopedGainAsMultiChannel (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
+    {
+        for (size_t channel = 0; channel < input.getNumChannels(); ++channel)
+            for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
+                output[channel][frame] = input[channel][frame] * m_gainEnvelopeValues[frame];
+    }
+
+    void processEnvelopedGainAsMultiplexer (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
+    {
+        for (size_t channel = 0; channel < output.getNumChannels(); ++channel)
+            for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
+                output[channel][frame] = input[0][frame] * m_gainEnvelopeValues[frame];
+    }
 };
 
 }  // namespace hart

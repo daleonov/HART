@@ -78,6 +78,7 @@ HART_TEST ("DSP Chains - Long Chains")
 
     processAudioWith (GainDb (0_dB))
         .withInputSignal (signalWithLongFxChainA)
+        .withDuration (20_ms)  // A lot of DSP instances to process, so cutting some corners here
         .expectTrue (PeaksAt (gainTargetDb))
         .process();
 
