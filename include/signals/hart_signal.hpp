@@ -88,6 +88,7 @@ public:
     Signal& followedBy (const DSP<SampleType>& dsp)
     {
         dspChain.emplace_back (dsp.copy());
+        return *this;
     }
 
     template <typename DerivedDSP, typename = std::enable_if_t<std::is_base_of_v<DSP<SampleType>, std::decay_t<DerivedDSP>>>>
@@ -105,5 +106,23 @@ protected:
     size_t m_numChannels = 1;
     std::vector<std::unique_ptr<DSP<SampleType>>> dspChain;
 };
+
+template<typename SampleType>
+Signal<SampleType>& operator>> (Signal<SampleType>& signal, DSP<SampleType>&& dsp)
+{
+    return signal.followedBy (std::move (dsp));
+}
+
+template<typename SampleType>
+Signal<SampleType>& operator>> (Signal<SampleType>& signal, const DSP<SampleType>& dsp)
+{
+    return signal.followedBy (dsp);;
+}
+
+template<typename SampleType>
+Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, const DSP<SampleType>& dsp)
+{
+    return std::move (signal.followedBy (dsp));
+}
 
 }  // namespace hart
