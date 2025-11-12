@@ -61,6 +61,8 @@ public:
         return false;
     }
 
+    HART_DSP_DECLARE_COPY_METHOD (TestedBoosterProcessor);
+
 private:
     hart::examples::LinearStereoBooster& m_booster;
 };

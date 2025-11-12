@@ -72,13 +72,6 @@ public:
         return *this;
     }
 
-    template <typename Derived>
-    AudioTestBuilder& withInputSignal (Derived&& signal)
-    {
-        m_inputSignal = std::make_unique<Derived> (std::forward<Derived> (signal));
-        return *this;
-    }
-
     AudioTestBuilder& withInputChannels (size_t numInputChannels)
     {   
         if (numInputChannels == 0)

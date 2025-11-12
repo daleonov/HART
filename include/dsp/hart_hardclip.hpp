@@ -67,6 +67,8 @@ public:
         return false;
     }
 
+    HART_DSP_DECLARE_COPY_METHOD (HardClip);
+
 private:
     double m_initialThresholdDb;
     double m_thresholdLinear;
