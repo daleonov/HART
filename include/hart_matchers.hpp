@@ -29,8 +29,8 @@ class EqualsTo:
 {
 public:
     template <typename SignalType>
-    EqualsTo (SignalType&& referenceSignal, SampleType epsilon = (SampleType) 1e-5):
-        m_referenceSignal (std::make_unique<std::decay_t<SignalType>> (std::forward<SignalType> (referenceSignal))),
+    EqualsTo (const SignalType& referenceSignal, SampleType epsilon = (SampleType) 1e-5):
+        m_referenceSignal (referenceSignal.copy()),
         m_epsilon (epsilon)
     {
         static_assert (std::is_base_of_v<Signal<SampleType>, std::decay_t<SignalType>>, "SignalType must be a hart::Signal subclass");
@@ -50,13 +50,13 @@ public:
 
     void prepare (double sampleRateHz, size_t numOutputChannels, size_t maxBlockSizeFrames) override
     {
-        m_referenceSignal->prepare (sampleRateHz, numOutputChannels, maxBlockSizeFrames);
+        m_referenceSignal->prepareWithDSPChain (sampleRateHz, numOutputChannels, maxBlockSizeFrames);
     }
 
     bool match (const AudioBuffer<SampleType>& observedAudio) override
     {
         auto referenceAudio = AudioBuffer<SampleType>::emptyLike (observedAudio);
-        m_referenceSignal->renderNextBlock (referenceAudio);
+        m_referenceSignal->renderNextBlockWithDSPChain (referenceAudio);
 
         for (size_t channel = 0; channel < referenceAudio.getNumChannels(); ++channel)
             for (size_t frame = 0; frame < referenceAudio.getNumFrames(); ++frame)
@@ -73,7 +73,7 @@ public:
 
     void reset() override
     {
-        m_referenceSignal->reset();
+        m_referenceSignal->resetWithDSPChain();
     }
 
     virtual std::unique_ptr<Matcher<SampleType>> copy() const override

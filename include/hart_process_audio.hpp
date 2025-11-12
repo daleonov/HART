@@ -227,8 +227,8 @@ public:
         if (m_inputSignal == nullptr)
             HART_THROW ("No input signal - call withInputSignal() first!");
 
-        m_inputSignal->reset();
-        m_inputSignal->prepare (m_sampleRateHz, m_numInputChannels, m_blockSizeFrames);
+        m_inputSignal->resetWithDSPChain();
+        m_inputSignal->prepareWithDSPChain (m_sampleRateHz, m_numInputChannels, m_blockSizeFrames);
         size_t offsetFrames = 0;
 
         AudioBuffer<SampleType> fullOutputBuffer (m_numOutputChannels);
@@ -242,7 +242,7 @@ public:
 
             hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, blockSizeFrames);
             hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, blockSizeFrames);
-            m_inputSignal->renderNextBlock (inputBlock);
+            m_inputSignal->renderNextBlockWithDSPChain (inputBlock);
             m_processor.process (inputBlock, outputBlock);
 
             const bool allChecksPassed = processChecks (perBlockChecks, outputBlock);

@@ -100,6 +100,35 @@ public:
         return *this;
     }
 
+    void prepareWithDSPChain (double sampleRateHz, size_t numOutputChannels, size_t maxBlockSizeFrames)
+    {
+        prepare (sampleRateHz, numOutputChannels, maxBlockSizeFrames);
+        const size_t numInputChannels = numOutputChannels;
+
+        for (auto& dsp : dspChain)
+        {
+            // TODO: Assert supportsChannelLayout
+            dsp->prepare (sampleRateHz, numInputChannels, numOutputChannels, maxBlockSizeFrames);
+        }
+    }
+
+    void renderNextBlockWithDSPChain (AudioBuffer<SampleType>& output)
+    {
+        renderNextBlock (output);
+        AudioBuffer<SampleType>& inputReplacing = output;
+
+        for (auto& dsp : dspChain)
+            dsp->process (inputReplacing, output);
+    }
+
+    virtual void resetWithDSPChain()
+    {
+        reset();
+
+        for (auto& dsp : dspChain)
+            dsp->reset();
+    }
+
     using m_SampleType = SampleType;
 
 protected:
@@ -107,8 +136,8 @@ protected:
     std::vector<std::unique_ptr<DSP<SampleType>>> dspChain;
 };
 
-template<typename SampleType>
-Signal<SampleType>& operator>> (Signal<SampleType>& signal, DSP<SampleType>&& dsp)
+template<typename SampleType, typename DerivedDSP, std::enable_if_t<std::is_base_of_v<DSP<SampleType>, std::decay_t<DerivedDSP>>>>
+Signal<SampleType>& operator>> (Signal<SampleType>& signal, DerivedDSP&& dsp)
 {
     return signal.followedBy (std::move (dsp));
 }
