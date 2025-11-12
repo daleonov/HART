@@ -29,7 +29,7 @@ class EqualsTo:
 {
 public:
     template <typename SignalType>
-    EqualsTo (SignalType&& referenceSignal, SampleType epsilon = (SampleType) 1e-6):
+    EqualsTo (SignalType&& referenceSignal, SampleType epsilon = (SampleType) 1e-5):
         m_referenceSignal (std::make_unique<std::decay_t<SignalType>> (std::forward<SignalType> (referenceSignal))),
         m_epsilon (epsilon)
     {
@@ -90,9 +90,9 @@ private:
     std::unique_ptr<Signal<SampleType>> m_referenceSignal;
     const SampleType m_epsilon;
 
-    static bool notEqual (SampleType x, SampleType y)
+    bool notEqual (SampleType x, SampleType y)
     {
-        return std::abs (x - y) > (SampleType) 1e-8;
+        return std::abs (x - y) > m_epsilon;
     }
 };
 
