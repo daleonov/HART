@@ -16,6 +16,7 @@ target_include_directories(HART_Examples PRIVATE
 
 add_executable(HART_Tests
     tests/test_dsp.cpp
+    tests/test_envelope.cpp
     tests/test_main.cpp
 )
 
