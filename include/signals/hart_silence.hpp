@@ -18,11 +18,12 @@ public:
         setNumChannels (numOutputChannels);
     }
 
-    void renderNextBlock (SampleType* const* outputs, size_t numFrames) override
+    void renderNextBlock (AudioBuffer<SampleType>& output) override
     {
+        // TODO: Assert chahhel numbers match
         for (size_t channel = 0; channel < this->m_numChannels; ++channel)
-            for (size_t frame = 0; frame < numFrames; ++frame)
-                outputs[channel][frame] = (SampleType) 0;
+            for (size_t frame = 0; frame < output.getNumFrames(); ++frame)
+                output[channel][frame] = (SampleType) 0;
     }
 
     void reset() override {}

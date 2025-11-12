@@ -56,7 +56,7 @@ public:
     bool match (const AudioBuffer<SampleType>& observedAudio) override
     {
         auto referenceAudio = AudioBuffer<SampleType>::emptyLike (observedAudio);
-        m_referenceSignal->renderNextBlock (referenceAudio.getArrayOfWritePointers(), referenceAudio.getNumFrames());
+        m_referenceSignal->renderNextBlock (referenceAudio);
 
         for (size_t channel = 0; channel < referenceAudio.getNumChannels(); ++channel)
             for (size_t frame = 0; frame < referenceAudio.getNumFrames(); ++frame)

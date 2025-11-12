@@ -27,11 +27,11 @@ public:
         this->setNumChannels (numOutputChannels);
     }
 
-    void renderNextBlock (SampleType* const* outputs, size_t numFrames) override
+    void renderNextBlock (AudioBuffer<SampleType>& output) override
     {
-        for (size_t frame = 0; frame < numFrames; ++frame)
+        for (size_t frame = 0; frame < output.getNumFrames(); ++frame)
             for (size_t channel = 0; channel < this->m_numChannels; ++channel)
-                outputs[channel][frame] = m_uniformRealDistribution (m_randomNumberGenerator);
+                output[channel][frame] = m_uniformRealDistribution (m_randomNumberGenerator);
     }
 
     void reset() override

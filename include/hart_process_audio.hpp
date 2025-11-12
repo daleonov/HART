@@ -249,7 +249,7 @@ public:
 
             hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, blockSizeFrames);
             hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, blockSizeFrames);
-            m_inputSignal->renderNextBlock (inputBlock.getArrayOfWritePointers(), blockSizeFrames);
+            m_inputSignal->renderNextBlock (inputBlock);
             m_processor.process (inputBlock, outputBlock);
 
             const bool allChecksPassed = processChecks (perBlockChecks, outputBlock);

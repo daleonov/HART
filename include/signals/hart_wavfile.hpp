@@ -55,14 +55,15 @@ public:
         m_wavNumChannels = static_cast<int> (numChannels);
     }
 
-    void prepare (double sampleRateHz, size_t numOutputChannels, size_t /*maxBlockSizeFrames*/) override
+    void prepare (double /* sampleRateHz */, size_t /* numOutputChannels */, size_t /*maxBlockSizeFrames*/) override
     {
         // TODO: Warning message is sample rate or channel num mismatches the wav file
     }
 
-    void renderNextBlock (SampleType* const* outputs, size_t numFrames) override
+    void renderNextBlock (AudioBuffer<SampleType>& output) override
     {
         // TODO: Add support for number of channels different from the wav file
+        const size_t numFrames = output.getNumFrames();
         const size_t numChannels = m_wavNumChannels;
         size_t frameInOutputBuffer = 0;
         size_t frameInWavBuffer = m_wavOffsetFrames;
@@ -70,7 +71,7 @@ public:
         while (m_wavOffsetFrames < m_wavFrames->getNumFrames() && frameInOutputBuffer < numFrames)
         {
             for (size_t channel = 0; channel < m_wavNumChannels; ++channel)
-                outputs[channel][frameInOutputBuffer] = (*m_wavFrames)[channel][frameInWavBuffer];
+                output[channel][frameInOutputBuffer] = (*m_wavFrames)[channel][frameInWavBuffer];
 
             ++frameInOutputBuffer;
             ++frameInWavBuffer;
@@ -84,7 +85,7 @@ public:
         {
             // TODO: assert m_loop == Loop::no
             for (size_t channel = 0; channel < m_wavNumChannels; ++channel)
-                outputs[channel][frameInOutputBuffer] = (SampleType) 0;
+                output[channel][frameInOutputBuffer] = (SampleType) 0;
 
             ++frameInOutputBuffer;
         }

@@ -29,16 +29,17 @@ public:
         this->setNumChannels (numOutputChannels);
     }
 
-    void renderNextBlock (SampleType* const* outputs, size_t numFrames) override
+    void renderNextBlock (AudioBuffer<SampleType>& output) override
     {
+        // TODO: Assert channels number match
         const double phaseIncrement = m_twoPi * m_frequencyHz / m_sampleRateHz;
 
-        for (size_t frame = 0; frame < numFrames; ++frame)
+        for (size_t frame = 0; frame < output.getNumFrames(); ++frame)
         {
             SampleType value = static_cast<SampleType> (std::sin (m_phaseRadians));
 
             for (size_t channel = 0; channel < this->m_numChannels; ++channel)
-                outputs[channel][frame] = value;
+                output[channel][frame] = value;
 
             m_phaseRadians += phaseIncrement;
             clampPhase();
