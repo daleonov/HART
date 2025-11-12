@@ -47,6 +47,8 @@ public:
         size_t numPassed = 0;
         size_t numFailed = 0;
 
+        // TODO: Optional shuffle before running
+
         for (const TestInfo& test : tests)
         {
             std::cout << "[  ...   ] Running " << test.name;
@@ -63,6 +65,8 @@ public:
                 assertionFailMessage = e.what();
                 assertionFailed = true;
             }
+
+            // TODO: Output test durations
 
             std::cout << '\r';
             const bool expectationsFailed = ExpectationFailureMessages::get().size() > 0;

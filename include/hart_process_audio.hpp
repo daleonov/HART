@@ -126,6 +126,8 @@ public:
         return this->withStereoInput().withStereoOutput();
     }
 
+    // TODO: withLabel() for easier troubleshooting
+
     AudioTestBuilder& expectTrue (const Matcher<SampleType>& matcher)
     {
         addCheck (matcher, SignalAssertionLevel::expect, true);
