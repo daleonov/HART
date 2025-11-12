@@ -8,6 +8,7 @@
 
 #include "hart_audio_buffer.hpp"
 #include "dsp/hart_dsp_all.hpp"
+#include "envelopes/hart_envelopes_all.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_expectation_failure_messages.hpp"
 #include "hart_process_audio.hpp"

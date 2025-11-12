@@ -52,6 +52,7 @@ public:
 
     AudioTestBuilder& withValue (int id, ParamType value)
     {
+        // TODO: Handle cases when processor already has an envelope for this id
         paramValues.emplace_back (ParamValue { id, value });
         return *this;
     }

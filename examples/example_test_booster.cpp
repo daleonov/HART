@@ -38,7 +38,15 @@ public:
             m_booster.setGainDb (value);
     }
 
-    bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) override
+    double getValue (int id) const override
+    {
+        if (id == Params::gainDb)
+            return m_booster.getGainDb();
+
+        return 0.0;
+    }
+
+    bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const override
     {
         return numInputChannels == 2 && numOutputChannels == 2;
     }
@@ -46,6 +54,11 @@ public:
     void print (std::ostream& stream) const override
     {
         stream << "TestedBoosterProcessor()";
+    }
+
+    bool supportsEnvelopeFor (int id) const override
+    {
+        return false;
     }
 
 private:

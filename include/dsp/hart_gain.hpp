@@ -1,5 +1,8 @@
 #pragma once
 
+#include <algorithm>  // fill()
+#include <vector>
+
 #include "hart_audio_buffer.hpp"
 #include "hart_dsp.hpp"
 #include "hart_utils.hpp"
@@ -23,7 +26,10 @@ public:
     {
     }
 
-    void prepare (double /* sampleRateHz */, size_t /* numInputChannels */, size_t /* numOutputChannels */, size_t /* maxBlockSizeFrames */) override {};
+    void prepare (double /* sampleRateHz */, size_t /* numInputChannels */, size_t /* numOutputChannels */, size_t maxBlockSizeFrames) override
+    {
+        m_gainEnvelopeValues.resize (maxBlockSizeFrames);
+    }
 
     void process (const AudioBuffer<SampleType>& inputs, AudioBuffer<SampleType>& outputs) override
     {
@@ -31,11 +37,25 @@ public:
         const size_t numOutputChannels = outputs.getNumChannels();
         // TODO: Check if number of frames is equal
 
+        const size_t blockSize = inputs.getNumFrames();
+
+        if (hasEnvelopeFor (Params::gainDb))
+        {
+            getValues (Params::gainDb, blockSize, m_gainEnvelopeValues);
+            
+            for (size_t i = 0; i < m_gainEnvelopeValues.size(); ++i)
+                m_gainEnvelopeValues[i] = decibelsToRatio (m_gainEnvelopeValues[i]);
+        }
+        else
+        {
+            std::fill (m_gainEnvelopeValues.begin(), m_gainEnvelopeValues.end(), m_gainLinear);
+        }
+
         if (numInputChannels == numOutputChannels)
         {
             for (size_t channel = 0; channel < inputs.getNumChannels(); ++channel)
-                for (size_t frame = 0; frame < inputs.getNumFrames(); ++frame)
-                    outputs[channel][frame] = inputs[channel][frame] * m_gainLinear;
+                for (size_t frame = 0; frame < blockSize; ++frame)
+                    outputs[channel][frame] = inputs[channel][frame] * m_gainEnvelopeValues[frame];
 
             return;
         }
@@ -43,8 +63,8 @@ public:
         if (numInputChannels == 1)
         {
             for (size_t channel = 0; channel < outputs.getNumChannels(); ++channel)
-                for (size_t frame = 0; frame < inputs.getNumFrames(); ++frame)
-                    outputs[channel][frame] = inputs[0][frame] * m_gainLinear;
+                for (size_t frame = 0; frame < blockSize; ++frame)
+                    outputs[channel][frame] = inputs[0][frame] * m_gainEnvelopeValues[frame];
 
             return;
         }
@@ -60,7 +80,15 @@ public:
             m_gainLinear = decibelsToRatio (value);
     }
 
-    virtual bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels)
+    double getValue (int id) const override
+    {
+        if (id == Params::gainDb)
+            return ratioToDecibels (m_gainLinear);
+
+        return 0.0;
+    }
+
+    virtual bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const override
     {
         if (numInputChannels == numOutputChannels)
             return true;
@@ -76,9 +104,15 @@ public:
         stream << "Gain (" << m_initialGainDb << ")";
     }
 
+    bool supportsEnvelopeFor (int id) const override
+    {
+        return id == Params::gainDb;
+    }
+
 private:
     double m_initialGainDb;
     double m_gainLinear;
+    std::vector<double> m_gainEnvelopeValues;
 };
 
 }  // namespace hart

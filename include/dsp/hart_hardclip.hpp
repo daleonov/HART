@@ -44,7 +44,15 @@ public:
             m_thresholdLinear = decibelsToRatio (value);
     }
 
-    bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) override
+    double getValue (int id) const override
+    {
+        if (id == Params::thresholdDb)
+            return ratioToDecibels (m_thresholdLinear);
+
+        return 0.0;
+    }
+
+    bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const override
     {
         return numInputChannels == numOutputChannels;
     }
@@ -52,6 +60,11 @@ public:
     void print (std::ostream& stream) const override
     {
         stream << "HardClip (" << m_initialThresholdDb << ")";
+    }
+
+    bool supportsEnvelopeFor (int id) const override
+    {
+        return false;
     }
 
 private:

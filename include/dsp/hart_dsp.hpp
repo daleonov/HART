@@ -1,9 +1,12 @@
 #pragma once
 
+#include <algorithm>  // fill()
 #include <ostream>
 #include <string>
+#include <unordered_map>
 
 #include "hart_audio_buffer.hpp"
+#include "envelopes/hart_envelope.hpp"
 
 namespace hart
 {
@@ -16,9 +19,59 @@ public:
     virtual void prepare (double sampleRateHz, size_t numInputChannels, size_t numOutputChannels, size_t maxBlockSizeFrames) = 0;
     virtual void process (const AudioBuffer<SampleType>& inputs, AudioBuffer<SampleType>& outputs) = 0;
     virtual void reset() = 0;
-    virtual void setValue (int id, ParamType value) = 0;
-    virtual bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) = 0;
+    virtual void setValue (int paramId, ParamType value) = 0;
+    virtual ParamType getValue (int paramId) const = 0;
+    virtual bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const = 0;
     virtual void print (std::ostream& stream) const = 0;
+    virtual bool supportsEnvelopeFor (int paramId) const = 0;
+
+    DSP& withEnvelope (int paramId, Envelope<ParamType>&& envelope)
+    {
+        // TODO: Check supportsEnvelopeFor() first
+        m_envelopes.emplace (paramId, std::make_unique<Envelope<ParamType>> (std::move (envelope)));
+        return *this;
+    }
+
+    DSP& withEnvelope (int paramId, const Envelope<ParamType>& envelope)
+    {
+        // TODO: Check supportsEnvelopeFor() first
+        m_envelopes.emplace (paramId, envelope.copy());
+        return *this;
+    }
+
+    bool hasEnvelopeFor (int paramId)
+    {
+        return m_envelopes.find (paramId) != m_envelopes.end();
+    }
+
+protected:
+    std::unordered_map<int, std::unique_ptr<Envelope<ParamType>>> m_envelopes;
+
+    void getValues (int paramId, size_t blockSize, std::vector<ParamType>& valuesOutput)
+    {
+        if (valuesOutput.size() != blockSize)
+        {
+            // TODO: Warning message
+            valuesOutput.resize (blockSize);
+        }
+
+        if (! hasEnvelopeFor (paramId))
+        {
+            const ParamType value = getValue (paramId);
+            std::fill (valuesOutput.begin(), valuesOutput.end(), value);
+        }
+        else
+        {
+            m_envelopes[paramId]->renderNextBlock (blockSize, valuesOutput);
+        }
+    }
+
+    std::vector<ParamType> getValues (int paramId, size_t blockSize)
+    {
+        std::vector<ParamType> values (blockSize);
+        getValues (paramId, values);
+        return values;
+    }
 };
 
 template <typename SampleType, typename ParamType>
