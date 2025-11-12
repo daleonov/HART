@@ -188,7 +188,7 @@ public:
         return *this;
     }
 
-    AudioTestBuilder& saveOutputTo (const std::string& path, Save mode = Save::always, WavFormat wavFormat = WavFormat::PCM24)
+    AudioTestBuilder& saveOutputTo (const std::string& path, Save mode = Save::always, WavFormat wavFormat = WavFormat::pcm24)
     {
         if (path.empty())
             return *this;
