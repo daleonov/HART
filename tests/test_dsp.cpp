@@ -3,74 +3,74 @@
 
 using hart::equalsTo;
 using hart::HardClip;
-using hart::Gain;
+using hart::GainDb;
 using hart::PeaksAt;
 using hart::processAudioWith;
 using hart::Silence;
 using hart::SineWave;
 
-HART_TEST ("Gain - Gain Values")
+HART_TEST ("GainDb - GainDb Values")
 {
-    processAudioWith (Gain<float>())
+    processAudioWith (GainDb<float>())
         .withInputSignal (SineWave<float>())
-        .withValue (Gain<float>::gainDb, -oo_dB)
+        .withValue (GainDb<float>::gainDb, -oo_dB)
         .expectTrue (equalsTo (Silence<float>()))
         .process();
 
-    processAudioWith (Gain<float>())
+    processAudioWith (GainDb<float>())
         .withInputSignal (SineWave<float>())
-        .withValue (Gain<float>::gainDb, 0_dB)
+        .withValue (GainDb<float>::gainDb, 0_dB)
         .expectTrue (equalsTo (SineWave<float>()))
         .process();
 
-    processAudioWith (Gain<float>())
+    processAudioWith (GainDb<float>())
         .withInputSignal (SineWave<float>())
-        .withValue (Gain<float>::gainDb, -3_dB)
+        .withValue (GainDb<float>::gainDb, -3_dB)
         .expectTrue (PeaksAt<float> (-3_dB))
         .process();
 
-    processAudioWith (Gain<float>())
+    processAudioWith (GainDb<float>())
         .withInputSignal (SineWave<float>())
-        .withValue (Gain<float>::gainDb, -20_dB)
+        .withValue (GainDb<float>::gainDb, -20_dB)
         .expectTrue (PeaksAt<float> (-20_dB))
         .process();
 
-    processAudioWith (Gain<float>())
+    processAudioWith (GainDb<float>())
         .withInputSignal (SineWave<float>())
-        .withValue (Gain<float>::gainDb, +6_dB)
+        .withValue (GainDb<float>::gainDb, +6_dB)
         .expectTrue (PeaksAt<float> (+6_dB))
         .process();
 }
 
-HART_TEST ("Gain - Channel Layouts")
+HART_TEST ("GainDb - Channel Layouts")
 {
-    processAudioWith (Gain<float>())
+    processAudioWith (GainDb<float>())
         .withInputSignal (SineWave<float>())
         .inMono()
-        .withValue (Gain<float>::gainDb, -3_dB)
+        .withValue (GainDb<float>::gainDb, -3_dB)
         .expectTrue (PeaksAt<float> (-3_dB))
         .process();
 
-    processAudioWith (Gain<float>())
+    processAudioWith (GainDb<float>())
         .withInputSignal (SineWave<float>())
         .inStereo()
-        .withValue (Gain<float>::gainDb, -3_dB)
+        .withValue (GainDb<float>::gainDb, -3_dB)
         .expectTrue (PeaksAt<float> (-3_dB))
         .process();
 
-    processAudioWith (Gain<float>())
+    processAudioWith (GainDb<float>())
         .withInputSignal (SineWave<float>())
         .withMonoInput()
         .withStereoOutput()
-        .withValue (Gain<float>::gainDb, -3_dB)
+        .withValue (GainDb<float>::gainDb, -3_dB)
         .expectTrue (PeaksAt<float> (-3_dB))
         .process();
 
-    processAudioWith (Gain<float>())
+    processAudioWith (GainDb<float>())
         .withInputSignal (SineWave<float>())
         .withMonoInput()
         .withOutputChannels (5)
-        .withValue (Gain<float>::gainDb, -3_dB)
+        .withValue (GainDb<float>::gainDb, -3_dB)
         .expectTrue (PeaksAt<float> (-3_dB))
         .process();
 }

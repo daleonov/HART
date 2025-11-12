@@ -5,24 +5,23 @@
 
 #include "hart_audio_buffer.hpp"
 #include "hart_dsp.hpp"
-#include "hart_utils.hpp"
 
 namespace hart
 {
 
 template <typename SampleType>
-class Gain:
+class GainLinear:
     public hart::DSP<typename SampleType, double>
 {
 public:
     enum Params
     {
-        gainDb
+        gainLinear
     };
 
-    Gain (double gainDb = 0.0):
-        m_initialGainDb (gainDb),
-        m_gainLinear (decibelsToRatio (gainDb))
+    GainLinear (double initialGainLinear = 1.0):
+        m_initialGainLinear (initialGainLinear),
+        m_gainLinear (initialGainLinear)
     {
     }
 
@@ -38,18 +37,7 @@ public:
         // TODO: Check if number of frames is equal
 
         const size_t blockSize = inputs.getNumFrames();
-
-        if (hasEnvelopeFor (Params::gainDb))
-        {
-            getValues (Params::gainDb, blockSize, m_gainEnvelopeValues);
-            
-            for (size_t i = 0; i < m_gainEnvelopeValues.size(); ++i)
-                m_gainEnvelopeValues[i] = decibelsToRatio (m_gainEnvelopeValues[i]);
-        }
-        else
-        {
-            std::fill (m_gainEnvelopeValues.begin(), m_gainEnvelopeValues.end(), m_gainLinear);
-        }
+        getValues (Params::gainLinear, blockSize, m_gainEnvelopeValues);
 
         if (numInputChannels == numOutputChannels)
         {
@@ -76,14 +64,14 @@ public:
 
     void setValue (int id, double value) override
     {
-        if (id == Params::gainDb)
-            m_gainLinear = decibelsToRatio (value);
+        if (id == Params::gainLinear)
+            m_gainLinear = value;
     }
 
     double getValue (int id) const override
     {
-        if (id == Params::gainDb)
-            return ratioToDecibels (m_gainLinear);
+        if (id == Params::gainLinear)
+            return m_gainLinear;
 
         return 0.0;
     }
@@ -101,16 +89,16 @@ public:
 
     virtual void print (std::ostream& stream) const override
     {
-        stream << "Gain (" << m_initialGainDb << ")";
+        stream << "GainLinear (" << m_initialGainLinear << ")";
     }
 
     bool supportsEnvelopeFor (int id) const override
     {
-        return id == Params::gainDb;
+        return id == Params::gainLinear;
     }
 
 private:
-    double m_initialGainDb;
+    double m_initialGainLinear;
     double m_gainLinear;
     std::vector<double> m_gainEnvelopeValues;
 };
