@@ -20,7 +20,9 @@ public:
 
     void renderNextBlock (AudioBuffer<SampleType>& output) override
     {
-        // TODO: Assert chahhel numbers match
+        if (output.getNumChannels() != getNumChannels())
+            HART_THROW_OR_RETURN_VOID (ChannelLayoutError, std::string ("Signal was configured for a different channel number") + describe());
+
         for (size_t channel = 0; channel < this->m_numChannels; ++channel)
             for (size_t frame = 0; frame < output.getNumFrames(); ++frame)
                 output[channel][frame] = (SampleType) 0;

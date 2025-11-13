@@ -15,7 +15,6 @@ template<typename SampleType>
 class WhiteNoise : public Signal<SampleType>
 {
 public:
-    // TODO: Use global random seed as default
     WhiteNoise (uint_fast32_t randomSeed = CLIConfig::get().getRandomSeed()):
         m_randomSeed (randomSeed)
     {

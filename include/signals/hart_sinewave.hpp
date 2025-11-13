@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 
+#include "hart_exceptions.hpp"
 #include "signals/hart_signal.hpp"
 #include "hart_utils.hpp"
 
@@ -21,6 +22,9 @@ public:
         m_phaseRadians (phaseRadians)
         {
             clampPhase();
+
+            if (frequencyHz <= 0)
+                HART_THROW (hart::ValueError, std::string ("Invalid frequency value for: ") + describe());
         }
 
     void prepare (double sampleRateHz, size_t numOutputChannels, size_t /*maxBlockSizeFrames*/) override
@@ -31,7 +35,9 @@ public:
 
     void renderNextBlock (AudioBuffer<SampleType>& output) override
     {
-        // TODO: Assert channels number match
+        if (output.getNumChannels() != getNumChannels())
+            HART_THROW_OR_RETURN_VOID (ChannelLayoutError, std::string ("Signal was configured for a different channel number") + describe());
+
         const double phaseIncrement = m_twoPi * m_frequencyHz / m_sampleRateHz;
 
         for (size_t frame = 0; frame < output.getNumFrames(); ++frame)

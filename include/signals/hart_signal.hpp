@@ -10,6 +10,7 @@
 
 #include "hart_audio_buffer.hpp"
 #include "dsp/hart_dsp.hpp"
+#include "hart_exceptions.hpp"
 
 namespace hart {
 
@@ -107,7 +108,9 @@ public:
 
         for (auto& dsp : dspChain)
         {
-            // TODO: Assert supportsChannelLayout
+            if (! dsp->supportsChannelLayout (numInputChannels, numOutputChannels))
+                HART_THROW_OR_RETURN_VOID (ChannelLayoutError, "Not all DSP in the Signal's DSP chain support its channel layout");
+
             dsp->prepare (sampleRateHz, numInputChannels, numOutputChannels, maxBlockSizeFrames);
         }
     }

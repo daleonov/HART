@@ -41,6 +41,18 @@ inline static SampleType ratioToDecibels (SampleType valueLinear)
     return std::pow ((SampleType) 10, valueLinear / ((SampleType) 20));
 }
 
+template <typename SampleType>
+inline static SampleType floatsEqual (SampleType a, SampleType b, SampleType epsilon = (SampleType) 1e-8)
+{
+    return std::abs (a - b) < epsilon;
+}
+
+template <typename SampleType>
+inline static SampleType floatsNotEqual (SampleType a, SampleType b, SampleType epsilon = (SampleType) 1e-8)
+{
+    return std::abs (a - b) >= epsilon;
+}
+
 inline static bool isAbsolutePath (const std::string& path)
 {
     if (path.empty())

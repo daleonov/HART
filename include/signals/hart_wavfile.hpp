@@ -6,8 +6,9 @@
 #include "dr_wav.h"
 
 #include "hart_audio_buffer.hpp"
+#include "hart_exceptions.hpp"
 #include "signals/hart_signal.hpp"
-#include "hart_utils.hpp"  // toAbsolutePath()
+#include "hart_utils.hpp"  // toAbsolutePath(), floatsNotEqual()
 
 namespace hart
 {
@@ -39,9 +40,8 @@ public:
             nullptr
             );
 
-        // TODO: Warning message
         if (pcmFrames == nullptr)
-            return;
+            HART_THROW_OR_RETURN_VOID (hart::IOError, std::string ("Could not read frames from the wav file: ") + describe());
 
         m_wavFrames = std::make_shared<AudioBuffer<float>> (numChannels, numFrames);
 
@@ -55,9 +55,14 @@ public:
         m_wavNumChannels = static_cast<int> (numChannels);
     }
 
-    void prepare (double /* sampleRateHz */, size_t /* numOutputChannels */, size_t /*maxBlockSizeFrames*/) override
+    void prepare (double sampleRateHz, size_t numOutputChannels, size_t /*maxBlockSizeFrames*/) override
     {
-        // TODO: Warning message is sample rate or channel num mismatches the wav file
+        // There are a few ovbvious cases where channel number mismatch can be gracefully resolved - perhaps in the future
+        if (numOutputChannels != m_wavNumChannels)
+            HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, std::string ("Unexpected channel number: ") + describe());
+
+        if (floatsNotEqual (sampleRateHz, m_wavSampleRateHz))
+            HART_THROW_OR_RETURN_VOID (hart::UnsupportedError, std::string ("Wav file is in different sampling rate, resampling not supported: ") + describe());
     }
 
     void renderNextBlock (AudioBuffer<SampleType>& output) override
@@ -83,7 +88,8 @@ public:
 
         while (frameInOutputBuffer < numFrames)
         {
-            // TODO: assert m_loop == Loop::no
+            hassert (m_loop == Loop::no);
+
             for (size_t channel = 0; channel < m_wavNumChannels; ++channel)
                 output[channel][frameInOutputBuffer] = (SampleType) 0;
 
