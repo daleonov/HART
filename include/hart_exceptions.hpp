@@ -73,4 +73,6 @@ class UnsupportedError:
 #define hassertfalse HART_THROW (hart::HartAssertException, "hassertfalse failed")
 #define hassert(condition) if (! (condition)) { HART_THROW (hart::HartAssertException, std::string ("hassert failed:") + #condition); }
 
+#define HART_WARNING(message) std::cout << "Warning: " << message << ", file: " << __FILE__ << ", line: " << __LINE__ << std::endl
+
 }  // namespace hart

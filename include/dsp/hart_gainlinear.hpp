@@ -34,13 +34,10 @@ public:
     {
         const size_t numInputChannels = input.getNumChannels();
         const size_t numOutputChannels = output.getNumChannels();
-        // TODO: Check if number of frames is equal
+        hassert (output.getNumFrames() == input.getNumFrames());
 
         if (! supportsChannelLayout (numInputChannels, numOutputChannels))
-        {
-            // TODO: assert
-            return;
-        }
+            HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, std::string ("Unsupported channel configuration for: ") + print());
 
         const bool hasEnvelope = ! m_gainEnvelopeValues.empty();
         const bool multiplexerMode = numInputChannels != numOutputChannels;

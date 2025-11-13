@@ -61,14 +61,18 @@ public:
 
     DSP& withEnvelope (int paramId, Envelope&& envelope)
     {
-        // TODO: Check supportsEnvelopeFor() first
+        if (! supportsEnvelopeFor(paramId))
+            HART_THROW_OR_RETURN (hart::UnsupportedError, std::string ("DSP doesn't support envelopes for param ID: ") + std::to_string (paramId), *this);
+
         m_envelopes.emplace (paramId, std::make_unique<Envelope> (std::move (envelope)));
         return *this;
     }
 
     DSP& withEnvelope (int paramId, const Envelope& envelope)
     {
-        // TODO: Check supportsEnvelopeFor() first
+        if (! supportsEnvelopeFor(paramId))
+            HART_THROW_OR_RETURN (hart::UnsupportedError, std::string ("DSP doesn't support envelopes for param ID: ") + std::to_string (paramId), *this);
+
         m_envelopes.emplace (paramId, envelope.copy());
         return *this;
     }
@@ -85,7 +89,7 @@ protected:
     {
         if (valuesOutput.size() != blockSize)
         {
-            // TODO: Warning message
+            HART_WARNING ("Make sure to configure your envelope container size before processing audio");
             valuesOutput.resize (blockSize);
         }
 

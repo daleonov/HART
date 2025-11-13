@@ -26,14 +26,18 @@ public:
 
     void prepare (double /*sampleRateHz*/, size_t /*numInputChannels*/, size_t /*numOutputChannels*/, size_t /*maxBlockSizeFrames*/) override {}
 
-    void process (const AudioBuffer<SampleType>& inputs, AudioBuffer<SampleType>& outputs) override
+    void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output) override
     {
-        const size_t numChannels = inputs.getNumChannels();
-        const size_t numFrames = inputs.getNumFrames();
+        hassert (output.getNumFrames() == input.getNumFrames());
+        const size_t numChannels = input.getNumChannels();
+        const size_t numFrames = input.getNumFrames();
+
+        if (input.getNumChannels() != output.getNumChannels())
+            HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, std::string ("Unsupported channel configuration for: ") + print());
 
         for (size_t channel = 0; channel < numChannels; ++channel)
             for (size_t frame = 0; frame < numFrames; ++frame)
-                outputs[channel][frame] = std::min (std::max (inputs[channel][frame], (SampleType) -m_thresholdLinear), (SampleType) m_thresholdLinear);
+                output[channel][frame] = std::min (std::max (input[channel][frame], (SampleType) -m_thresholdLinear), (SampleType) m_thresholdLinear);
     }
 
     void reset() override {}
