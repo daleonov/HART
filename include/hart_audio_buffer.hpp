@@ -108,7 +108,7 @@ public:
     void appendFrom (const AudioBuffer<SampleType>& otherBuffer)
     {
         if (otherBuffer.getNumChannels() != m_numChannels)
-            throw hart::ChannelMismatchException ("Channel count mismatch");
+            HART_THROW_OR_RETURN_VOID (hart::SizeError, "Channel count mismatch");
 
         const size_t thisNumFrames = m_numFrames;
         const size_t otherNumFrames = otherBuffer.getNumFrames();

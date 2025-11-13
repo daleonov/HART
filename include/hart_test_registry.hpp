@@ -32,7 +32,7 @@ public:
         const auto insertResult = registeredTestNames.insert (name);
 
         if (const bool wasInserted = insertResult.second != true)
-            throw std::runtime_error ("Duplicate test case name found: " + name);
+            HART_THROW_OR_RETURN_VOID (hart::ValueError, std::string ("Duplicate test case name found: ") + name);
 
         tests.emplace_back (TestInfo {name, tags, func});
     }

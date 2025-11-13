@@ -49,8 +49,8 @@ public:
                 break;
         }
 
-        if (!drwav_init_file_write (&drWavHandle, fileName.c_str(), &drWavFormat, nullptr))
-             throw hart::FileIOException ("Failed to init WAV writer");
+        if (! drwav_init_file_write (&drWavHandle, fileName.c_str(), &drWavFormat, nullptr))
+            HART_THROW_OR_RETURN_VOID (hart::IOError, "Failed to init WAV writer");
 
         switch (wavFormat)
         {

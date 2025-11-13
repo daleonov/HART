@@ -35,7 +35,7 @@ public:
     AudioTestBuilder& withSampleRate (double sampleRateHz)
     {
         if (sampleRateHz <= 0)
-            HART_THROW ("Sample rate should be a positive value in Hz");
+            HART_THROW_OR_RETURN (hart::ValueError, "Sample rate should be a positive value in Hz", *this);
 
         m_sampleRateHz = sampleRateHz;
         return *this;
@@ -44,7 +44,7 @@ public:
     AudioTestBuilder& withBlockSize (size_t blockSizeFrames)
     {
         if (blockSizeFrames == 0)
-            HART_THROW ("Illegal block size - should be a positive value in frames (samples)");
+            HART_THROW_OR_RETURN (hart::SizeError, "Illegal block size - should be a positive value in frames (samples)", *this);
 
         m_blockSizeFrames = blockSizeFrames;
         return *this;
@@ -60,7 +60,7 @@ public:
     AudioTestBuilder& withDuration (double durationSeconds)
     {
         if (durationSeconds < 0)
-            HART_THROW ("Signal duration should be a non-negative value in Hz");
+            HART_THROW_OR_RETURN(hart::ValueError, "Signal duration should be a non-negative value in Hz", *this);
 
         m_durationSeconds = durationSeconds;
         return *this;
@@ -75,10 +75,10 @@ public:
     AudioTestBuilder& withInputChannels (size_t numInputChannels)
     {   
         if (numInputChannels == 0)
-            HART_THROW ("There should be at least one (mono) audio channel");
+            HART_THROW_OR_RETURN (SizeError, "There should be at least one (mono) audio channel", *this);
 
         if (numInputChannels > 128)
-            HART_THROW ("The number of channels is unexpectedly large... Do people really use so many channels?");
+            HART_THROW_OR_RETURN (SizeError, "The number of channels is unexpectedly large... Do people really use so many channels?", *this);
 
         m_numInputChannels = numInputChannels;
         return *this;
@@ -87,10 +87,10 @@ public:
     AudioTestBuilder& withOutputChannels (size_t numOutputChannels)
     {   
         if (numOutputChannels == 0)
-            HART_THROW ("There should be at least one (mono) audio channel");
+            HART_THROW_OR_RETURN(SizeError, "There should be at least one (mono) audio channel", *this);
 
         if (numOutputChannels > 128)
-            HART_THROW ("The number of channels is unexpectedly large... Do people really use so many channels?");
+            HART_THROW_OR_RETURN(SizeError, "The number of channels is unexpectedly large... Do people really use so many channels?", *this);
 
         m_numOutputChannels = numOutputChannels;
         return *this;
@@ -200,7 +200,7 @@ public:
         m_durationFrames = (size_t) std::round (m_sampleRateHz * m_durationSeconds);
 
         if (m_durationFrames == 0)
-            HART_THROW ("Nothing to process");
+            HART_THROW_OR_RETURN_VOID (hart::SizeError, "Nothing to process");
 
         for (auto& check : perBlockChecks)
         {
@@ -227,7 +227,7 @@ public:
         }
 
         if (m_inputSignal == nullptr)
-            HART_THROW ("No input signal - call withInputSignal() first!");
+            HART_THROW_OR_RETURN_VOID (hart::StateError, "No input signal - call withInputSignal() first!");
 
         m_inputSignal->resetWithDSPChain();
         m_inputSignal->prepareWithDSPChain (m_sampleRateHz, m_numInputChannels, m_blockSizeFrames);
