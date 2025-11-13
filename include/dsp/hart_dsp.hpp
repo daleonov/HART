@@ -87,7 +87,7 @@ protected:
 
     void getValues (int paramId, size_t blockSize, std::vector<double>& valuesOutput)
     {
-        if (valuesOutput.size() != blockSize)
+        if (valuesOutput.size() < blockSize)
         {
             HART_WARNING ("Make sure to configure your envelope container size before processing audio");
             valuesOutput.resize (blockSize);
