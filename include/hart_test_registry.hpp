@@ -30,8 +30,9 @@ public:
     void add (const std::string& name, const std::string& tags, void(*func)())
     {
         const auto insertResult = registeredTestNames.insert (name);
+        const bool isDuplicate = ! insertResult.second;
 
-        if (const bool wasInserted = insertResult.second != true)
+        if (isDuplicate)
             HART_THROW_OR_RETURN_VOID (hart::ValueError, std::string ("Duplicate test case name found: ") + name);
 
         tests.emplace_back (TestInfo {name, tags, func});

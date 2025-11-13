@@ -62,13 +62,13 @@ class UnsupportedError:
 #define HART_LINE_STRING HART_STRINGIFY(__LINE__)
 
 #if HART_DO_NOT_THROW_EXCEPTIONS
-#define HART_THROW(ExceptionType, message) std::cout << #ExceptionType << " triggered: \"" << message << "\", file: " << __FILE__ << ", line: " << __LINE__ << std::endl
+#define HART_THROW(ExceptionType, message) do { std::cout << #ExceptionType << " triggered: \"" << message << "\", file: " << __FILE__ << ", line: " << __LINE__ << std::endl } while (0)
 #else
-#define HART_THROW(ExceptionType, message) throw ExceptionType (std::string (message) +  ", file: " __FILE__ ", line: " HART_LINE_STRING)
+#define HART_THROW(ExceptionType, message) do { throw ExceptionType (std::string (message) +  ", file: " __FILE__ ", line: " HART_LINE_STRING); } while (0)
 #endif  // HART_DO_NOT_THROW_EXCEPTIONS
 
-#define HART_THROW_OR_RETURN(ExceptionType, message, returnValue) HART_THROW (ExceptionType, message); return returnValue
-#define HART_THROW_OR_RETURN_VOID(ExceptionType, message) HART_THROW (ExceptionType, message); return 
+#define HART_THROW_OR_RETURN(ExceptionType, message, returnValue) do { HART_THROW (ExceptionType, message); return returnValue; } while (0)
+#define HART_THROW_OR_RETURN_VOID(ExceptionType, message) do { HART_THROW (ExceptionType, message); return; } while(0)
 
 #define hassertfalse HART_THROW (hart::HartAssertException, "hassertfalse failed")
 #define hassert(condition) if (! (condition)) { HART_THROW (hart::HartAssertException, std::string ("hassert failed:") + #condition); }
