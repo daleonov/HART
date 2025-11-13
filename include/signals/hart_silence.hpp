@@ -15,12 +15,12 @@ class Silence:
 public:
     void prepare (double /* sampleRateHz */, size_t numOutputChannels, size_t /* maxBlockSizeFrames */) override
     {
-        setNumChannels (numOutputChannels);
+        this->setNumChannels (numOutputChannels);
     }
 
     void renderNextBlock (AudioBuffer<SampleType>& output) override
     {
-        if (output.getNumChannels() != getNumChannels())
+        if (output.getNumChannels() != this->getNumChannels())
             HART_THROW_OR_RETURN_VOID (ChannelLayoutError, std::string ("Signal was configured for a different channel number") + describe());
 
         for (size_t channel = 0; channel < this->m_numChannels; ++channel)

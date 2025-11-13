@@ -11,7 +11,7 @@ namespace hart
 
 template <typename SampleType>
 class GainLinear:
-    public hart::DSP<typename SampleType>
+    public hart::DSP<SampleType>
 {
 public:
     enum Params
@@ -27,7 +27,7 @@ public:
 
     void prepare (double /* sampleRateHz */, size_t /* numInputChannels */, size_t /* numOutputChannels */, size_t maxBlockSizeFrames) override
     {
-        m_gainEnvelopeValues.resize (hasEnvelopeFor (Params::gainLinear) ? maxBlockSizeFrames : 0);
+        m_gainEnvelopeValues.resize (this->hasEnvelopeFor (Params::gainLinear) ? maxBlockSizeFrames : 0);
     }
 
     void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output) override
@@ -37,14 +37,14 @@ public:
         hassert (output.getNumFrames() == input.getNumFrames());
 
         if (! supportsChannelLayout (numInputChannels, numOutputChannels))
-            HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, std::string ("Unsupported channel configuration for: ") + print());
+            HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "Unsupported channel configuration");
 
         const bool hasEnvelope = ! m_gainEnvelopeValues.empty();
         const bool multiplexerMode = numInputChannels != numOutputChannels;
 
         if (hasEnvelope)
         {
-            getValues (Params::gainLinear, input.getNumFrames(), m_gainEnvelopeValues);
+            this->getValues (Params::gainLinear, input.getNumFrames(), m_gainEnvelopeValues);
 
             if (multiplexerMode)
                 processEnvelopedGainAsMultiplexer (input, output);

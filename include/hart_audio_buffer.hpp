@@ -26,7 +26,7 @@ public:
         m_channelPointers (m_numChannels)
     {
         if (m_numChannels != other.m_numChannels)
-            throw hart::ChannelMismatchException ("Can't copy from a buffer with different number of channels");
+            HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "Can't copy from a buffer with different number of channels");
 
         updateChannelPointers();
     }
@@ -38,7 +38,7 @@ public:
         m_channelPointers (std::move (other.m_channelPointers))
     {
         if (m_numChannels != other.m_numChannels)
-            throw hart::ChannelMismatchException ("Can't move from a buffer with different number of channels");
+            HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "Can't move from a buffer with different number of channels");
 
         other.clear();
     }
@@ -51,7 +51,7 @@ public:
             return *this;
 
         if (m_numChannels != other.m_numChannels)
-            throw hart::ChannelMismatchException ("Can't copy from a buffer with different number of channels");
+            HART_THROW_OR_RETURN (hart::ChannelLayoutError, "Can't copy from a buffer with different number of channels", *this);
 
         m_numFrames = other.m_numFrames;
         m_frames = other.m_frames;
@@ -67,7 +67,7 @@ public:
             return *this;
 
         if (m_numChannels != other.m_numChannels)
-            throw hart::ChannelMismatchException ("Can't move from a buffer with different number of channels");
+            HART_THROW_OR_RETURN (hart::ChannelLayoutError, "Can't move from a buffer with different number of channels", *this);
 
         m_numFrames = other.m_numFrames;
         m_frames = std::move (other.m_frames);
@@ -108,7 +108,7 @@ public:
     void appendFrom (const AudioBuffer<SampleType>& otherBuffer)
     {
         if (otherBuffer.getNumChannels() != m_numChannels)
-            HART_THROW_OR_RETURN_VOID (hart::SizeError, "Channel count mismatch");
+            HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "Channel count mismatch");
 
         const size_t thisNumFrames = m_numFrames;
         const size_t otherNumFrames = otherBuffer.getNumFrames();

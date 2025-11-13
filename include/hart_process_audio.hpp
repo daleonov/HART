@@ -27,8 +27,9 @@ template <typename SampleType>
 class AudioTestBuilder
 {
 public:
-    AudioTestBuilder (DSP<SampleType>& processor):
-        m_processor (processor)
+    // TODO: Add move semantics
+    AudioTestBuilder (const DSP<SampleType>& processor):
+        m_processor (processor.copy())
     {
     }
 
@@ -217,13 +218,13 @@ public:
         }
 
         // TODO: Ckeck supportsChannelLayout() here
-        m_processor.reset();
-        m_processor.prepare (m_sampleRateHz, m_numInputChannels, m_numOutputChannels, m_blockSizeFrames);
+        m_processor->reset();
+        m_processor->prepare (m_sampleRateHz, m_numInputChannels, m_numOutputChannels, m_blockSizeFrames);
 
         for (const ParamValue& paramValue : paramValues)
         {
             // TODO: Add true/false return to indicate if setting the parameter was successful
-            m_processor.setValue (paramValue.id, paramValue.value);
+            m_processor->setValue (paramValue.id, paramValue.value);
         }
 
         if (m_inputSignal == nullptr)
@@ -245,7 +246,7 @@ public:
             hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, blockSizeFrames);
             hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, blockSizeFrames);
             m_inputSignal->renderNextBlockWithDSPChain (inputBlock);
-            m_processor.process (inputBlock, outputBlock);
+            m_processor->process (inputBlock, outputBlock);
 
             const bool allChecksPassed = processChecks (perBlockChecks, outputBlock);
             atLeastOneCheckFailed |= ! allChecksPassed;
@@ -282,7 +283,7 @@ private:
         bool shouldPass;
     };
 
-    DSP<SampleType>& m_processor;
+    std::unique_ptr<DSP<SampleType>> m_processor;
     std::unique_ptr<Signal<SampleType>> m_inputSignal;
     double m_sampleRateHz = (double) 44100;
     size_t m_blockSizeFrames = 1024;
@@ -355,8 +356,9 @@ private:
     }
 };
 
+// TODO: Add move semantics
 template <typename SampleType>
-AudioTestBuilder<SampleType> processAudioWith (DSP<SampleType>& processor)
+AudioTestBuilder<SampleType> processAudioWith (const DSP<SampleType>& processor)
 {
     return { processor };
 }

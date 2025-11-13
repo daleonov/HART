@@ -35,7 +35,7 @@ public:
 
     void renderNextBlock (AudioBuffer<SampleType>& output) override
     {
-        if (output.getNumChannels() != getNumChannels())
+        if (output.getNumChannels() != this->getNumChannels())
             HART_THROW_OR_RETURN_VOID (ChannelLayoutError, std::string ("Signal was configured for a different channel number") + describe());
 
         const double phaseIncrement = m_twoPi * m_frequencyHz / m_sampleRateHz;

@@ -33,7 +33,7 @@ public:
         const size_t numFrames = input.getNumFrames();
 
         if (input.getNumChannels() != output.getNumChannels())
-            HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, std::string ("Unsupported channel configuration for: ") + print());
+            HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "Unsupported channel configuration");
 
         for (size_t channel = 0; channel < numChannels; ++channel)
             for (size_t frame = 0; frame < numFrames; ++frame)
