@@ -4,6 +4,8 @@
 #include <vector>
 
 #include "envelopes/hart_envelope.hpp"
+#include "hart_exceptions.hpp"
+#include "hart_utils.hpp"
 
 namespace hart
 {
@@ -32,7 +34,7 @@ public:
     {
         if (valuesOutput.size() != blockSize)
         {
-            // TODO: Warning message
+            HART_WARNING ("Make sure to configure your envelope container size before processing audio");
             valuesOutput.resize (blockSize);
         }
 
@@ -44,8 +46,10 @@ public:
     }
 
     void prepare (double sampleRateHz, size_t /* maxBlockSizeFrames */) override
-    {
-        // TODO: Add sample rate value check
+    {   
+        if (sampleRateHz < 0 || floatsEqual (sampleRateHz, 0.0))
+            HART_THROW_OR_RETURN_VOID (hart::ValueError, "Illegal sample rate value");
+
         m_frameTimeSeconds = 1.0 / sampleRateHz;
     }
 
@@ -98,6 +102,7 @@ private:
     {
         m_currentTimeSeconds += timeSeconds;
 
+        // TODO: Less nesting here
         while (m_currentSegmentIndex < m_segments.size())
         {
             const Segment& currentSegment = m_segments[m_currentSegmentIndex];
