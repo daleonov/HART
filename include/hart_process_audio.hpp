@@ -27,9 +27,31 @@ template <typename SampleType>
 class AudioTestBuilder
 {
 public:
-    // TODO: Add move semantics
-    AudioTestBuilder (const DSP<SampleType>& processor):
-        m_processor (processor.copy())
+    /// @brief Copies the DSP instance into the host
+    template <typename DSPType>
+    AudioTestBuilder (DSPType&& dsp,
+        typename std::enable_if<
+            std::is_lvalue_reference<DSPType&&>::value &&
+            std::is_base_of<DSP<SampleType>, typename std::decay<DSPType>::type>::value
+        >::type* = 0)
+    : m_processor (dsp.copy())
+    {
+    }
+
+    /// @brief Moves the DSP instance into the host
+    template <typename DSPType>
+    AudioTestBuilder (DSPType&& dsp,
+        typename std::enable_if<
+            ! std::is_lvalue_reference<DSPType&&>::value &&
+            std::is_base_of<DSP<SampleType>, typename std::decay<DSPType>::type>::value
+        >::type* = 0)
+    : m_processor (std::forward<DSPType> (dsp).move())
+    {
+    }
+
+    /// @brief Transfers the DSP smart pointer into the host
+    AudioTestBuilder (std::unique_ptr<DSP<SampleType>> dsp)
+    : m_processor (std::move (dsp))
     {
     }
 
@@ -359,11 +381,17 @@ private:
     }
 };
 
-// TODO: Add move semantics
-template <typename SampleType>
-AudioTestBuilder<SampleType> processAudioWith (const DSP<SampleType>& processor)
+template <typename DSPType>
+AudioTestBuilder<typename std::decay<DSPType>::type::SampleTypePublicAlias> processAudioWith (DSPType&& dsp)
 {
-    return { processor };
+    return AudioTestBuilder<typename std::decay<DSPType>::type::SampleTypePublicAlias> (std::forward<DSPType>(dsp));
+}
+
+template <typename DSPType>
+AudioTestBuilder<typename DSPType::SampleTypePublicAlias> processAudioWith (std::unique_ptr<DSPType>&& dsp)
+{
+    using SampleType = typename DSPType::SampleTypePublicAlias;
+    return AudioTestBuilder<SampleType> (std::unique_ptr<DSP<SampleType>> (dsp.release()));
 }
 
 }  // namespace hart

@@ -105,7 +105,7 @@ public:
         return id == Params::gainLinear;
     }
 
-    HART_DSP_DECLARE_COPY_METHOD (GainLinear);
+    HART_DSP_DEFINE_COPY_AND_MOVE (GainLinear);
 
 private:
     double m_initialGainLinear;

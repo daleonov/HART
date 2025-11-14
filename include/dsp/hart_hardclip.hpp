@@ -84,7 +84,7 @@ public:
         return false;
     }
 
-    HART_DSP_DECLARE_COPY_METHOD (HardClip);
+    HART_DSP_DEFINE_COPY_AND_MOVE (HardClip);
 
 private:
     double m_initialThresholdDb;

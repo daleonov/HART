@@ -116,7 +116,7 @@ public:
         return id == Params::gainDb;
     }
 
-    HART_DSP_DECLARE_COPY_METHOD (GainDb);
+    HART_DSP_DEFINE_COPY_AND_MOVE (GainDb);
 
 private:
     double m_initialGainDb;

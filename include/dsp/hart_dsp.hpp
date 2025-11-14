@@ -115,9 +115,18 @@ public:
     /// @return true if effect is capable of interpreting and processing in a given sample rate, false otherwise
     virtual bool supportsSampleRate (double sampleRateHz) const { return true; }
 
-    /// @brief Return a smart pointer with a copy of this object
-    /// @details Use @ref HART_DSP_DECLARE_COPY_METHOD() to define this method if your class is trivially copyable
+    /// @brief Returns a smart pointer with a copy of this object
+    /// @details Just put one of those two macros into your class body, and your @ref copy() and @ref move() are sorted:
+    ///  - @ref HART_DSP_DEFINE_COPY_AND_MOVE() for movable and copyable classes
+    ///  - @ref HART_DSP_FORBID_COPY_AND_MOVE for non-movable and non-copyable classes
+    ///
+    /// Read their description, and choose one that fits your class.
+    /// You can, of course, make your own implementation, but you're not supposed to, unless you're doing something obscure.
     virtual std::unique_ptr<DSP<SampleType>> copy() const = 0;
+
+    /// @brief Returns a smart pointer with a moved instance of this object
+    /// @details Just pick a macro to define it - see description for @ref copy() for details
+    virtual std::unique_ptr<DSP<SampleType>> move() = 0;
 
     /// @brief Destructor
     virtual ~DSP() = default;
@@ -206,6 +215,10 @@ public:
     {
         return m_envelopes.find (paramId) != m_envelopes.end();
     }
+
+/// @brief Helper for template resolution
+/// @private
+using SampleTypePublicAlias = SampleType;
 
 private:
     std::unordered_map<int, std::unique_ptr<Envelope>> m_envelopes;
@@ -303,13 +316,49 @@ inline std::ostream& operator<< (std::ostream& stream, const DSP<SampleType>& ds
     return stream;
 }
 
-/// @brief A handy macro for trivially copyable DSP objects
-/// @details Despite returning a smart pointer to an abstract DSP class,
-/// it must construct an object of a specific class, hence the boilerplate method
-#define HART_DSP_DECLARE_COPY_METHOD(cls) \
-    std::unique_ptr<DSP<SampleType>> copy() const override \
-    { \
+/// @brief Defines @ref DSP::copy() and @ref DSP::move() methods
+/// @details Put this into your class body's ```public``` section if either is true:
+///  - Your class is trivially copyable and movable
+///  - You have your Rule Of Five methods explicitly defined in this class
+/// (see <a href="https://en.cppreference.com/w/cpp/language/rule_of_three.html" target="_blank">Rule Of Three/Five/Zero</a>)
+///
+/// If neither of those is true, or you're unsure, use @ref HART_DSP_FORBID_COPY_AND_MOVE instead
+///
+/// Despite returning a smart pointer to an abstract DSP class, those two methods must construct
+/// an object of a specific class, hence the mandatory boilerplate methods - sorry!
+/// @param cls Name of your class
+/// @ingroup DSP
+#define HART_DSP_DEFINE_COPY_AND_MOVE(cls) \
+    std::unique_ptr<DSP<SampleType>> copy() const override { \
         return std::make_unique<cls> (*this); \
+    } \
+    std::unique_ptr<DSP<SampleType>> move() override { \
+        return std::make_unique<cls> (std::move (*this)); \
+    }
+
+/// @brief Forbids @ref DSP::copy() and @ref DSP::move() methods
+/// @details Put this into your class body's ```public``` section if either is true:
+///  - Your class is not trivially copyable and movable
+///  - You don't want to trouble yourself with implementing move and copy semantics for your class
+///
+/// Otherwise, @ref use HART_DSP_DEFINE_COPY_AND_MOVE() instead.
+/// Obviously, you won't be able to pass your class to the host
+/// by reference, copy or explicit move, but you still can pass
+/// it wrapped into a smart pointer like so:
+/// ```cpp
+/// processAudioWith (std::make_unique<MyDspType>()).withThis().withThat().process();
+/// ```
+/// But it's still better to get your move and copy semantics figured out - this is a
+/// perfect chance to stress-test your effect's resource management, among other things!
+/// @ingroup DSP
+#define HART_DSP_FORBID_COPY_AND_MOVE \
+    std::unique_ptr<DSP<SampleType>> copy() const override { \
+        static_assert(false, "This DSP cannot be copied"); \
+        return nullptr; \
+    } \
+    std::unique_ptr<DSP<SampleType>> move() override { \
+        static_assert(false, "This DSP cannot be moved"); \
+        return nullptr; \
     }
 
 }  // namespace hart
