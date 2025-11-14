@@ -1,0 +1,132 @@
+html {
+  --primary-color: var(--rp-love);
+  --primary-dark-color: var(--rp-rose);
+  --primary-light-color: var(--rp-love);
+  --on-primary-color: var(--rp-base);
+  --link-color: var(--rp-iris);
+  --page-background-color: var(--rp-base);
+  --page-foreground-color: var(--rp-text);
+  --page-secondary-foreground-color: var(--rp-subtle);
+  --separator-color: transparent;
+  --odd-color: var(--rp-surface);
+  --warning-color: var(--rp-overlay);
+  --warning-color-dark: var(--rp-love);
+  --warning-color-darker: var(--rp-text);
+  --note-color: var(--rp-overlay);
+  --note-color-dark: var(--rp-foam);
+  --note-color-darker: var(--rp-text);
+  --todo-color: var(--rp-iris);
+  --todo-color-dark: var(--rp-muted);
+  --todo-color-darker: var(--rp-subtle);
+  --deprecated-color: var(--rp-highlight-high);
+  --deprecated-color-dark: var(--rp-highlight-med);
+  --deprecated-color-darker: var(--rp-highlight-low);
+  --bug-color: var(--rp-love);
+  --bug-color-dark: var(--rp-gold);
+  --bug-color-darker: var(--rp-rose);
+  --invariant-color: var(--rp-foam);
+  --invariant-color-dark: var(--rp-pine);
+  --invariant-color-darker: var(--rp-iris);
+  --blockquote-background: var(--rp-surface);
+  --blockquote-foreground: var(--rp-muted);
+  --tablehead-background: var(--rp-overlay);
+  --tablehead-foreground: var(--rp-subtle);
+  --menu-focus-foreground: var(--rp-text);
+  --menu-focus-background: var(--rp-pine);
+  --menu-selected-background: var(--rp-highlight-med);
+  --header-background: var(--rp-base);
+  --header-foreground: var(--rp-text);
+  --searchbar-background: var(--rp-surface);
+  --searchbar-foreground: var(--rp-subtle);
+  --side-nav-background: var(--rp-overlay);
+  --code-background: var(--rp-surface);
+  --fragment-background: var(--rp-overlay);
+  --fragment-foreground: var(--rp-text);
+  --fragment-keyword: var(--rp-iris);
+  --fragment-keywordtype: var(--rp-pine);
+  --fragment-keywordflow: var(--rp-rose);
+  --fragment-token: var(--rp-gold);
+  --fragment-comment: var(--rp-muted);
+  --fragment-link: var(--rp-love);
+  --fragment-preprocessor: var(--rp-love);
+  --fragment-linenumber-color: var(--rp-subtle);
+  --fragment-linenumber-background: var(--rp-highlight-med);
+  --fragment-linenumber-border: var(--rp-highlight-high);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light-mode) {
+  --primary-color: var(--rp-love);
+  --primary-dark-color: var(--rp-rose);
+  --primary-light-color: var(--rp-love);
+  --on-primary-color: var(--rp-base);
+  --link-color: var(--rp-iris);
+  --page-background-color: var(--rp-base);
+  --page-foreground-color: var(--rp-text);
+  --page-secondary-foreground-color: var(--rp-subtle);
+  --separator-color: transparent;
+  --odd-color: var(--rp-surface);
+  --warning-color: var(--rp-overlay);
+  --warning-color-dark: var(--rp-love);
+  --warning-color-darker: var(--rp-text);
+  --note-color: var(--rp-overlay);
+  --note-color-dark: var(--rp-foam);
+  --note-color-darker: var(--rp-text);
+  --todo-color: var(--rp-iris);
+  --todo-color-dark: var(--rp-muted);
+  --todo-color-darker: var(--rp-subtle);
+  --deprecated-color: var(--rp-highlight-high);
+  --deprecated-color-dark: var(--rp-highlight-med);
+  --deprecated-color-darker: var(--rp-highlight-low);
+  --bug-color: var(--rp-love);
+  --bug-color-dark: var(--rp-gold);
+  --bug-color-darker: var(--rp-rose);
+  --invariant-color: var(--rp-foam);
+  --invariant-color-dark: var(--rp-pine);
+  --invariant-color-darker: var(--rp-iris);
+  --blockquote-background: var(--rp-surface);
+  --blockquote-foreground: var(--rp-muted);
+  --tablehead-background: var(--rp-overlay);
+  --tablehead-foreground: var(--rp-subtle);
+  --menu-focus-foreground: var(--rp-text);
+  --menu-focus-background: var(--rp-pine);
+  --menu-selected-background: var(--rp-highlight-med);
+  --header-background: var(--rp-base);
+  --header-foreground: var(--rp-text);
+  --searchbar-background: var(--rp-surface);
+  --searchbar-foreground: var(--rp-subtle);
+  --side-nav-background: var(--rp-overlay);
+  --code-background: var(--rp-surface);
+  --fragment-background: var(--rp-overlay);
+  --fragment-foreground: var(--rp-text);
+  --fragment-keyword: var(--rp-iris);
+  --fragment-keywordtype: var(--rp-pine);
+  --fragment-keywordflow: var(--rp-rose);
+  --fragment-token: var(--rp-gold);
+  --fragment-comment: var(--rp-muted);
+  --fragment-link: var(--rp-love);
+  --fragment-preprocessor: var(--rp-love);
+  --fragment-linenumber-color: var(--rp-subtle);
+  --fragment-linenumber-background: var(--rp-highlight-med);
+  --fragment-linenumber-border: var(--rp-highlight-high);
+  }
+}
+
+.icon {
+  color: var(--rp-base);
+}
+
+div.memitem,
+div.memdoc,
+p.definition, {
+  background-color: var(--rp-surface);
+}
+
+html {
+    --side-nav-fixed-width: 275px;
+}
+
+span.mlabel {
+  font-size: 8pt;
+  font-weight: 600;
+}

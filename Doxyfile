@@ -471,7 +471,7 @@ LOOKUP_CACHE_SIZE      = 0
 # DOT_NUM_THREADS setting.
 # Minimum value: 0, maximum value: 32, default value: 1.
 
-NUM_PROC_THREADS       = 1
+NUM_PROC_THREADS       = 0
 
 #---------------------------------------------------------------------------
 # Build related configuration options
@@ -667,7 +667,7 @@ SORT_MEMBERS_CTORS_1ST = NO
 # appear in their defined order.
 # The default value is: NO.
 
-SORT_GROUP_NAMES       = NO
+SORT_GROUP_NAMES       = YES
 
 # If the SORT_BY_SCOPE_NAME tag is set to YES, the class list will be sorted by
 # fully-qualified names, including namespaces. If set to NO, the class list will
@@ -926,10 +926,9 @@ EXCLUDE_SYMLINKS       = NO
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       = */dependencies/*
-                         */examples/*
+EXCLUDE_PATTERNS       = */dependencies/* \
+                         */examples/* \
                          */tests/*
-                         */docs/*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
@@ -1119,7 +1118,7 @@ VERBATIM_HEADERS       = YES
 # generated with the -Duse_libclang=ON option for CMake.
 # The default value is: NO.
 
-CLANG_ASSISTED_PARSING = NO
+CLANG_ASSISTED_PARSING = YES
 
 # If clang assisted parsing is enabled and the CLANG_ADD_INC_PATHS tag is set to
 # YES then doxygen will add the directory of each input to the include path.
@@ -1209,7 +1208,7 @@ HTML_FILE_EXTENSION    = .html
 # of the possible markers and block names see the documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_HEADER            =
+HTML_HEADER            = docs/doxygen/templates/hart_header.html
 
 # The HTML_FOOTER tag can be used to specify a user-defined HTML footer for each
 # generated HTML page. If the tag is left blank doxygen will generate a standard
@@ -1219,7 +1218,7 @@ HTML_HEADER            =
 # that doxygen normally uses.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_FOOTER            =
+HTML_FOOTER            = docs/doxygen/templates/hart_footer.html
 
 # The HTML_STYLESHEET tag can be used to specify a user-defined cascading style
 # sheet that is used by each HTML page. It can be used to fine-tune the look of
@@ -1247,9 +1246,8 @@ HTML_STYLESHEET        =
 HTML_EXTRA_STYLESHEET  = docs/doxygen/doxygen-awesome/doxygen-awesome.css \
                          docs/doxygen/doxygen-awesome/doxygen-custom/custom.css \
                          docs/doxygen/doxygen-awesome/doxygen-awesome-sidebar-only.css \
-                         docs/doxygen/doxygen-awesome/doxygen-awesome-sidebar-only-darkmode-toggle.css \
-                         docs/doxygen/doxygen-awesome/doxygen-custom/theme-round.css \
-                         docs/doxygen/doxygen-awesome/doxygen-custom/theme-robot.css
+                         docs/doxygen/rose-pine/rose-pine-vars.css \
+                         docs/doxygen/rose-pine/rose-pine-awesome-doxygen-overrides.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
@@ -1259,10 +1257,8 @@ HTML_EXTRA_STYLESHEET  = docs/doxygen/doxygen-awesome/doxygen-awesome.css \
 # files will be copied as-is; there are no commands or markers available.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_FILES       = docs/doxygen/doxygen-awesome/doxygen-awesome-darkmode-toggle.js \
-                         docs/doxygen/doxygen-awesome/doxygen-awesome-fragment-copy-button.js \
+HTML_EXTRA_FILES       = docs/doxygen/doxygen-awesome/doxygen-awesome-fragment-copy-button.js \
                          docs/doxygen/doxygen-awesome/doxygen-awesome-paragraph-link.js \
-                         docs/doxygen/doxygen-awesome/doxygen-custom/toggle-alternative-theme.js \
                          docs/doxygen/doxygen-awesome/doxygen-awesome-interactive-toc.js \
                          docs/doxygen/doxygen-awesome/doxygen-awesome-tabs.js
 
@@ -1275,7 +1271,7 @@ HTML_EXTRA_FILES       = docs/doxygen/doxygen-awesome/doxygen-awesome-darkmode-t
 # Minimum value: 0, maximum value: 359, default value: 220.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_COLORSTYLE_HUE    = 220
+HTML_COLORSTYLE_HUE    = 300
 
 # The HTML_COLORSTYLE_SAT tag controls the purity (or saturation) of the colors
 # in the HTML output. For a value of 0 the output will use grayscales only. A
@@ -1294,7 +1290,7 @@ HTML_COLORSTYLE_SAT    = 100
 # Minimum value: 40, maximum value: 240, default value: 80.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_COLORSTYLE_GAMMA  = 80
+HTML_COLORSTYLE_GAMMA  = 100
 
 # If the HTML_TIMESTAMP tag is set to YES then the footer of each generated HTML
 # page will contain the date and time when the page was generated. Setting this
@@ -2600,7 +2596,7 @@ MAX_DOT_GRAPH_DEPTH    = 0
 # The default value is: NO.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-DOT_TRANSPARENT        = NO
+DOT_TRANSPARENT        = YES
 
 # Set the DOT_MULTI_TARGETS tag to YES to allow dot to generate multiple output
 # files in one run (i.e. multiple -o and -T options on the command line). This
