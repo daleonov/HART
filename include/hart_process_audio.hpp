@@ -38,6 +38,9 @@ public:
         if (sampleRateHz <= 0)
             HART_THROW_OR_RETURN (hart::ValueError, "Sample rate should be a positive value in Hz", *this);
 
+        if (! m_processor->supportsSampleRate (sampleRateHz))
+            HART_THROW_OR_RETURN (hart::SampleRateError, "Sample rate is not supported by the tested DSP", *this);
+
         m_sampleRateHz = sampleRateHz;
         return *this;
     }

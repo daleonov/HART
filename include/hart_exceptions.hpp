@@ -36,6 +36,12 @@ class ValueError:
     using std::runtime_error::runtime_error;
 };
 
+class SampleRateError:
+    public std::runtime_error
+{
+    using std::runtime_error::runtime_error;
+};
+
 class ChannelLayoutError:
     public std::runtime_error
 {

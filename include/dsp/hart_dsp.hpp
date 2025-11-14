@@ -34,14 +34,12 @@ template <typename SampleType>
 class DSP
 {
 public:
-    // TODO: Add supportsSampleRate() callback
-
     /// @brief Prepare for processing
     /// @details In real-time DSP, such methods are usually used for allocating memory and other non-realtime-safe and heavyweight
     /// operations. But keep in mind that that HART does not do real-time processing, so this merely follows common real-time
     /// DSP design conventions, where non-realtime operations are done in a separate callback like this one.
-    /// This method is guaranteed to be called after @ref supportsChannelLayout(), but before @ref process().
-    /// It is guaranteed that the number of input and output channels obeys supportsChannelLayout() preferences.
+    /// This method is guaranteed to be called after @ref supportsChannelLayout() and @ref supportsSampleRate(), but before @ref process().
+    /// It is guaranteed that the number of input and output channels obeys supportsChannelLayout() and supportsSampleRate() preferences.
     /// It is guaranteed that all subsequent process() calls will be in line with the arguments received in this callback.
     /// @param SampleRateHz sample rate at which the audio should be interpreted and processed
     /// @param numInputChannels Number of input channels
@@ -110,6 +108,12 @@ public:
     /// @param paramId Some ID that your subclass understands
     /// @return true if your subclass can process automation for this parameter, false otherwise
     virtual bool supportsEnvelopeFor (int paramId) const { return false; }
+
+    /// @brief Tells whether this effect supports given sample rate
+    /// @details It is guaranteed to be called before @ref prepare()
+    /// @param sampleRateHz Sample rate in question
+    /// @return true if effect is capable of interpreting and processing in a given sample rate, false otherwise
+    virtual bool supportsSampleRate (double sampleRateHz) const { return true; }
 
     /// @brief Return a smart pointer with a copy of this object
     /// @details Use @ref HART_DSP_DECLARE_COPY_METHOD() to define this method if your class is trivially copyable
