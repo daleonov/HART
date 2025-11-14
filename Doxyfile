@@ -1244,7 +1244,12 @@ HTML_STYLESHEET        =
 # list). For an example see the documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_STYLESHEET  = docs/doxygen/css/doxygen-awesome.css
+HTML_EXTRA_STYLESHEET  = docs/doxygen/doxygen-awesome/doxygen-awesome.css \
+                         docs/doxygen/doxygen-awesome/doxygen-custom/custom.css \
+                         docs/doxygen/doxygen-awesome/doxygen-awesome-sidebar-only.css \
+                         docs/doxygen/doxygen-awesome/doxygen-awesome-sidebar-only-darkmode-toggle.css \
+                         docs/doxygen/doxygen-awesome/doxygen-custom/theme-round.css \
+                         docs/doxygen/doxygen-awesome/doxygen-custom/theme-robot.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
@@ -1254,7 +1259,12 @@ HTML_EXTRA_STYLESHEET  = docs/doxygen/css/doxygen-awesome.css
 # files will be copied as-is; there are no commands or markers available.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_FILES       =
+HTML_EXTRA_FILES       = docs/doxygen/doxygen-awesome/doxygen-awesome-darkmode-toggle.js \
+                         docs/doxygen/doxygen-awesome/doxygen-awesome-fragment-copy-button.js \
+                         docs/doxygen/doxygen-awesome/doxygen-awesome-paragraph-link.js \
+                         docs/doxygen/doxygen-awesome/doxygen-custom/toggle-alternative-theme.js \
+                         docs/doxygen/doxygen-awesome/doxygen-awesome-interactive-toc.js \
+                         docs/doxygen/doxygen-awesome/doxygen-awesome-tabs.js
 
 # The HTML_COLORSTYLE_HUE tag controls the color of the HTML output. Doxygen
 # will adjust the colors in the style sheet and background images according to
@@ -1543,7 +1553,7 @@ DISABLE_INDEX          = NO
 # The default value is: NO.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-GENERATE_TREEVIEW      = NO
+GENERATE_TREEVIEW      = YES
 
 # The ENUM_VALUES_PER_LINE tag can be used to set the number of enum values that
 # doxygen will group on one line in the generated HTML documentation.
@@ -1751,7 +1761,7 @@ EXTRA_SEARCH_MAPPINGS  =
 # If the GENERATE_LATEX tag is set to YES, doxygen will generate LaTeX output.
 # The default value is: YES.
 
-GENERATE_LATEX         = YES
+GENERATE_LATEX         = NO
 
 # The LATEX_OUTPUT tag is used to specify where the LaTeX docs will be put. If a
 # relative path is entered the value of OUTPUT_DIRECTORY will be put in front of

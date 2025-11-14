@@ -2,4 +2,4 @@
 build*/
 compile_commands.json
 .vscode/
-docs/doxygen
+docs/doxygen/html
