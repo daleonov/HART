@@ -11,6 +11,13 @@
 
 namespace hart
 {
+template <typename SampleType> class AudioTestBuilder;
+template <typename SampleType> class Signal;
+
+/// @brief Hash table of automation envelope sequences mapped to param ids.
+/// @details Keys: Param IDs (int enums like GainDb::gainDb)
+///          Values: Sequence of automation envelope values for this Param ID, one value per frame
+using EnvelopeBuffers = std::unordered_map<int, std::vector<double>>;
 
 /// @defgroup DSP
 /// @brief Used to process signals
@@ -49,7 +56,7 @@ public:
     /// Also note that, unlike real-time audio applications, this method is called on the same thread as all others like @ref prepare().
     /// @param input Input audio block
     /// @param output Output audio block
-    virtual void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output) = 0;
+    virtual void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const EnvelopeBuffers& envelopeBuffers) = 0;
 
     /// @brief Resets to initial state
     /// @details Ideally should be implemented in a way that audio produced after resetting is identical to audio produced after instantiation
@@ -91,7 +98,7 @@ public:
     /// @brief Tells whether this effect accepts automation envelopes for a particular parameter
     /// @param paramId Some ID that your subclass understands
     /// @return true if your subclass can process automation for this parameter, false otherwise
-    virtual bool supportsEnvelopeFor (int paramId) const { return false }
+    virtual bool supportsEnvelopeFor (int paramId) const { return false; }
 
     /// @brief Return a smart pointer with a copy of this object
     /// @details Use @ref HART_DSP_DECLARE_COPY_METHOD() to define this method if your class is trivially copyable
@@ -212,6 +219,58 @@ protected:
         std::vector<double> values (blockSize);
         getValues (paramId, values);
         return values;
+    }
+
+protected:
+    EnvelopeBuffers m_envelopeBuffers;
+    friend class AudioTestBuilder<SampleType>;
+    friend class Signal<SampleType>;
+
+    void prepareWithEnvelopes (double sampleRateHz, size_t numInputChannels, size_t numOutputChannels, size_t maxBlockSizeFrames)
+    {
+        m_envelopeBuffers.clear();  // TODO: Remove only unused buffers
+
+        for (auto& item : m_envelopes)
+        {
+            const int paramId = item.first;
+            m_envelopeBuffers.emplace (paramId, std::vector<double> (maxBlockSizeFrames));
+        }
+
+        hassert (m_envelopes.size() == m_envelopeBuffers.size());
+
+        for (auto& item : m_envelopeBuffers)
+        {
+            const int paramId = item.first;
+            auto& envelopeBuffer = item.second;
+
+            // Sanity checks
+            hassert (supportsEnvelopeFor (paramId) && "Envelope for this id is unsupported, yet there's an envelope buffer allocated for it");
+            hassert (hasEnvelopeFor (paramId) && "Envelope for this param id is not attached, yet there's an envelope buffer allocated for it");
+
+            if (envelopeBuffer.size() != maxBlockSizeFrames)
+                envelopeBuffer.resize (maxBlockSizeFrames);
+        }
+
+        prepare (sampleRateHz, numInputChannels, numOutputChannels, maxBlockSizeFrames);
+    }
+
+    void processWithEnvelopes (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
+    {
+        for (auto& item : m_envelopeBuffers)
+        {
+            const int paramId = item.first;
+            auto& envelopeBuffer = item.second;
+
+            // Sanity checks
+            hassert (supportsEnvelopeFor (paramId) && "Envelope for this id is unsupported, yet there's an envelope buffer allocated for it");
+            hassert (hasEnvelopeFor (paramId) && "Envelope for this param id is not attached, yet there's an envelope buffer allocated for it");
+            hassert (input.getNumFrames() <= envelopeBuffer.size() && "Envelope Buffers were not allocated properly for this buffer size");
+
+            // Render envelope values
+            getValues (paramId, envelopeBuffer.size(), envelopeBuffer);
+        }
+        
+        process (input, output, m_envelopeBuffers);
     }
 };
 

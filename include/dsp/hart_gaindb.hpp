@@ -33,10 +33,10 @@ public:
 
     void prepare (double /* sampleRateHz */, size_t /* numInputChannels */, size_t /* numOutputChannels */, size_t maxBlockSizeFrames) override
     {
-        m_gainEnvelopeValues.resize (this->hasEnvelopeFor (Params::gainDb) ? maxBlockSizeFrames : 0);
+        m_gainEnvelopeValuesLinear.resize (this->hasEnvelopeFor (Params::gainDb) ? maxBlockSizeFrames : 0);
     }
 
-    void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output) override
+    void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const EnvelopeBuffers& envelopeBuffers) override
     {
         const size_t numInputChannels = input.getNumChannels();
         const size_t numOutputChannels = output.getNumChannels();
@@ -45,15 +45,16 @@ public:
         if (! supportsChannelLayout (numInputChannels, numOutputChannels))
             HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "Unsupported channel configuration");
 
-        const bool hasEnvelope = ! m_gainEnvelopeValues.empty();;
+        const bool hasGainEnvelope = ! envelopeBuffers.empty() && contains (envelopeBuffers, (int) Params::gainDb);
         const bool multiplexerMode = numInputChannels != numOutputChannels;
 
-        if (hasEnvelope)
+        if (hasGainEnvelope)
         {
-            this->getValues (Params::gainDb, input.getNumFrames(), m_gainEnvelopeValues);
+            auto& gainEnvelopeValuesDb = envelopeBuffers. at(Params::gainDb);
+            hassert (gainEnvelopeValuesDb.size() == m_gainEnvelopeValuesLinear.size());
             
-            for (size_t i = 0; i < m_gainEnvelopeValues.size(); ++i)
-                m_gainEnvelopeValues[i] = decibelsToRatio (m_gainEnvelopeValues[i]);
+            for (size_t i = 0; i < m_gainEnvelopeValuesLinear.size(); ++i)
+                m_gainEnvelopeValuesLinear[i] = decibelsToRatio (gainEnvelopeValuesDb[i]);
 
             if (multiplexerMode)
                 processEnvelopedGainAsMultiplexer (input, output);
@@ -120,7 +121,7 @@ public:
 private:
     double m_initialGainDb;
     double m_gainLinear;
-    std::vector<double> m_gainEnvelopeValues;
+    std::vector<double> m_gainEnvelopeValuesLinear;
 
     void processConstantGainAsMultiChannel (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
     {
@@ -140,14 +141,14 @@ private:
     {
         for (size_t channel = 0; channel < input.getNumChannels(); ++channel)
             for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
-                output[channel][frame] = input[channel][frame] * m_gainEnvelopeValues[frame];
+                output[channel][frame] = input[channel][frame] * m_gainEnvelopeValuesLinear[frame];
     }
 
     void processEnvelopedGainAsMultiplexer (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
     {
         for (size_t channel = 0; channel < output.getNumChannels(); ++channel)
             for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
-                output[channel][frame] = input[0][frame] * m_gainEnvelopeValues[frame];
+                output[channel][frame] = input[0][frame] * m_gainEnvelopeValuesLinear[frame];
     }
 };
 

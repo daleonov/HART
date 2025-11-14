@@ -5,6 +5,7 @@
 #include <cmath>  // pow()
 #include <limits>  // infinity()
 #include <string>
+#include <unordered_map>
 
 #include "hart_cliconfig.hpp"
 
@@ -75,6 +76,12 @@ inline static std::string toAbsolutePath (const std::string& path)
         return path;
 
     return CLIConfig::get().getDataRootPath() + '/' + path;
+}
+
+template <typename KeyType, typename ValueType>
+inline static bool contains (const std::unordered_map<KeyType, ValueType>& map, const KeyType& key)
+{
+    return map.find (key) != map.end();
 }
 
 }  // namespace hart

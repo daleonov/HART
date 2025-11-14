@@ -219,7 +219,7 @@ public:
 
         // TODO: Ckeck supportsChannelLayout() here
         m_processor->reset();
-        m_processor->prepare (m_sampleRateHz, m_numInputChannels, m_numOutputChannels, m_blockSizeFrames);
+        m_processor->prepareWithEnvelopes (m_sampleRateHz, m_numInputChannels, m_numOutputChannels, m_blockSizeFrames);
 
         for (const ParamValue& paramValue : paramValues)
         {
@@ -246,7 +246,7 @@ public:
             hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, blockSizeFrames);
             hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, blockSizeFrames);
             m_inputSignal->renderNextBlockWithDSPChain (inputBlock);
-            m_processor->process (inputBlock, outputBlock);
+            m_processor->processWithEnvelopes (inputBlock, outputBlock);
 
             const bool allChecksPassed = processChecks (perBlockChecks, outputBlock);
             atLeastOneCheckFailed |= ! allChecksPassed;

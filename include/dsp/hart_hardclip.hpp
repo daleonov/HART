@@ -32,7 +32,7 @@ public:
 
     void prepare (double /*sampleRateHz*/, size_t /*numInputChannels*/, size_t /*numOutputChannels*/, size_t /*maxBlockSizeFrames*/) override {}
 
-    void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output) override
+    void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const EnvelopeBuffers& /* envelopeBuffers */) override
     {
         hassert (output.getNumFrames() == input.getNumFrames());
         const size_t numChannels = input.getNumChannels();
