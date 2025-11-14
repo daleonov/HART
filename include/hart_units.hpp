@@ -5,6 +5,10 @@
 
 #include "hart_utils.hpp"  // pi
 
+/// @defgroup Units
+/// @brief Handy literals and constants for better readability
+/// @{
+
 constexpr double inf_dB = hart::inf;
 constexpr double oo_dB = hart::inf;
 constexpr double pi_rad = hart::pi;
@@ -27,5 +31,7 @@ constexpr double operator"" _rad (long double val) { return val; }
 constexpr double operator"" _rad (unsigned long long val) { return static_cast<double>(val); }
 constexpr double operator"" _deg (long double val) { return val * hart::pi / 180.0; }
 constexpr double operator"" _deg (unsigned long long val) { return static_cast<double>(val) * hart::pi / 180.0; }
+
+/// @}
 
 #endif  // HART_DO_NOT_ADD_UNITS

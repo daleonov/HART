@@ -9,6 +9,9 @@
 namespace hart
 {
 
+/// @brief Applies linear gain (not decibels) to the signal
+/// @details To set gain in decibels, consider using @ref GainDb class instead
+/// @ingroup DSP
 template <typename SampleType>
 class GainLinear:
     public hart::DSP<SampleType>
@@ -16,9 +19,11 @@ class GainLinear:
 public:
     enum Params
     {
-        gainLinear
+        gainLinear  ///< Linear gain
     };
 
+    /// @brief Constructor
+    /// @param initialGainLinear Linear gain
     GainLinear (double initialGainLinear = 1.0):
         m_initialGainLinear (initialGainLinear),
         m_gainLinear (initialGainLinear)
@@ -63,12 +68,16 @@ public:
 
     void reset() override {}
 
+    /// @param id Only @ref GainLinear::gainLinear is accepted
+    /// @param value linear gain
     void setValue (int id, double value) override
     {
         if (id == Params::gainLinear)
             m_gainLinear = value;
     }
 
+    /// @param id Only @ref GainLinear::gainLinear is accepted
+    /// @return linear gain
     double getValue (int id) const override
     {
         if (id == Params::gainLinear)
@@ -77,6 +86,7 @@ public:
         return 0.0;
     }
 
+    /// @details Supports either 1-to-n or n-to-n configurations 
     virtual bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const override
     {
         if (numInputChannels == numOutputChannels)
@@ -93,6 +103,8 @@ public:
         stream << "GainLinear (" << m_initialGainLinear << ")";
     }
 
+    /// @param id Only @ref GainLinear::gainLinear is accepted
+    /// return true for GainLinear::gainLinear, else otherwise
     bool supportsEnvelopeFor (int id) const override
     {
         return id == Params::gainLinear;

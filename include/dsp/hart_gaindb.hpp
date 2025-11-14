@@ -10,6 +10,9 @@
 namespace hart
 {
 
+/// @brief Applies gain in decibels to the signal
+/// @note For automation, consider using @ref GainLinear instead, because the two classes produce different curve shapes.
+/// @ingroup DSP
 template <typename SampleType>
 class GainDb:
     public hart::DSP<SampleType>
@@ -17,9 +20,11 @@ class GainDb:
 public:
     enum Params
     {
-        gainDb
+        gainDb  ///< Gain in decibels
     };
 
+    /// @brief Constructor
+    /// @param gainDb Initial gain in decibels
     GainDb (double gainDb = 0.0):
         m_initialGainDb (gainDb),
         m_gainLinear (decibelsToRatio (gainDb))
@@ -67,12 +72,16 @@ public:
 
     void reset() override {}
 
+    /// @param id Only @ref GainDb::gainDb is accepted
+    /// @param value Gain in decibels
     void setValue (int id, double value) override
     {
         if (id == Params::gainDb)
             m_gainLinear = decibelsToRatio (value);
     }
 
+    /// @param id Only @ref GainDb::gainDb is accepted
+    /// @retval (value) Gain in decibels
     double getValue (int id) const override
     {
         if (id == Params::gainDb)
@@ -81,6 +90,8 @@ public:
         return 0.0;
     }
 
+    /// @brief Checks if the DSP supports given i/o configuration
+    /// @details Supports either 1-to-n or n-to-n configurations 
     virtual bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const override
     {
         if (numInputChannels == numOutputChannels)
@@ -97,6 +108,8 @@ public:
         stream << "GainDb (" << m_initialGainDb << ")";
     }
 
+    /// @param id Only @ref GainDb::gainDb is accepted
+    /// retval (bool) true for GainDb::gainDb, else otherwise
     bool supportsEnvelopeFor (int id) const override
     {
         return id == Params::gainDb;

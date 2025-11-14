@@ -8,6 +8,10 @@
 namespace hart
 {
 
+/// @brief Applies symmetrical hard clipping (no knee) to the signal.
+/// @details Signal will never go above the threshold. Signal that doesn't peak above
+///         the threshold is guaranteed to be identical to the input signal.
+/// @ingroup DSP
 template <typename SampleType>
 class HardClip:
     public hart::DSP<SampleType>
@@ -15,9 +19,11 @@ class HardClip:
 public:
     enum Params
     {
-        thresholdDb
+        thresholdDb  ///< Threshold in decibels
     };
 
+    /// @brief Contructor
+    /// @param thresholdDb Fixed threshold in decibels, above which the signal will be symmetrically hard-clipped
     HardClip (double thresholdDb = 0.0):
         m_initialThresholdDb (thresholdDb),
         m_thresholdLinear (decibelsToRatio (thresholdDb))
@@ -42,12 +48,16 @@ public:
 
     void reset() override {}
 
+    /// @param id Only @ref HardClip::thresholdDb is accepted
+    /// @param value Threshold in decibels
     void setValue(int id, double value) override
     {
         if (id == Params::thresholdDb)
             m_thresholdLinear = decibelsToRatio (value);
     }
 
+    /// @param id Only @ref HardClip::thresholdDb is accepted
+    /// @return Threshold in decibels
     double getValue (int id) const override
     {
         if (id == Params::thresholdDb)
@@ -56,6 +66,7 @@ public:
         return 0.0;
     }
 
+    /// @details Supports only n-to-n channel configurations 
     bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const override
     {
         return numInputChannels == numOutputChannels;
@@ -66,6 +77,8 @@ public:
         stream << "HardClip (" << m_initialThresholdDb << ")";
     }
 
+    /// @param id Only @ref HardClip::thresholdDb is accepted
+    /// @return true for @ref HardClip::thresholdDb, false otherwise
     bool supportsEnvelopeFor (int id) const override
     {
         return false;
