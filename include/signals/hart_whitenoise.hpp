@@ -11,15 +11,24 @@
 namespace hart
 {
 
+/// @brief Produces deterministic white noise
+/// @details Outputs a signal uniformly distrubuted between -1.0 and +1.0, thus peaking below 0dB
+/// @ingroup Signals
 template<typename SampleType>
 class WhiteNoise : public Signal<SampleType>
 {
 public:
+
+    /// @brief Creates a Signal that produces white noise
+    /// @param randomSeed Seed for the RNG
+    /// @details Two signals with the same seed are guaranteed to produce the identical audio
     WhiteNoise (uint_fast32_t randomSeed = CLIConfig::get().getRandomSeed()):
         m_randomSeed (randomSeed)
     {
         reset();
     }
+
+    bool supportsNumChannels (size_t numChannels) const override { return true; };
 
     void prepare (double /*sampleRateHz*/, size_t numOutputChannels, size_t /*maxBlockSizeFrames*/) override
     {
@@ -33,21 +42,20 @@ public:
                 output[channel][frame] = m_uniformRealDistribution (m_randomNumberGenerator);
     }
 
+    /// @copybrief Signal::reset()
+    /// @details After resetting, WhiteNoise is guaranteed to produce identical audio to the one produced after instantiation
     void reset() override
     {
         m_randomNumberGenerator = std::mt19937 (m_randomSeed);
         m_uniformRealDistribution.reset();
     }
 
-    std::unique_ptr<Signal<SampleType>> copy() const override
-    {
-        return std::make_unique <WhiteNoise<SampleType>> (*this);
-    }
-
     std::string describe() const override
     {
         return std::string ("WhiteNoise (" + std::to_string (m_randomSeed) + ")");
     }
+
+    HART_SIGNAL_DEFINE_COPY_AND_MOVE (WhiteNoise);
 
 private:
     const uint_fast32_t m_randomSeed;

@@ -28,7 +28,7 @@ using EnvelopeBuffers = std::unordered_map<int, std::vector<double>>;
 /// as tested processors, and you can use your tested DSP subclasses in Signals' DSP chains with
 /// other effects. You can even chain multiple of your own DSP classes together this way.
 /// All the callbacks of this class are guaranteed to be called from the same thread.
-/// @tparam SampleType Type of values that will be processed, typecally ```float``` or ```double```
+/// @tparam SampleType Type of values that will be processed, typically ```float``` or ```double```
 /// @ingroup DSP
 template <typename SampleType>
 class DSP
@@ -216,9 +216,9 @@ public:
         return m_envelopes.find (paramId) != m_envelopes.end();
     }
 
-/// @brief Helper for template resolution
-/// @private
-using SampleTypePublicAlias = SampleType;
+    /// @brief Helper for template resolution
+    /// @private
+    using SampleTypePublicAlias = SampleType;
 
 private:
     std::unordered_map<int, std::unique_ptr<Envelope>> m_envelopes;

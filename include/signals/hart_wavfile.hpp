@@ -13,6 +13,12 @@
 namespace hart
 {
 
+// TODO: skipTo()
+// TODO: Add "normalize" option?
+
+/// @brief Produces audio from a wav file
+/// @details Original levels from the wav file are preserved
+/// @ingroup Signals
 template<typename SampleType>
 class WavFile:
     public Signal<SampleType>
@@ -24,6 +30,12 @@ public:
         no
     };
 
+    /// @brief Creates a Signal that produces audio from a wav file
+    /// @param filePath Path to a wav file
+    /// Can be absolute or relative. If a relative path is used, it will resolve
+    /// as relative to a data root path provided via respective CLI argument.
+    /// @param loop Indicates whether the signal should loop the audio or produce
+    /// silence after wav file runs out of frames.
     WavFile (const std::string& filePath, Loop loop = Loop::no):
         m_filePath (filePath),
         m_loop (loop)
@@ -54,6 +66,15 @@ public:
         m_wavSampleRateHz = static_cast<double> (wavSampleRateHz);
         m_wavNumChannels = static_cast<int> (numChannels);
     }
+
+    /// @copydoc Signal::supportsNumChannels()
+    /// @note WavFile can only fill as much channels as there are in the wav file, or less.
+    /// For instance, if the wav file is stereo, it can generate two channels (as they are),
+    /// one channel (left, discarding right), but not three channels.
+    bool supportsNumChannels (size_t numChannels) const override
+    {
+        return numChannels <= m_wavNumChannels;
+    };
 
     void prepare (double sampleRateHz, size_t numOutputChannels, size_t /*maxBlockSizeFrames*/) override
     {
@@ -102,15 +123,12 @@ public:
         m_wavOffsetFrames = 0;
     }
 
-    std::unique_ptr<Signal<SampleType>> copy() const override
-    {
-        return std::make_unique<WavFile<SampleType>> (*this);
-    }
-
     std::string describe() const override
     {
         return std::string ("WavFile (\"") + m_filePath + (m_loop == Loop::yes ? "\", Loop::yes)" : "\", Loop::no)");
     }
+
+    HART_SIGNAL_DEFINE_COPY_AND_MOVE (WavFile);
 
 private:
     const std::string m_filePath;

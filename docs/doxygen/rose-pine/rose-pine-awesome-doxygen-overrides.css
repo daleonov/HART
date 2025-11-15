@@ -118,7 +118,9 @@ html {
 
 div.memitem,
 div.memdoc,
-p.definition, {
+p.definition,
+dl.note .tt,
+dl.remark .tt {
   background-color: var(--rp-surface);
 }
 
