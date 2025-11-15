@@ -9,11 +9,20 @@
 namespace hart
 {
 
+/// @brief Checks whether the audio peaks at specific level
+/// @details This matcher will calculate peak value of a full audio signal (not a per-block peaks)
+/// and compare against a value provided during instantiation with a provided tolerance.
+/// @attention It checks the sample peaks, not the inter-sample peaks (a popular metric in audio
+/// mastering community). Fon inter-sample peak checking, you can make your own custom Matcher.
+/// @ingroup Matchers
 template<typename SampleType>
 class PeaksAt:
     public Matcher<SampleType>
 {
 public:
+    /// @brief Creates a matcher for a specific peak level
+    /// @param targetDb Expected sample peak value in decibels
+    /// @param toleranceLinear Absolute tolerance for comparing frames, in linear domain (not decibels)
     PeaksAt (SampleType targetDb, SampleType toleranceLinear = 1e-3):
         m_targetDb (targetDb),
         m_targetLinear (decibelsToRatio (targetDb)),
@@ -21,7 +30,7 @@ public:
     {
     }
 
-    void prepare (double /*sampleRateHz*/, size_t /* numOutputChannels */, size_t /* maxBlockSizeFrames */) override {}
+    void prepare (double /*sampleRateHz*/, size_t /* numChannels */, size_t /* maxBlockSizeFrames */) override {}
 
     bool match (const AudioBuffer<SampleType>& observedAudio) override
     {
@@ -41,15 +50,12 @@ public:
 
     void reset() override {}
 
-    virtual std::unique_ptr<Matcher<SampleType>> copy() const override
-    {
-        return std::make_unique<PeaksAt<SampleType>> (*this);
-    }
-
     std::string describe() const override
     {
         return std::string ("PeaksAt (") + std::to_string (m_targetDb) + ")";
     }
+
+    HART_MATCHER_DEFINE_COPY_AND_MOVE (PeaksAt);
 
 private:
     const SampleType m_targetDb;

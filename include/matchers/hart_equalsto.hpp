@@ -8,11 +8,23 @@
 namespace hart
 {
 
+/// @brief Checks whether the audio is identical to some signal
+/// @details Holds an internal Signal instance, and gets it to generate reference audio as
+/// the matcher receives new audio blocks through match(). Reports mismatch if even
+/// one of the frames in the audio does not match the reference signal within tolerance
+/// specified in @c epsilon during its instantiation.
+/// @ingroup Matchers
 template<typename SampleType>
 class EqualsTo:
     public Matcher<SampleType>
 {
 public:
+    /// @brief Creates a matcher for a specific signal
+    /// details The reference signal can be something simple like a @ref SineWave, or more
+    /// complex signal with DSP effects chain and automation envelopes.
+    /// @note Tip: To compare audio to a pre-recorded wav file, you can use @ref WavFile.
+    /// @param referenceSignal Signal to compare the incoming audio against
+    /// @param epsilon Absolute tolerance for comparing frames, in linear domain (not decibels)
     template <typename SignalType>
     EqualsTo (const SignalType& referenceSignal, SampleType epsilon = (SampleType) 1e-5):
         m_referenceSignal (referenceSignal.copy()),
@@ -33,9 +45,9 @@ public:
     {
     }
 
-    void prepare (double sampleRateHz, size_t numOutputChannels, size_t maxBlockSizeFrames) override
+    void prepare (double sampleRateHz, size_t numChannels, size_t maxBlockSizeFrames) override
     {
-        m_referenceSignal->prepareWithDSPChain (sampleRateHz, numOutputChannels, maxBlockSizeFrames);
+        m_referenceSignal->prepareWithDSPChain (sampleRateHz, numChannels, maxBlockSizeFrames);
     }
 
     bool match (const AudioBuffer<SampleType>& observedAudio) override
@@ -61,15 +73,12 @@ public:
         m_referenceSignal->resetWithDSPChain();
     }
 
-    virtual std::unique_ptr<Matcher<SampleType>> copy() const override
-    {
-        return std::make_unique<EqualsTo<SampleType>> (*this);
-    }
-
     std::string describe() const override
     {
         return "Equals To: " + m_referenceSignal->describe();
     }
+
+    HART_MATCHER_DEFINE_COPY_AND_MOVE (EqualsTo);
 
 private:
     std::unique_ptr<Signal<SampleType>> m_referenceSignal;

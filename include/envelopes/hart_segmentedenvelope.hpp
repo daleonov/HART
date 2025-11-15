@@ -73,7 +73,7 @@ public:
         return *this;
     }
 
-    std::unique_ptr<Envelope> copy() const
+    std::unique_ptr<Envelope> copy() const override
     {
         return std::make_unique<SegmentedEnvelope> (*this);
     }

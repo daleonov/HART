@@ -12,8 +12,8 @@
 #include "dsp/hart_dsp.hpp"
 #include "hart_exceptions.hpp"
 
-/// @defgroup Signals
-/// @brief Objects used to generate signals
+/// @defgroup Signals Signals
+/// @brief Generate signals
 
 namespace hart {
 
@@ -92,9 +92,8 @@ public:
 
     /// @brief Tells whether this Signal supports given sample rate
     /// @details It is guaranteed to be called before @ref prepare()
-    /// @param sampleRateHz Sample rate in question
     /// @note This method should only care about the Signal itself, and not the attached effects in DSP chain - they'll be queried separately
-    /// @param SampleRateHz sample rate at which the audio should be generated
+    /// @param sampleRateHz sample rate at which the audio should be generated
     /// @return true if signal is capable of generating audio at a given sample rate, false otherwise
     virtual bool supportsSampleRate (double sampleRateHz) const { return true; }
 
@@ -104,7 +103,7 @@ public:
     /// It is guaranteed that ```numChannels``` obeys supportsNumChannels() preferences, same with ```sampleRateHz```
     /// and @ref supportsSampleRate(). It is guaranteed that all subsequent renderNextBlock() calls will be in line
     /// with the arguments received in this callback.
-    /// @param SampleRateHz sample rate at which the audio should be generated
+    /// @param sampleRateHz sample rate at which the audio should be generated
     /// @param numOutputChannels Number of output channels to be filled
     /// @param maxBlockSizeFrames Maximum block size in frames (samples)
     virtual void prepare (double sampleRateHz, size_t numOutputChannels, size_t maxBlockSizeFrames) = 0;
@@ -172,11 +171,11 @@ public:
     // TODO: followedBy (std::unique_ptr<DSP<SampleType>> dsp)
 
     /// @brief Prepares the signal and all attached effects in the DSP chain for rendering
-    /// @details This method is intended to be called by hosts like AudioTestBuilder or Matcher.
+    /// @details This method is intended to be called by Signal hosts like AudioTestBuilder or Matcher.
     /// If you're making something that owns an instance of a Signal and needs it to generate audio,
     /// like a custom Matcher, you must call this method before calling @ref renderNextBlockWithDSPChain().
     /// You must also call @ref supportsNumChannels() and @ref supportsSampleRate() before calling this method.
-    /// If you're not making a custom host, you probably don't need this method.
+    /// @attention If you're not making a custom host, you probably don't need to call this method.
     void prepareWithDSPChain (double sampleRateHz, size_t numOutputChannels, size_t maxBlockSizeFrames)
     {
         prepare (sampleRateHz, numOutputChannels, maxBlockSizeFrames);
@@ -197,10 +196,10 @@ public:
     }
 
     /// @brief Renders next block audio for the signal and all the effects in the DSP chain
-    /// @details This method is intended to be called by hosts like AudioTestBuilder or Matcher
+    /// @details This method is intended to be called by Signal hosts like AudioTestBuilder or Matcher
     /// If you're making something that owns an instance of a Signal and needs it to generate audio,
     /// like a custom Matcher, you must call it after calling @ref prepareWithDSPChain().
-    /// If you're not making a custom host, you probably don't need this method.
+    /// @attention If you're not making a custom host, you probably don't need to call this method.
     void renderNextBlockWithDSPChain (AudioBuffer<SampleType>& output)
     {
         renderNextBlock (output);
@@ -262,7 +261,7 @@ Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, const DSP<SampleTy
 
 }  // namespace hart
 
-/// @brief Defines @ref Signal::copy() and @ref Signal::move() methods
+/// @brief Defines @ref hart::Signal::copy() and @ref hart::Signal::move() methods
 /// @details Put this into your class body's ```public``` section if either is true:
 ///  - Your class is trivially copyable and movable
 ///  - You have your Rule Of Five methods explicitly defined in this class
@@ -272,7 +271,7 @@ Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, const DSP<SampleTy
 ///
 /// Despite returning a smart pointer to an abstract Signal class, those two methods must construct
 /// an object of a specific class, hence the mandatory boilerplate methods - sorry!
-/// @param cls Name of your class
+/// @param ClassName Name of your class
 /// @ingroup Signals
 #define HART_SIGNAL_DEFINE_COPY_AND_MOVE(ClassName) \
     std::unique_ptr<Signal<SampleType>> copy() const override { \
@@ -282,12 +281,12 @@ Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, const DSP<SampleTy
         return std::make_unique<ClassName> (std::move (*this)); \
     }
 
-/// @brief Forbids @ref Signal::copy() and @ref Signal::move() methods
+/// @brief Forbids @ref hart::Signal::copy() and @ref hart::Signal::move() methods
 /// @details Put this into your class body's ```public``` section if either is true:
 ///  - Your class is not trivially copyable and movable
 ///  - You don't want to trouble yourself with implementing move and copy semantics for your class
 ///
-/// Otherwise, @ref use HART_SIGNAL_DEFINE_COPY_AND_MOVE() instead.
+/// Otherwise, use @ref HART_SIGNAL_DEFINE_COPY_AND_MOVE() instead.
 /// Obviously, you won't be able to pass your class to the host
 /// by reference, copy or explicit move, but you still can pass
 /// it wrapped into a smart pointer like so:

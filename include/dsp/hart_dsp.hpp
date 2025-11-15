@@ -11,16 +11,14 @@
 
 namespace hart
 {
-template <typename SampleType> class AudioTestBuilder;
-template <typename SampleType> class Signal;
+
+/// @defgroup DSP DSP
+/// @brief Process signals
 
 /// @brief Hash table of automation envelope sequences mapped to param ids.
 /// @details Keys: Param IDs (int enums like GainDb::gainDb)
 ///          Values: Sequence of automation envelope values for this Param ID, one value per frame
 using EnvelopeBuffers = std::unordered_map<int, std::vector<double>>;
-
-/// @defgroup DSP
-/// @brief Used to process signals
 
 /// @brief Base for DSP effects
 /// @details This class is used both for adapting your DSP classes that you wish to test,
@@ -41,7 +39,7 @@ public:
     /// This method is guaranteed to be called after @ref supportsChannelLayout() and @ref supportsSampleRate(), but before @ref process().
     /// It is guaranteed that the number of input and output channels obeys supportsChannelLayout() and supportsSampleRate() preferences.
     /// It is guaranteed that all subsequent process() calls will be in line with the arguments received in this callback.
-    /// @param SampleRateHz sample rate at which the audio should be interpreted and processed
+    /// @param sampleRateHz sample rate at which the audio should be interpreted and processed
     /// @param numInputChannels Number of input channels
     /// @param numOutputChannels Number of output channels
     /// @param maxBlockSizeFrames Maximum block size in frames (samples)
@@ -76,10 +74,9 @@ public:
     /// use of enums is encouraged for readability
     /// @param value Value of the param in an appropriate unit;
     /// use of SI units is enocuraged (i.e. s instead of ms. Hz instead of kHz) to make better use of unit literals (see @ref Units)
-    /// @warning This method is only called to set initial value before processing, and is not called to do automation (via @ref Envelopes)
-    /// If you want your class to support automation for a specific parameter, override @ref supportsEnvelopeFor(), then call @ref hasEnvelopeFor()
-    /// in your @ref process() to check is there's an automation curve for a apecific parameter, and then call @ref getValues() to retreive
-    /// the automation envelope values.
+    /// @warning This method is only called to set a fixed value before processing, and is not called to do automation (via @ref hart::Envelope)
+    /// If you want your class to support automation for a specific parameter, override @ref supportsEnvelopeFor(), and then
+    /// use @c envelopeBuffers provided in @ref process() callback.
     virtual void setValue (int paramId, double value) = 0;
 
     /// @brief Retreives DSP value
@@ -87,7 +84,7 @@ public:
     /// @param paramId Some ID that your subclass understands
     /// @return The value of requested parameter in a unit that your subclass understands
     /// @note This method is only intended for parameters that don't have an automation envelope attached to this specific instance.
-    /// To get values for automated parameters, use @ref getValues() instead.
+    /// To get values for automated parameters, use @c envelopeBuffers provided in @ref process() callback.
     virtual double getValue (int paramId) const = 0;
 
     /// @brief Tells the runner (host) whether this effect supports a specific i/o configuration.
@@ -216,48 +213,12 @@ public:
         return m_envelopes.find (paramId) != m_envelopes.end();
     }
 
-    /// @brief Helper for template resolution
-    /// @private
-    using SampleTypePublicAlias = SampleType;
-
-private:
-    std::unordered_map<int, std::unique_ptr<Envelope>> m_envelopes;
-    EnvelopeBuffers m_envelopeBuffers;
-
-    /// @brief DSP host for running tests
-    /// @details This class can act as a host for the DSP effecs, being the responsible for rendering audio for all tests.
-    /// Has access to private @ref prepareWithEnvelopes() and @ref processWithEnvelopes() methods.
-    friend class AudioTestBuilder<SampleType>;
-
-    /// @brief DSP host for rendering signal chains
-    /// @details This class hold a chain of DSP instances to render its signal through them.
-    /// Has access to private @ref prepareWithEnvelopes() and @ref processWithEnvelopes() methods.
-    friend class Signal<SampleType>;
-
-    /// @brief Gets sample-accurate automation envelope values for a specific parameter
-    /// @param[in] paramId Some ID that your subclass understands
-    /// @param[in] blockSize Buffer size in frames, should be the same as ```input```/```output```'s size in @ref process()
-    /// @param[out] valuesOutput Container to get filled with the rendered automation values
-    void getValues (int paramId, size_t blockSize, std::vector<double>& valuesOutput)
-    {
-        if (valuesOutput.size() < blockSize)
-        {
-            HART_WARNING ("Make sure to configure your envelope container size before processing audio");
-            valuesOutput.resize (blockSize);
-        }
-
-        if (! hasEnvelopeFor (paramId))
-        {
-            const double value = getValue (paramId);
-            std::fill (valuesOutput.begin(), valuesOutput.end(), value);
-        }
-        else
-        {
-            m_envelopes[paramId]->renderNextBlock (blockSize, valuesOutput);
-        }
-    }
-
-    /// @brief Processes the audio
+    /// @brief Prepares all the attached envelopes and the effect itself for processing
+    /// @details This method is intended to be called by DSP hosts like @ref hart::AudioTestBuilder or @ref hart::Signal.
+    /// If you're making something that owns an instance of a DSP and needs it to generate audio,
+    /// you must call this method before calling @ref processWithEnvelopes().
+    /// You must also call @ref supportsChannelLayout() and @ref supportsSampleRate() before calling this method.
+    /// @attention If you're not making a custom host, you probably don't need to call this method.
     void prepareWithEnvelopes (double sampleRateHz, size_t numInputChannels, size_t numOutputChannels, size_t maxBlockSizeFrames)
     {
         m_envelopeBuffers.clear();  // TODO: Remove only unused buffers
@@ -286,7 +247,11 @@ private:
         prepare (sampleRateHz, numInputChannels, numOutputChannels, maxBlockSizeFrames);
     }
 
-    /// @brief Processes the audio
+    /// @brief Renders all the automation envelopes and processes the audio
+    /// @details This method is intended to be called by DSP hosts like @ref hart::AudioTestBuilder @ref hart::Signal.
+    /// If you're making something that owns an instance of a Signal and needs it to generate audio,
+    /// you must call it after calling @ref prepareWithEnvelopes().
+    /// @attention If you're not making a custom host, you probably don't need to call this method.
     /// @param input Input audio block
     /// @param output Output audio block
     void processWithEnvelopes (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
@@ -307,6 +272,37 @@ private:
         
         process (input, output, m_envelopeBuffers);
     }
+
+    /// @brief Helper for template resolution
+    /// @private
+    using SampleTypePublicAlias = SampleType;
+
+private:
+    std::unordered_map<int, std::unique_ptr<Envelope>> m_envelopes;
+    EnvelopeBuffers m_envelopeBuffers;
+
+    /// @brief Gets sample-accurate automation envelope values for a specific parameter
+    /// @param[in] paramId Some ID that your subclass understands
+    /// @param[in] blockSize Buffer size in frames, should be the same as ```input```/```output```'s size in @ref process()
+    /// @param[out] valuesOutput Container to get filled with the rendered automation values
+    void getValues (int paramId, size_t blockSize, std::vector<double>& valuesOutput)
+    {
+        if (valuesOutput.size() < blockSize)
+        {
+            HART_WARNING ("Make sure to configure your envelope container size before processing audio");
+            valuesOutput.resize (blockSize);
+        }
+
+        if (! hasEnvelopeFor (paramId))
+        {
+            const double value = getValue (paramId);
+            std::fill (valuesOutput.begin(), valuesOutput.end(), value);
+        }
+        else
+        {
+            m_envelopes[paramId]->renderNextBlock (blockSize, valuesOutput);
+        }
+    }
 };
 
 /// @brief Prints readable text representation of the DSP object into the I/O stream
@@ -316,7 +312,7 @@ inline std::ostream& operator<< (std::ostream& stream, const DSP<SampleType>& ds
     return stream;
 }
 
-/// @brief Defines @ref DSP::copy() and @ref DSP::move() methods
+/// @brief Defines @ref hart::DSP::copy() and @ref hart::DSP::move() methods
 /// @details Put this into your class body's ```public``` section if either is true:
 ///  - Your class is trivially copyable and movable
 ///  - You have your Rule Of Five methods explicitly defined in this class
@@ -326,22 +322,22 @@ inline std::ostream& operator<< (std::ostream& stream, const DSP<SampleType>& ds
 ///
 /// Despite returning a smart pointer to an abstract DSP class, those two methods must construct
 /// an object of a specific class, hence the mandatory boilerplate methods - sorry!
-/// @param cls Name of your class
+/// @param ClassName Name of your class
 /// @ingroup DSP
-#define HART_DSP_DEFINE_COPY_AND_MOVE(cls) \
+#define HART_DSP_DEFINE_COPY_AND_MOVE(ClassName) \
     std::unique_ptr<DSP<SampleType>> copy() const override { \
-        return std::make_unique<cls> (*this); \
+        return std::make_unique<ClassName> (*this); \
     } \
     std::unique_ptr<DSP<SampleType>> move() override { \
-        return std::make_unique<cls> (std::move (*this)); \
+        return std::make_unique<ClassName> (std::move (*this)); \
     }
 
-/// @brief Forbids @ref DSP::copy() and @ref DSP::move() methods
+/// @brief Forbids @ref hart::DSP::copy() and @ref hart::DSP::move() methods
 /// @details Put this into your class body's ```public``` section if either is true:
 ///  - Your class is not trivially copyable and movable
 ///  - You don't want to trouble yourself with implementing move and copy semantics for your class
 ///
-/// Otherwise, @ref use HART_DSP_DEFINE_COPY_AND_MOVE() instead.
+/// Otherwise, use @ref HART_DSP_DEFINE_COPY_AND_MOVE() instead.
 /// Obviously, you won't be able to pass your class to the host
 /// by reference, copy or explicit move, but you still can pass
 /// it wrapped into a smart pointer like so:

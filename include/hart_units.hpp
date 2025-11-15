@@ -5,8 +5,8 @@
 
 #include "hart_utils.hpp"  // pi
 
-/// @defgroup Units
-/// @brief Handy literals and constants for better readability
+/// @defgroup Units Units
+/// @brief Better readability
 /// @{
 
 constexpr double inf_dB = hart::inf;
