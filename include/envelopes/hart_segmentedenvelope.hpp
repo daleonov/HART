@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cmath>  // pow(), abs()
-#include <vector>
 
 #include "envelopes/hart_envelope.hpp"
 #include "hart_exceptions.hpp"

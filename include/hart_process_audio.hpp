@@ -6,7 +6,6 @@
 #include <memory>
 #include <vector>
 
-#include "hart.hpp"
 #include "hart_audio_buffer.hpp"
 #include "dsp/hart_dsp_all.hpp"
 #include "hart_expectation_failure_messages.hpp"

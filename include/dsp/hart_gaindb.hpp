@@ -3,7 +3,6 @@
 #include <algorithm>  // fill()
 #include <vector>
 
-#include "hart_audio_buffer.hpp"
 #include "hart_dsp.hpp"
 #include "hart_utils.hpp"
 

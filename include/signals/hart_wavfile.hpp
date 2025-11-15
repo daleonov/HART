@@ -5,7 +5,6 @@
 
 #include "dr_wav.h"
 
-#include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
 #include "signals/hart_signal.hpp"
 #include "hart_utils.hpp"  // toAbsolutePath(), floatsNotEqual()

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "hart_audio_buffer.hpp"
 #include "hart_dsp.hpp"
 
 #include <algorithm>  // min(), max()

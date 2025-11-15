@@ -3,7 +3,7 @@
 #include <cmath>  // abs()
 
 #include "matchers/hart_matcher.hpp"
-#include "signals/hart_signals_all.hpp"
+#include "signals/hart_signal.hpp"
 
 namespace hart
 {
