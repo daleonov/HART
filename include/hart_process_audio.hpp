@@ -10,7 +10,7 @@
 #include "hart_audio_buffer.hpp"
 #include "dsp/hart_dsp_all.hpp"
 #include "hart_expectation_failure_messages.hpp"
-#include "hart_matchers.hpp"
+#include "matchers/hart_matcher.hpp"
 #include "hart_wavwriter.hpp"
 #include "signals/hart_signals_all.hpp"
 

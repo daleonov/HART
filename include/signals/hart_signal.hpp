@@ -270,7 +270,7 @@ Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, const DSP<SampleTy
 ///
 /// If neither of those is true, or you're unsure, use @ref HART_SIGNAL_FORBID_COPY_AND_MOVE instead
 ///
-/// Despite returning a smart pointer to an abstract DSP class, those two methods must construct
+/// Despite returning a smart pointer to an abstract Signal class, those two methods must construct
 /// an object of a specific class, hence the mandatory boilerplate methods - sorry!
 /// @param cls Name of your class
 /// @ingroup Signals

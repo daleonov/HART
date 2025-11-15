@@ -11,6 +11,7 @@
 #include "envelopes/hart_envelopes_all.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_expectation_failure_messages.hpp"
+#include "matchers/hart_matchers_all.hpp"
 #include "hart_process_audio.hpp"
 #include "signals/hart_signals_all.hpp"
 #include "hart_test_registry.hpp"

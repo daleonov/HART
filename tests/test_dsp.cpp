@@ -1,5 +1,4 @@
 #include "hart.hpp"
-#include "hart_matchers.hpp"
 
 using EqualsTo = hart::EqualsTo<float>;
 using HardClip = hart::HardClip<float>;

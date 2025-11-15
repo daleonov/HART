@@ -5,6 +5,7 @@
 
 #include "hart.hpp"
 
+using EqualsTo = hart::EqualsTo<float>;
 using HardClip = hart::HardClip<float>;
 using GainDb = hart::GainDb<float>;
 using PeaksAt = hart::PeaksAt<float>;
@@ -27,8 +28,8 @@ HART_TEST ("DSP Chains - Basic Gain")
     processAudioWith (GainDb (-2_dB))
         .withInputSignal (SineWave() >> GainDb (-1_dB))
         .expectTrue (PeaksAt (-3_dB))
-        .expectTrue (equalsTo (SineWave() >> GainDb (-3.0_dB)))
-        .expectFalse (equalsTo (SineWave() >> GainDb (-3.1_dB)))
+        .expectTrue (EqualsTo (SineWave() >> GainDb (-3.0_dB)))
+        .expectFalse (EqualsTo (SineWave() >> GainDb (-3.1_dB)))
         .process();
 }
 
@@ -37,13 +38,13 @@ HART_TEST ("DSP Chains - Order Matters")
     processAudioWith (GainDb (0_dB))
         .withInputSignal (SineWave() >> HardClip (-3_dB) >> GainDb (+1_dB))
         .expectTrue (PeaksAt (-2_dB))
-        .expectFalse (equalsTo (SineWave() >> GainDb (+1_dB) >> HardClip (-3_dB)))
+        .expectFalse (EqualsTo (SineWave() >> GainDb (+1_dB) >> HardClip (-3_dB)))
         .process();
 
     processAudioWith (GainDb (0_dB))
         .withInputSignal (SineWave() >> GainDb (+1_dB) >> HardClip (-3_dB))
         .expectTrue (PeaksAt (-3_dB))
-        .expectFalse (equalsTo (SineWave() >> HardClip (-3_dB) >> GainDb (+1_dB)))
+        .expectFalse (EqualsTo (SineWave() >> HardClip (-3_dB) >> GainDb (+1_dB)))
         .process();
 }
 
