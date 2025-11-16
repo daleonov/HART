@@ -5,8 +5,8 @@
 #include <iomanip>
 #include <sstream>
 
-#include "hart_cliconfig.hpp"
 #include "matchers/hart_matcher.hpp"
+#include "hart_precision.hpp"
 #include "hart_utils.hpp"  // decibelsToRatio(), ratioToDecibels()
 
 namespace hart
@@ -77,8 +77,7 @@ public:
     virtual MatcherFailureDetails getFailureDetails() const override
     {
         std::stringstream stream;
-        stream << std::fixed << std::setprecision (CLIConfig::get().getDbDecimals())
-            << "Observed audio peaks at " << m_observedPeakDb << " dB";
+        stream << dbPrecision << "Observed audio peaks at " << m_observedPeakDb << " dB";
 
         MatcherFailureDetails details;
         details.frame = m_failedFrame;
@@ -87,13 +86,11 @@ public:
         return details;
     }
 
-    void represent (std::ostream& stream) const
+    void represent (std::ostream& stream) const override
     {
         stream << "PeaksAt ("
-            << std::fixed << std::setprecision (CLIConfig::get().getDbDecimals())
-            << m_targetDb << ", "
-            << std::fixed << std::setprecision (CLIConfig::get().getLinDecimals())
-            << m_toleranceLinear << ')';
+            << dbPrecision << m_targetDb << "_dB, "
+            << linPrecision << m_toleranceLinear << ')';
     }
 
     HART_MATCHER_DEFINE_COPY_AND_MOVE (PeaksAt);

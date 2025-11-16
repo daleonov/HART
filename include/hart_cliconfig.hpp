@@ -61,10 +61,19 @@ public:
     std::string getDataRootPath() { return m_dataRootPath; }
     uint_fast32_t getRandomSeed() { return m_seed; }
 
+    /// @see linPrecision
     int getLinDecimals() { return m_linDecimals; }
+
+    /// @see dbPrecision
     int getDbDecimals() { return m_dbDecimals; }
+
+    /// @see secPrecision
     int getSecDecimals() { return m_secDecimals; }
+
+    /// @see hzPrecision
     int getHzDecimals() { return m_hzDecimals; }
+
+    /// @see radPrecision
     int getRadDecimals() { return m_radDecimals; }
 
 private:

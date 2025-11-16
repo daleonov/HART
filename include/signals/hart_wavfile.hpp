@@ -123,7 +123,7 @@ public:
         m_wavOffsetFrames = 0;
     }
 
-    void represent (std::ostream& stream) const
+    void represent (std::ostream& stream) const override
     {
         stream << "WavFile (\"" << m_filePath << (m_loop == Loop::yes ? "\", Loop::yes)" : "\", Loop::no)");
     }

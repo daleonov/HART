@@ -74,13 +74,11 @@ public:
         return details;
     }
 
-    void represent (std::ostream& stream) const
+    void represent (std::ostream& stream) const override
     {
         stream << "PeaksBelow ("
-            << std::fixed << std::setprecision (CLIConfig::get().getDbDecimals())
-            << m_thresholdDb << ", "
-            << std::fixed << std::setprecision (CLIConfig::get().getLinDecimals())
-            << m_thresholdLinear << ')';
+            << dbPrecision() << m_thresholdDb << "_dB, "
+            << linPrecision() << m_thresholdLinear << ')';
     }
 
     HART_MATCHER_DEFINE_COPY_AND_MOVE (PeaksBelow);

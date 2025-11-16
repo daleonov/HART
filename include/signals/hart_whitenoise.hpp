@@ -50,7 +50,7 @@ public:
         m_uniformRealDistribution.reset();
     }
 
-    void represent (std::ostream& stream) const
+    void represent (std::ostream& stream) const override
     {
         stream << "WhiteNoise (" << m_randomSeed << ")";
     }

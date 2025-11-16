@@ -75,8 +75,7 @@ public:
 
     void represent (std::ostream& stream) const override
     {
-        stream << std::fixed << std::setprecision (CLIConfig::get().getDbDecimals())
-            << "HardClip (" << m_initialThresholdDb << ")";
+        stream << dbPrecision << "HardClip (" << m_initialThresholdDb << "_dB)";
     }
 
     /// @param id Only @ref HardClip::thresholdDb is accepted

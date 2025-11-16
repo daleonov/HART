@@ -4,8 +4,8 @@
 #include <iomanip>
 #include <vector>
 
-#include "hart_cliconfig.hpp"
 #include "hart_dsp.hpp"
+#include "hart_precision.hpp"
 #include "hart_utils.hpp"
 
 namespace hart
@@ -107,8 +107,7 @@ public:
 
     virtual void represent (std::ostream& stream) const override
     {
-        stream << std::fixed << std::setprecision (CLIConfig::get().getDbDecimals())
-            << "GainDb (" << m_initialGainDb << ")";
+        stream << dbPrecision << "GainDb (" << m_initialGainDb << "_dB)";
     }
 
     /// @param id Only @ref GainDb::gainDb is accepted

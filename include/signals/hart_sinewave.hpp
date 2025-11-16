@@ -1,11 +1,10 @@
 #pragma once
 
 #include <cmath>
-#include <iomanip>
 #include <memory>
 
-#include "hart_cliconfig.hpp"
 #include "hart_exceptions.hpp"
+#include "hart_precision.hpp"
 #include "signals/hart_signal.hpp"
 #include "hart_utils.hpp"
 
@@ -59,14 +58,11 @@ public:
         m_phaseRadians = m_initialPhaseRadians;
     }
 
-    void represent (std::ostream& stream) const
+    void represent (std::ostream& stream) const override
     {
-        stream
-            << "SineWave ("
-            << std::fixed << std::setprecision (CLIConfig::get().getHzDecimals())
-            << m_frequencyHz << ", "
-            << std::setprecision (CLIConfig::get().getRadDecimals())
-            << m_initialPhaseRadians << ")";
+        stream << "SineWave ("
+            << hzPrecision << m_frequencyHz << "_Hz, "
+            << radPrecision << m_initialPhaseRadians << "_rad)";
     }
 
     HART_SIGNAL_DEFINE_COPY_AND_MOVE (SineWave);

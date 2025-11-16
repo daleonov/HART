@@ -4,8 +4,8 @@
 #include <iomanip>
 #include <sstream>
 
-#include "hart_cliconfig.hpp"
 #include "matchers/hart_matcher.hpp"
+#include "hart_precision.hpp"
 #include "signals/hart_signal.hpp"
 #include "hart_utils.hpp"
 
@@ -93,19 +93,12 @@ public:
 
     virtual MatcherFailureDetails getFailureDetails() const override
     {
-        const int linDecimals = CLIConfig::get().getLinDecimals();
-        const int dbDecimals = CLIConfig::get().getDbDecimals();
         const SampleType m_differenceLinear = std::abs (m_failedExpectedValue - m_failedObservedValue);
-
         std::stringstream stream;
-        stream << std::fixed << std::setprecision (linDecimals)
-            << "Expected sample value: " << m_failedExpectedValue
-            << std::setprecision (dbDecimals)
-            << " (" << ratioToDecibels (m_failedExpectedValue) << " dB)"
-            <<  std::setprecision (linDecimals)
-            << ", difference: " << m_differenceLinear
-            << std::setprecision (dbDecimals)
-            << " (" << ratioToDecibels (m_differenceLinear) << " dB)";
+        stream << linPrecision << "Expected sample value: " << m_failedExpectedValue
+            << dbPrecision << " (" << ratioToDecibels (m_failedExpectedValue) << " dB)"
+            << linPrecision << ", difference: " << m_differenceLinear
+            << dbPrecision << " (" << ratioToDecibels (m_differenceLinear) << " dB)";
 
         MatcherFailureDetails details;
         details.frame = m_failedFrame;
@@ -114,11 +107,10 @@ public:
         return details;
     }
 
-    void represent (std::ostream& stream) const
+    void represent (std::ostream& stream) const override
     {
         stream << "EqualsTo (" << *m_referenceSignal
-            << std::fixed << std::setprecision (CLIConfig::get().getLinDecimals())
-            << ", " << m_toleranceLinear << ')';
+            << linPrecision << ", " << m_toleranceLinear << ')';
     }
 
     HART_MATCHER_DEFINE_COPY_AND_MOVE (EqualsTo);
