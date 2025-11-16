@@ -92,7 +92,7 @@ public:
         return false;
     }
 
-    virtual void print (std::ostream& stream) const override
+    virtual void represent (std::ostream& stream) const override
     {
         stream << "GainLinear (" << m_initialGainLinear << ")";
     }

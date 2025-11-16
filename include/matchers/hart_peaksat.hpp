@@ -52,7 +52,12 @@ public:
 
     std::string describe() const override
     {
-        return std::string ("PeaksAt (") + std::to_string (m_targetDb) + ")";
+        return {};
+    }
+
+    void represent (std::ostream& stream) const
+    {
+        stream << "PeaksAt(" << m_targetDb << ", " << m_toleranceLinear << ')';
     }
 
     HART_MATCHER_DEFINE_COPY_AND_MOVE (PeaksAt);

@@ -94,13 +94,14 @@ public:
     /// it can cause an exception or a test failure. This method is guaranteed to be called at least once before @ref prepare()
     virtual bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const = 0;
 
-    /// @brief Makes a text representation of this object for test failure outputs.
-    /// @brief It is strongly encouraged to follow python's
+    /// @brief Makes a text representation of this DSP effect for test failure outputs.
+    /// @details It is strongly encouraged to follow python's
     /// <a href="https://docs.python.org/3/reference/datamodel.html#object.__repr__" target="_blank">repr()</a>
     /// conventions for returned text - basically, put something like "MyClass(value1, value2)" (with no quotes)
     /// into the stream whenever possible, or "<Readable info in angled brackets>" otherwise.
+    /// Use @ref HART_DEFINE_GENERIC_REPRESENT() to get a basic implementation for this method.
     /// @param[out] stream Output stream to write to
-    virtual void print (std::ostream& stream) const = 0;
+    virtual void represent (std::ostream& stream) const = 0;
 
     /// @brief Tells whether this effect accepts automation envelopes for a particular parameter
     /// @param paramId Some ID that your subclass understands
@@ -307,9 +308,13 @@ private:
 };
 
 /// @brief Prints readable text representation of the DSP object into the I/O stream
+/// @relates DSP
+/// @ingroup DSP
 template <typename SampleType>
-inline std::ostream& operator<< (std::ostream& stream, const DSP<SampleType>& dsp) {
-    dsp.print (stream);
+inline std::ostream& operator<< (std::ostream& stream, const DSP<SampleType>& dsp)
+{
+    // TODO: Represent with the envelopes
+    dsp.represent (stream);
     return stream;
 }
 

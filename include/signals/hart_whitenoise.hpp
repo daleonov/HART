@@ -50,9 +50,9 @@ public:
         m_uniformRealDistribution.reset();
     }
 
-    std::string describe() const override
+    void represent (std::ostream& stream) const
     {
-        return std::string ("WhiteNoise (" + std::to_string (m_randomSeed) + ")");
+        stream << "WhiteNoise (" << m_randomSeed << ")";
     }
 
     HART_SIGNAL_DEFINE_COPY_AND_MOVE (WhiteNoise);

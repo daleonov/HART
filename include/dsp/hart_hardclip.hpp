@@ -71,7 +71,7 @@ public:
         return numInputChannels == numOutputChannels;
     }
 
-    void print (std::ostream& stream) const override
+    void represent (std::ostream& stream) const override
     {
         stream << "HardClip (" << m_initialThresholdDb << ")";
     }

@@ -139,12 +139,14 @@ public:
     /// @details Just pick a macro to define it - see description for @ref copy() for details
     virtual std::unique_ptr<Signal<SampleType>> move() = 0;
 
-    /// @brief Makes a text representation of this object for test failure outputs.
-    /// @brief It is strongly encouraged to follow python's
+    /// @brief Makes a text representation of this Signal for test failure outputs.
+    /// @details It is strongly encouraged to follow python's
     /// <a href="https://docs.python.org/3/reference/datamodel.html#object.__repr__" target="_blank">repr()</a>
     /// conventions for returned text - basically, put something like "MyClass(value1, value2)" (with no quotes)
     /// into the stream whenever possible, or "<Readable info in angled brackets>" otherwise.
-    virtual std::string describe() const = 0;
+    /// Use @ref HART_DEFINE_GENERIC_REPRESENT() to get a basic implementation for this method.
+    /// @param[out] stream Output stream to write to
+    virtual void represent (std::ostream& stream) const = 0;
 
     /// @brief Adds a DSP effect to the end of signal's DSP chain by copying it
     /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
@@ -223,6 +225,18 @@ public:
             dsp->reset();
     }
 
+    /// @brief Makes a text representation of this signal and its entire signal chain for test failure outputs.
+    /// @details Used by "<<" operator
+    /// @private
+    /// @param[out] stream Output stream to write to
+    void representWithDSPChain (std::ostream& stream) const
+    {
+        represent (stream);
+
+        for (const auto& dsp : dspChain)
+            stream << " >> " << *dsp;
+    }
+
     /// @brief Helper for template resolution
     /// @private
     using m_SampleType = SampleType;
@@ -231,6 +245,16 @@ private:
     size_t m_numChannels = 1;
     std::vector<std::unique_ptr<DSP<SampleType>>> dspChain;
 };
+
+/// @brief Prints readable text representation of the Signal object into the I/O stream
+/// @relates Signal
+/// @ingroup Signals
+template<typename SampleType>
+std::ostream& operator<< (std::ostream& stream, const Signal<SampleType>& signal)
+{
+    signal.representWithDSPChain (stream);
+    return stream;
+}
 
 // TODO: Overload >> for unique ptrs (multiple)
 
@@ -261,7 +285,6 @@ Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, const DSP<SampleTy
 {
     return std::move (signal.followedBy (dsp));
 }
-
 
 }  // namespace hart
 

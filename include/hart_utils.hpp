@@ -93,4 +93,14 @@ std::unique_ptr<ObjectType> make_unique (Args&&... args)
     return std::unique_ptr<ObjectType> (new ObjectType (std::forward<Args> (args)...));
 }
 
+/// @brief Defines a basic string representation of your class
+/// @details If your class takes ctor arguments, it's strongly encouraged to make a proper
+/// implementation of represent(), so that you get more detailed test failure reports.
+/// See @ref DSP::represent(), @ref Macthers::represent(), @ref Signal::represent() for the description.
+#define HART_DEFINE_GENERIC_REPRESENT(ClassName) \
+    virtual void represent(std::ostream& stream) const override \
+    { \
+        stream << #ClassName "()"; \
+    }
+
 }  // namespace hart

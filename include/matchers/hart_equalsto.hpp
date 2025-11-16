@@ -79,7 +79,12 @@ public:
 
     std::string describe() const override
     {
-        return "Equals To: " + m_referenceSignal->describe();
+        return {};
+    }
+
+    void represent (std::ostream& stream) const
+    {
+        stream << "EqualsTo (" << *m_referenceSignal << ')';
     }
 
     HART_MATCHER_DEFINE_COPY_AND_MOVE (EqualsTo);

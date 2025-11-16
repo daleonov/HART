@@ -4,6 +4,7 @@
 #include <string>
 
 #include "signals/hart_signal.hpp"
+#include "hart_utils.hpp"  // HART_DEFINE_GENERIC_REPRESENT()
 
 namespace hart
 {
@@ -30,11 +31,7 @@ public:
 
     void reset() override {}
 
-    std::string describe() const override
-    {
-        return "Silence";
-    }
-
+    HART_DEFINE_GENERIC_REPRESENT (Silence);
     HART_SIGNAL_DEFINE_COPY_AND_MOVE (Silence);
 };
 

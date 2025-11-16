@@ -64,16 +64,31 @@ public:
     /// @details Just pick a macro to define it - see description for @ref copy() for details
     virtual std::unique_ptr<Matcher<SampleType>> move() = 0;
 
-    /// @brief Makes a text representation of this object for test failure outputs.
-    /// @brief It is strongly encouraged to follow python's
+    /// @brief Returns a description of why the macth has failed
+    virtual std::string describe() const = 0;
+
+    /// @brief Makes a text representation of this Macther for test failure outputs.
+    /// @details It is strongly encouraged to follow python's
     /// <a href="https://docs.python.org/3/reference/datamodel.html#object.__repr__" target="_blank">repr()</a>
     /// conventions for returned text - basically, put something like "MyClass(value1, value2)" (with no quotes)
     /// into the stream whenever possible, or "<Readable info in angled brackets>" otherwise.
-    virtual std::string describe() const = 0;
+    /// Use @ref HART_DEFINE_GENERIC_REPRESENT() to get a basic implementation for this method.
+    /// @param[out] stream Output stream to write to
+    virtual void represent (std::ostream& stream) const = 0;
 
     /// @brief Destructor
     virtual ~Matcher() = default;
 };
+
+/// @brief Prints readable text representation of the Matcher object into the I/O stream
+/// @relates Matcher
+/// @ingroup Matchers
+template <typename SampleType>
+inline std::ostream& operator<< (std::ostream& stream, const Matcher<SampleType>& dsp)
+{
+    dsp.represent (stream);
+    return stream;
+}
 
 /// @brief Defines @ref hart::Matcher::copy() and @ref hart::Matcher::move() methods
 /// @details Put this into your class body's ```public``` section if either is true:

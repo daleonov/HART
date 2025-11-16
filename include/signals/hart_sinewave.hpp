@@ -27,7 +27,7 @@ public:
             clampPhase();
 
             if (frequencyHz <= 0)
-                HART_THROW (hart::ValueError, std::string ("Invalid frequency value for: ") + describe());
+                HART_THROW (hart::ValueError, std::string ("Invalid frequency value"));
         }
 
     bool supportsNumChannels (size_t numChannels) const override { return true; };
@@ -58,9 +58,9 @@ public:
         m_phaseRadians = m_initialPhaseRadians;
     }
 
-    std::string describe() const override
+    void represent (std::ostream& stream) const
     {
-        return std::string ("Sine Wave, frequency = ") + std::to_string (m_frequencyHz) + "Hz, phase = " + std::to_string(m_initialPhaseRadians) + " radians";
+        stream << "SineWave (" << m_frequencyHz << ", " << m_initialPhaseRadians << ")";
     }
 
     HART_SIGNAL_DEFINE_COPY_AND_MOVE (SineWave);

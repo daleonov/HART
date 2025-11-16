@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <memory>
+#include <sstream>
 #include <vector>
 
 #include "hart_audio_buffer.hpp"
@@ -385,11 +386,28 @@ private:
             if (matchPassed != check.shouldPass)
             {
                 check.shouldSkip = true;
+                // TODO: Add optional label for each test
 
                 if (assertionLevel == SignalAssertionLevel::assert)
-                    throw hart::TestAssertException (std::string ("Assert failed: ") + matcher->describe());
+                {
+                    std::stringstream stream;
+                    stream << (check.shouldPass ? "assertTrue() failed" : "assertFalse() failed") << std::endl << *matcher;
+
+                    if (check.shouldPass)
+                        stream << std::endl << matcher->describe();
+
+                    throw hart::TestAssertException (std::string (stream.str()));
+                }
                 else
-                    hart::ExpectationFailureMessages::get().emplace_back (std::string ("Expect failed: ") + matcher->describe());
+                {
+                    std::stringstream stream;
+                    stream << (check.shouldPass ? "expectTrue() failed" : "expectFalse() failed") << std::endl << *matcher;
+
+                    if (check.shouldPass)
+                        stream << std::endl << matcher->describe();
+
+                    hart::ExpectationFailureMessages::get().emplace_back (stream.str());
+                }
 
                 // TODO: FIXME: Do not throw indife of per-block loop if requested to write input or output to a wav file, throw after the loop instead
                 // TODO: Stop processing if expect has failed and outputting to a file wasn't requested

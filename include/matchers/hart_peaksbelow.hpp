@@ -49,7 +49,12 @@ public:
 
     std::string describe() const override
     {
-        return std::string ("Peaks Below: ") + std::to_string (m_thresholdDb) + "dB";
+        return {};
+    }
+
+    void represent (std::ostream& stream) const
+    {
+        stream << "PeaksBelow (" << m_thresholdDb << ", " << m_thresholdLinear << ')';
     }
 
     HART_MATCHER_DEFINE_COPY_AND_MOVE (PeaksBelow);

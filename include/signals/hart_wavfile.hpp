@@ -53,7 +53,7 @@ public:
             );
 
         if (pcmFrames == nullptr)
-            HART_THROW_OR_RETURN_VOID (hart::IOError, std::string ("Could not read frames from the wav file: ") + describe());
+            HART_THROW_OR_RETURN_VOID (hart::IOError, std::string ("Could not read frames from the wav file"));
 
         m_wavFrames = std::make_shared<AudioBuffer<float>> (numChannels, numFrames);
 
@@ -80,10 +80,10 @@ public:
     {
         // There are a few ovbvious cases where channel number mismatch can be gracefully resolved - perhaps in the future
         if (numOutputChannels != m_wavNumChannels)
-            HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, std::string ("Unexpected channel number: ") + describe());
+            HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, std::string ("Unexpected channel number"));
 
         if (floatsNotEqual (sampleRateHz, m_wavSampleRateHz))
-            HART_THROW_OR_RETURN_VOID (hart::UnsupportedError, std::string ("Wav file is in different sampling rate, resampling not supported: ") + describe());
+            HART_THROW_OR_RETURN_VOID (hart::UnsupportedError, std::string ("Wav file is in different sampling rate, resampling not supported"));
     }
 
     void renderNextBlock (AudioBuffer<SampleType>& output) override
@@ -123,9 +123,9 @@ public:
         m_wavOffsetFrames = 0;
     }
 
-    std::string describe() const override
+    void represent (std::ostream& stream) const
     {
-        return std::string ("WavFile (\"") + m_filePath + (m_loop == Loop::yes ? "\", Loop::yes)" : "\", Loop::no)");
+        stream << "WavFile (\"" << m_filePath << (m_loop == Loop::yes ? "\", Loop::yes)" : "\", Loop::no)");
     }
 
     HART_SIGNAL_DEFINE_COPY_AND_MOVE (WavFile);
