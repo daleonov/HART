@@ -99,6 +99,7 @@ public:
     /// <a href="https://docs.python.org/3/reference/datamodel.html#object.__repr__" target="_blank">repr()</a>
     /// conventions for returned text - basically, put something like "MyClass(value1, value2)" (with no quotes)
     /// into the stream whenever possible, or "<Readable info in angled brackets>" otherwise.
+    /// Also, query @ref CLIConfig for number of displayed decimal places, whenever applicable.
     /// Use @ref HART_DEFINE_GENERIC_REPRESENT() to get a basic implementation for this method.
     /// @param[out] stream Output stream to write to
     virtual void represent (std::ostream& stream) const = 0;

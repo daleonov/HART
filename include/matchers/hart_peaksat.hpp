@@ -77,7 +77,7 @@ public:
     virtual MatcherFailureDetails getFailureDetails() const override
     {
         std::stringstream stream;
-        stream << std::fixed << std::setprecision (CLIConfig::get().getDbValueDisplayDecimals())
+        stream << std::fixed << std::setprecision (CLIConfig::get().getDbDecimals())
             << "Observed audio peaks at " << m_observedPeakDb << " dB";
 
         MatcherFailureDetails details;
@@ -89,7 +89,11 @@ public:
 
     void represent (std::ostream& stream) const
     {
-        stream << "PeaksAt (" << m_targetDb << ", " << m_toleranceLinear << ')';
+        stream << "PeaksAt ("
+            << std::fixed << std::setprecision (CLIConfig::get().getDbDecimals())
+            << m_targetDb << ", "
+            << std::fixed << std::setprecision (CLIConfig::get().getLinDecimals())
+            << m_toleranceLinear << ')';
     }
 
     HART_MATCHER_DEFINE_COPY_AND_MOVE (PeaksAt);

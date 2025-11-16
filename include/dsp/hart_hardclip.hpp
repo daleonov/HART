@@ -1,8 +1,10 @@
 #pragma once
 
-#include "hart_dsp.hpp"
-
 #include <algorithm>  // min(), max()
+#include <iomanip>
+
+#include "hart_cliconfig.hpp"
+#include "hart_dsp.hpp"
 
 namespace hart
 {
@@ -73,7 +75,8 @@ public:
 
     void represent (std::ostream& stream) const override
     {
-        stream << "HardClip (" << m_initialThresholdDb << ")";
+        stream << std::fixed << std::setprecision (CLIConfig::get().getDbDecimals())
+            << "HardClip (" << m_initialThresholdDb << ")";
     }
 
     /// @param id Only @ref HardClip::thresholdDb is accepted

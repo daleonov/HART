@@ -23,22 +23,34 @@ public:
         app.add_option ("--seed,-s", m_seed, "Random seed")->default_val (0);
 
         app.add_option (
-            "--linear-value-display-decimals",
-            m_linearValueDisplayDecimals,
+            "--lin-decimals",
+            m_linDecimals,
             "Number of displayed decimal places for samples' linear values in test output"
             )->default_val (6);
 
         app.add_option (
-            "--db-value-display-decimals",
-            m_dbValueDisplayDecimals,
+            "--db-decimals",
+            m_dbDecimals,
             "Number of displayed decimal places for values in decidels in test output"
             )->default_val (1);
 
         app.add_option (
-            "--seconds-value-display-decimals",
-            m_secondsValueDisplayDecimals,
+            "--sec-decimals",
+            m_secDecimals,
             "Number of displayed decimal places for values in seconds in test output"
             )->default_val (3);
+
+        app.add_option (
+            "--hz-decimals",
+            m_hzDecimals,
+            "Number of displayed decimal places for values in hertz in test output"
+            )->default_val (1);
+
+        app.add_option (
+            "--rad-decimals",
+            m_radDecimals,
+            "Number of displayed decimal places for values in radians in test output"
+            )->default_val (1);
 
         app.add_flag ("--generators", m_runGeneratorsNotTests, "Run generators instead of tests");
         app.add_flag ("--shuffle", m_shuffle, "Shuffle test order");
@@ -48,9 +60,12 @@ public:
 
     std::string getDataRootPath() { return m_dataRootPath; }
     uint_fast32_t getRandomSeed() { return m_seed; }
-    int getLinearValueDisplayDecimals() { return m_linearValueDisplayDecimals; }
-    int getDbValueDisplayDecimals() { return m_dbValueDisplayDecimals; }
-    int getSecondsValueDisplayDecimals() { return m_secondsValueDisplayDecimals; }
+
+    int getLinDecimals() { return m_linDecimals; }
+    int getDbDecimals() { return m_dbDecimals; }
+    int getSecDecimals() { return m_secDecimals; }
+    int getHzDecimals() { return m_hzDecimals; }
+    int getRadDecimals() { return m_radDecimals; }
 
 private:
 
@@ -60,9 +75,11 @@ private:
     bool m_runGeneratorsNotTests = false;
     bool m_shuffle = false;
 
-    int m_linearValueDisplayDecimals;
-    int m_dbValueDisplayDecimals;
-    int m_secondsValueDisplayDecimals;
+    int m_linDecimals;
+    int m_dbDecimals;
+    int m_secDecimals;
+    int m_hzDecimals;
+    int m_radDecimals;
 
     CLIConfig() = default;
 };

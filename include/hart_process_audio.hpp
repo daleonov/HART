@@ -424,9 +424,9 @@ private:
 
     void appendFailureDetails (std::stringstream& stream, const MatcherFailureDetails& details, AudioBuffer<SampleType>& observedAudioBlock)
     {
-        const int linDecimals = CLIConfig::get().getLinearValueDisplayDecimals();
-        const int dbDecimals = CLIConfig::get().getDbValueDisplayDecimals();
-        const int secDecimals = CLIConfig::get().getSecondsValueDisplayDecimals();
+        const int linDecimals = CLIConfig::get().getLinDecimals();
+        const int dbDecimals = CLIConfig::get().getDbDecimals();
+        const int secDecimals = CLIConfig::get().getSecDecimals();
 
         const double timestampSeconds = static_cast<double> (offsetFrames + details.frame) / m_sampleRateHz;
         const SampleType sampleValue = observedAudioBlock[details.channel][details.frame];

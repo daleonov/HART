@@ -93,8 +93,8 @@ public:
 
     virtual MatcherFailureDetails getFailureDetails() const override
     {
-        const int linDecimals = CLIConfig::get().getLinearValueDisplayDecimals();
-        const int dbDecimals = CLIConfig::get().getDbValueDisplayDecimals();
+        const int linDecimals = CLIConfig::get().getLinDecimals();
+        const int dbDecimals = CLIConfig::get().getDbDecimals();
         const SampleType m_differenceLinear = std::abs (m_failedExpectedValue - m_failedObservedValue);
 
         std::stringstream stream;
@@ -116,7 +116,9 @@ public:
 
     void represent (std::ostream& stream) const
     {
-        stream << "EqualsTo (" << *m_referenceSignal << ", " << m_toleranceLinear << ')';
+        stream << "EqualsTo (" << *m_referenceSignal
+            << std::fixed << std::setprecision (CLIConfig::get().getLinDecimals())
+            << ", " << m_toleranceLinear << ')';
     }
 
     HART_MATCHER_DEFINE_COPY_AND_MOVE (EqualsTo);

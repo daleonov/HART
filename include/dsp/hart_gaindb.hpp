@@ -1,8 +1,10 @@
 #pragma once
 
 #include <algorithm>  // fill()
+#include <iomanip>
 #include <vector>
 
+#include "hart_cliconfig.hpp"
 #include "hart_dsp.hpp"
 #include "hart_utils.hpp"
 
@@ -105,7 +107,8 @@ public:
 
     virtual void represent (std::ostream& stream) const override
     {
-        stream << "GainDb (" << m_initialGainDb << ")";
+        stream << std::fixed << std::setprecision (CLIConfig::get().getDbDecimals())
+            << "GainDb (" << m_initialGainDb << ")";
     }
 
     /// @param id Only @ref GainDb::gainDb is accepted

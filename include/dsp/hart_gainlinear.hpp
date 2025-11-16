@@ -1,8 +1,10 @@
 #pragma once
 
 #include <algorithm>  // fill()
+#include <iomanip>
 #include <vector>
 
+#include "hart_cliconfig.hpp"
 #include "hart_dsp.hpp"
 
 namespace hart
@@ -94,7 +96,8 @@ public:
 
     virtual void represent (std::ostream& stream) const override
     {
-        stream << "GainLinear (" << m_initialGainLinear << ")";
+        stream << std::fixed << std::setprecision (CLIConfig::get().getLinDecimals())
+            << "GainLinear (" << m_initialGainLinear << ")";
     }
 
     /// @param id Only @ref GainLinear::gainLinear is accepted

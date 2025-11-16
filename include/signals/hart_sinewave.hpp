@@ -1,9 +1,10 @@
 #pragma once
 
 #include <cmath>
+#include <iomanip>
 #include <memory>
-#include <string>
 
+#include "hart_cliconfig.hpp"
 #include "hart_exceptions.hpp"
 #include "signals/hart_signal.hpp"
 #include "hart_utils.hpp"
@@ -27,7 +28,7 @@ public:
             clampPhase();
 
             if (frequencyHz <= 0)
-                HART_THROW (hart::ValueError, std::string ("Invalid frequency value"));
+                HART_THROW (hart::ValueError, "Invalid frequency value");
         }
 
     bool supportsNumChannels (size_t numChannels) const override { return true; };
@@ -60,7 +61,12 @@ public:
 
     void represent (std::ostream& stream) const
     {
-        stream << "SineWave (" << m_frequencyHz << ", " << m_initialPhaseRadians << ")";
+        stream
+            << "SineWave ("
+            << std::fixed << std::setprecision (CLIConfig::get().getHzDecimals())
+            << m_frequencyHz << ", "
+            << std::setprecision (CLIConfig::get().getRadDecimals())
+            << m_initialPhaseRadians << ")";
     }
 
     HART_SIGNAL_DEFINE_COPY_AND_MOVE (SineWave);
