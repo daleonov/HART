@@ -23,10 +23,10 @@ public:
     /// @brief Creates a matcher for a specific peak level
     /// @param targetDb Expected sample peak value in decibels
     /// @param toleranceLinear Absolute tolerance for comparing frames, in linear domain (not decibels)
-    PeaksAt (SampleType targetDb, SampleType toleranceLinear = 1e-3):
-        m_targetDb (targetDb),
-        m_targetLinear (decibelsToRatio (targetDb)),
-        m_toleranceLinear (toleranceLinear)
+    PeaksAt (double targetDb, double toleranceLinear = 1e-3):
+        m_targetDb ((SampleType) targetDb),
+        m_targetLinear ((SampleType) decibelsToRatio (targetDb)),
+        m_toleranceLinear ((SampleType) toleranceLinear)
     {
     }
 

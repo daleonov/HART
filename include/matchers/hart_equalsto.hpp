@@ -24,11 +24,11 @@ public:
     /// complex signal with DSP effects chain and automation envelopes.
     /// @note Tip: To compare audio to a pre-recorded wav file, you can use @ref WavFile.
     /// @param referenceSignal Signal to compare the incoming audio against
-    /// @param epsilon Absolute tolerance for comparing frames, in linear domain (not decibels)
+    /// @param toleranceLinear Absolute tolerance for comparing frames, in linear domain (not decibels)
     template <typename SignalType>
-    EqualsTo (const SignalType& referenceSignal, SampleType epsilon = (SampleType) 1e-5):
+    EqualsTo (const SignalType& referenceSignal, double toleranceLinear = (SampleType) 1e-5):
         m_referenceSignal (referenceSignal.copy()),
-        m_epsilon (epsilon)
+        m_toleranceLinear ((SampleType) toleranceLinear)
     {
         using DecayedType = typename std::decay<SignalType>::type;
         static_assert (
@@ -37,15 +37,15 @@ public:
             );
     }
 
-    EqualsTo (EqualsTo&& other):
+    EqualsTo (EqualsTo&& other) noexcept:
         m_referenceSignal (std::move (other.m_referenceSignal)),
-        m_epsilon (other.m_epsilon)
+        m_toleranceLinear (other.m_toleranceLinear)
     {
     }
 
     EqualsTo (const EqualsTo& other):
         m_referenceSignal (other.m_referenceSignal != nullptr ? other.m_referenceSignal->copy() : nullptr),
-        m_epsilon (other.m_epsilon)
+        m_toleranceLinear (other.m_toleranceLinear)
     {
     }
 
@@ -86,11 +86,11 @@ public:
 
 private:
     std::unique_ptr<Signal<SampleType>> m_referenceSignal;
-    const SampleType m_epsilon;
+    const SampleType m_toleranceLinear;
 
-    bool notEqual (SampleType x, SampleType y)
+    inline bool notEqual (SampleType x, SampleType y)
     {
-        return std::abs (x - y) > m_epsilon;
+        return std::abs (x - y) > m_toleranceLinear;
     }
 };
 

@@ -114,28 +114,28 @@ private:
     {
         for (size_t channel = 0; channel < input.getNumChannels(); ++channel)
             for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
-                output[channel][frame] = input[channel][frame] * m_gainLinear;
+                output[channel][frame] = input[channel][frame] * (SampleType) m_gainLinear;
     }
 
     void processConstantGainAsMultiplexer (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
     {
         for (size_t channel = 0; channel < output.getNumChannels(); ++channel)
             for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
-                output[channel][frame] = input[0][frame] * m_gainLinear;
+                output[channel][frame] = input[0][frame] * (SampleType) m_gainLinear;
     }
 
     void processEnvelopedGainAsMultiChannel (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const std::vector<double>& gainEnvelopeValues)
     {
         for (size_t channel = 0; channel < input.getNumChannels(); ++channel)
             for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
-                output[channel][frame] = input[channel][frame] * gainEnvelopeValues[frame];
+                output[channel][frame] = input[channel][frame] * (SampleType) gainEnvelopeValues[frame];
     }
 
     void processEnvelopedGainAsMultiplexer (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const std::vector<double>& gainEnvelopeValues)
     {
         for (size_t channel = 0; channel < output.getNumChannels(); ++channel)
             for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
-                output[channel][frame] = input[0][frame] * gainEnvelopeValues[frame];
+                output[channel][frame] = input[0][frame] * (SampleType) gainEnvelopeValues[frame];
     }
 };
 
