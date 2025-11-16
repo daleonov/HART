@@ -4,6 +4,7 @@
 #include <string>
 
 #include "hart_audio_buffer.hpp"
+#include "hart_matcher_failure_details.hpp"
 #include "hart_utils.hpp"  // make_unique()
 
 /// @defgroup Matchers Matchers
@@ -64,8 +65,17 @@ public:
     /// @details Just pick a macro to define it - see description for @ref copy() for details
     virtual std::unique_ptr<Matcher<SampleType>> move() = 0;
 
-    /// @brief Returns a description of why the macth has failed
-    virtual std::string describe() const = 0;
+    /// @brief Returns a description of why the match has failed
+    /// @details It is guaranteed to be called strictly after calling match(), or not called at all
+    /// @note This method is a callback for the test host, so you probably don't need to call it
+    /// yourself ever. If you're making a custom matcher, use it to communicate the data with test host.
+    /// @retval MatcherFailureDetails::frame Index of frame at which the match has failed
+    /// @retval MatcherFailureDetails::channel Index of channel at which the failure was detected
+    /// @retval MatcherFailureDetails::description Readable description of why the match has failed.
+    /// Do not include the value of observed frame value or its timing in the description, as well as
+    /// any of values printed by represent(), as all of this will be added to the output anyway.
+    /// @see MatcherFailureDetails
+    virtual MatcherFailureDetails getFailureDetails() const = 0;
 
     /// @brief Makes a text representation of this Macther for test failure outputs.
     /// @details It is strongly encouraged to follow python's

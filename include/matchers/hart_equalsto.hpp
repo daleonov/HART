@@ -1,9 +1,12 @@
 #pragma once
 
 #include <cmath>  // abs()
+#include <iomanip>
+#include <sstream>
 
 #include "matchers/hart_matcher.hpp"
 #include "signals/hart_signal.hpp"
+#include "hart_utils.hpp"
 
 namespace hart
 {
@@ -60,9 +63,19 @@ public:
         m_referenceSignal->renderNextBlockWithDSPChain (referenceAudio);
 
         for (size_t channel = 0; channel < referenceAudio.getNumChannels(); ++channel)
+        {
             for (size_t frame = 0; frame < referenceAudio.getNumFrames(); ++frame)
+            {
                 if (notEqual (observedAudio[channel][frame], referenceAudio[channel][frame]))
+                {
+                    m_failedFrame = frame;
+                    m_failedChannel = (int) channel;
+                    m_failedObservedValue = observedAudio[channel][frame];
+                    m_failedExpectedValue = referenceAudio[channel][frame];
                     return false;
+                }
+            }
+        }
 
         return true;
     }
@@ -77,14 +90,29 @@ public:
         m_referenceSignal->resetWithDSPChain();
     }
 
-    std::string describe() const override
+    virtual MatcherFailureDetails getFailureDetails() const override
     {
-        return {};
+        std::stringstream stream;
+        const SampleType m_differenceLinear = std::abs (m_failedExpectedValue - m_failedObservedValue);
+        stream << std::fixed << std::setprecision (8)
+            << "Expected sample value: " << m_failedExpectedValue
+            << std::setprecision (1)
+            << " (" << ratioToDecibels (m_failedExpectedValue) << " dB)"
+            <<  std::setprecision (8)
+            << ", difference: " << m_differenceLinear
+            << std::setprecision (1)
+            << " (" << ratioToDecibels (m_differenceLinear) << " dB)";
+
+        MatcherFailureDetails details;
+        details.frame = m_failedFrame;
+        details.channel = m_failedChannel;
+        details.description = std::move (stream.str());
+        return details;
     }
 
     void represent (std::ostream& stream) const
     {
-        stream << "EqualsTo (" << *m_referenceSignal << ')';
+        stream << "EqualsTo (" << *m_referenceSignal << ", " << m_toleranceLinear << ')';
     }
 
     HART_MATCHER_DEFINE_COPY_AND_MOVE (EqualsTo);
@@ -92,6 +120,11 @@ public:
 private:
     std::unique_ptr<Signal<SampleType>> m_referenceSignal;
     const SampleType m_toleranceLinear;
+
+    size_t m_failedFrame;
+    int m_failedChannel;
+    SampleType m_failedObservedValue;
+    SampleType m_failedExpectedValue;
 
     inline bool notEqual (SampleType x, SampleType y)
     {

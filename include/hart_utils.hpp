@@ -31,7 +31,7 @@ inline static SampleType decibelsToRatio (SampleType valueDb)
     if (valueDb < -120)
         return 0;
 
-    return std::pow ((SampleType) 10, valueDb / ((SampleType) 20));
+    return std::pow (static_cast<SampleType> (10), valueDb / static_cast<SampleType> (20));
 }
 
 template <typename SampleType>
@@ -40,7 +40,7 @@ inline static SampleType ratioToDecibels (SampleType valueLinear)
     if (valueLinear < 1e-6)
         return -120;
 
-    return std::pow ((SampleType) 10, valueLinear / ((SampleType) 20));
+    return static_cast<SampleType> (20 * std::log10 (valueLinear));
 }
 
 template <typename SampleType>

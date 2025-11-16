@@ -2,9 +2,11 @@
 
 #include <algorithm>  // max()
 #include <cmath>  // abs()
+#include <iomanip>
+#include <sstream>
 
 #include "matchers/hart_matcher.hpp"
-#include "hart_utils.hpp"  // decibelsToRatio()
+#include "hart_utils.hpp"  // decibelsToRatio(), ratioToDecibels()
 
 namespace hart
 {
@@ -35,12 +37,33 @@ public:
     bool match (const AudioBuffer<SampleType>& observedAudio) override
     {
         SampleType observedPeakLinear = 0;
+        size_t frameOfObservedPeakLinear = 0;
+        size_t channelOfObservedPeakLinear = 0;
 
         for (size_t channel = 0; channel < observedAudio.getNumChannels(); ++channel)
+        {
             for (size_t frame = 0; frame < observedAudio.getNumFrames(); ++frame)
-                observedPeakLinear = std::max (observedPeakLinear, std::abs (observedAudio[channel][frame]));
+            {
+                const SampleType currentPeakLinear = std::abs (observedAudio[channel][frame]);
 
-        return std::abs (observedPeakLinear - m_targetLinear) < m_toleranceLinear;
+                if (currentPeakLinear > observedPeakLinear)
+                {
+                    observedPeakLinear = currentPeakLinear;
+                    frameOfObservedPeakLinear = frame;
+                    channelOfObservedPeakLinear = channel;
+                }
+            }
+        }
+
+        if (std::abs (observedPeakLinear - m_targetLinear) > m_toleranceLinear)
+        {
+            m_failedFrame = frameOfObservedPeakLinear;
+            m_failedChannel = (int) channelOfObservedPeakLinear;
+            m_observedPeakDb = ratioToDecibels (observedPeakLinear);
+            return false;
+        }
+
+        return true;
     }
 
     bool canOperatePerBlock() override
@@ -50,14 +73,22 @@ public:
 
     void reset() override {}
 
-    std::string describe() const override
+    virtual MatcherFailureDetails getFailureDetails() const override
     {
-        return {};
+        std::stringstream stream;
+        stream << std::fixed << std::setprecision (1)
+            << "Observed audio peaks at " << m_observedPeakDb << "dB";
+
+        MatcherFailureDetails details;
+        details.frame = m_failedFrame;
+        details.channel = m_failedChannel;
+        details.description = std::move (stream.str());
+        return details;
     }
 
     void represent (std::ostream& stream) const
     {
-        stream << "PeaksAt(" << m_targetDb << ", " << m_toleranceLinear << ')';
+        stream << "PeaksAt (" << m_targetDb << ", " << m_toleranceLinear << ')';
     }
 
     HART_MATCHER_DEFINE_COPY_AND_MOVE (PeaksAt);
@@ -66,6 +97,10 @@ private:
     const SampleType m_targetDb;
     const SampleType m_targetLinear;
     const SampleType m_toleranceLinear;
+
+    size_t m_failedFrame;
+    int m_failedChannel;
+    SampleType m_observedPeakDb;
 };
 
 }  // namespace hart

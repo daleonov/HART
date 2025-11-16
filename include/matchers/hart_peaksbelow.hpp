@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cmath>  // abs()
+#include <iomanip>
+#include <sstream>
 
 #include "matchers/hart_matcher.hpp"
 #include "hart_utils.hpp"  // decibelsToRatio()
@@ -33,9 +35,20 @@ public:
     bool match (const AudioBuffer<SampleType>& observedAudio) override
     {
         for (size_t channel = 0; channel < observedAudio.getNumChannels(); ++channel)
+        {
             for (size_t frame = 0; frame < observedAudio.getNumFrames(); ++frame)
-                if (std::abs (observedAudio[channel][frame]) > m_thresholdLinear)
+            {
+                const SampleType observedPeakLinear = std::abs (observedAudio[channel][frame]);
+
+                if (observedPeakLinear > m_thresholdLinear)
+                {
+                    m_failedFrame = frame;
+                    m_failedChannel = channel;
+                    m_observedPeakDb = ratioToDecibels (observedPeakLinear);
                     return false;
+                }
+            }
+        }
 
         return true;
     }
@@ -47,9 +60,17 @@ public:
 
     void reset() override {}
 
-    std::string describe() const override
+    virtual MatcherFailureDetails getFailureDetails() const override
     {
-        return {};
+        std::stringstream stream;
+        stream << std::fixed << std::setprecision (1)
+            << "Observed audio peaks at " << m_observedPeakDb << " dB";
+
+        MatcherFailureDetails details;
+        details.frame = m_failedFrame;
+        details.channel = m_failedChannel;
+        details.description = std::move (stream.str());
+        return details;
     }
 
     void represent (std::ostream& stream) const
@@ -62,6 +83,10 @@ public:
 private:
     const SampleType m_thresholdDb;
     const SampleType m_thresholdLinear;
+
+    size_t m_failedFrame;
+    int m_failedChannel;
+    SampleType m_observedPeakDb;
 };
 
 }  // namespace hart

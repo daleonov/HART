@@ -3,6 +3,7 @@
 #include <algorithm>  // min()
 #include <cassert>
 #include <cmath>
+#include <iomanip>
 #include <memory>
 #include <sstream>
 #include <vector>
@@ -275,7 +276,7 @@ public:
 
         m_inputSignal->resetWithDSPChain();
         m_inputSignal->prepareWithDSPChain (m_sampleRateHz, m_numInputChannels, m_blockSizeFrames);
-        size_t offsetFrames = 0;
+        offsetFrames = 0;
 
         AudioBuffer<SampleType> fullOutputBuffer (m_numOutputChannels);
         bool atLeastOneCheckFailed = false;
@@ -335,6 +336,7 @@ private:
     std::vector<ParamValue> paramValues;
     double m_durationSeconds = 0.1;
     size_t m_durationFrames = static_cast<size_t> (m_durationSeconds * m_sampleRateHz);
+    size_t offsetFrames = 0;
 
     std::vector<Check> perBlockChecks;
     std::vector<Check> fullSignalChecks;
@@ -394,7 +396,7 @@ private:
                     stream << (check.shouldPass ? "assertTrue() failed" : "assertFalse() failed") << std::endl << *matcher;
 
                     if (check.shouldPass)
-                        stream << std::endl << matcher->describe();
+                        appendFailureDetails (stream, matcher->getFailureDetails(), outputBlock);
 
                     throw hart::TestAssertException (std::string (stream.str()));
                 }
@@ -404,7 +406,7 @@ private:
                     stream << (check.shouldPass ? "expectTrue() failed" : "expectFalse() failed") << std::endl << *matcher;
 
                     if (check.shouldPass)
-                        stream << std::endl << matcher->describe();
+                        appendFailureDetails (stream, matcher->getFailureDetails(), outputBlock);
 
                     hart::ExpectationFailureMessages::get().emplace_back (stream.str());
                 }
@@ -417,6 +419,23 @@ private:
         }
 
         return true;
+    }
+
+    void appendFailureDetails (std::stringstream& stream, const MatcherFailureDetails& details, AudioBuffer<SampleType>& observedAudioBlock)
+    {
+        const double timestampSeconds = static_cast<double> (offsetFrames + details.frame) / m_sampleRateHz;
+        const SampleType sampleValue = observedAudioBlock[details.channel][details.frame];
+
+        stream << std::endl
+            << "Channel: " << details.channel << std::endl
+            << "Frame: " << details.frame << std::endl
+            << std::fixed << std::setprecision (3)
+            << "Time: " << timestampSeconds << " seconds" << std::endl
+            << std::setprecision (8)
+            << "Sample value: " << sampleValue
+            << std::setprecision (1)
+            << " (" << ratioToDecibels (std::abs (sampleValue)) << " dB)" << std::endl
+            << details.description;
     }
 };
 
