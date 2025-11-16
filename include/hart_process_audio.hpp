@@ -12,6 +12,7 @@
 #include "matchers/hart_matcher.hpp"
 #include "hart_wavwriter.hpp"
 #include "signals/hart_signals_all.hpp"
+#include "hart_utils.hpp"  // make_unique()
 
 namespace hart {
 
@@ -162,7 +163,12 @@ public:
     template <typename MatcherType>
     AudioTestBuilder& expectTrue (MatcherType&& matcher)
     {
-        static_assert (std::is_base_of_v<Matcher<SampleType>, std::decay_t<MatcherType>>, "MatcherType must be a hart::Matcher subclass");
+        using DecayedType = typename std::decay<MatcherType>::type;
+        static_assert (
+            std::is_base_of<Matcher<SampleType>, DecayedType>::value,
+            "MatcherType must be a hart::Matcher subclass"
+            );
+
         addCheck (std::forward<MatcherType>(matcher), SignalAssertionLevel::expect, true);
         return *this;
     }
@@ -176,7 +182,11 @@ public:
     template <typename MatcherType>
     AudioTestBuilder& expectFalse (MatcherType&& matcher)
     {
-        static_assert (std::is_base_of_v<Matcher<SampleType>, std::decay_t<MatcherType>>, "MatcherType must be a hart::Matcher subclass");
+        using DecayedType = typename std::decay<MatcherType>::type;
+        static_assert (
+            std::is_base_of<Matcher<SampleType>, DecayedType>::value,
+            "MatcherType must be a hart::Matcher subclass"
+            );
         addCheck (std::forward<MatcherType>(matcher), SignalAssertionLevel::expect, false);
         return *this;
     }
@@ -190,7 +200,11 @@ public:
     template <typename MatcherType>
     AudioTestBuilder& assertTrue (MatcherType&& matcher)
     {
-        static_assert (std::is_base_of_v<Matcher<SampleType>, std::decay_t<MatcherType>>, "MatcherType must be a hart::Matcher subclass");
+        using DecayedType = typename std::decay<MatcherType>::type;
+        static_assert (
+            std::is_base_of<Matcher<SampleType>, DecayedType>::value,
+            "MatcherType must be a hart::Matcher subclass"
+            );
         addCheck (std::forward<MatcherType>(matcher), SignalAssertionLevel::assert, true);
         return *this;
     }
@@ -204,7 +218,11 @@ public:
     template <typename MatcherType>
     AudioTestBuilder& assertFalse (MatcherType&& matcher)
     {
-        static_assert (std::is_base_of_v<Matcher<SampleType>, std::decay_t<MatcherType>>, "MatcherType must be a hart::Matcher subclass");
+        using DecayedType = typename std::decay<MatcherType>::type;
+        static_assert (
+            std::is_base_of<Matcher<SampleType>, DecayedType>::value,
+            "MatcherType must be a hart::Matcher subclass"
+            );
         addCheck (std::forward<MatcherType>(matcher), SignalAssertionLevel::assert, false);
         return *this;
     }
@@ -338,10 +356,14 @@ private:
     template <typename MatcherType>
     void addCheck (MatcherType&& matcher, SignalAssertionLevel signalAssertionLevel, bool shouldPass)
     {
-        static_assert (std::is_base_of_v<Matcher<SampleType>, std::decay_t<MatcherType>>, "MatcherType must be a hart::Matcher subclass");
+        using DecayedType = typename std::decay<MatcherType>::type;
+        static_assert (
+            std::is_base_of<Matcher<SampleType>, DecayedType>::value,
+            "MatcherType must be a hart::Matcher subclass"
+            );
         auto& checksGroup = matcher.canOperatePerBlock() ? perBlockChecks : fullSignalChecks;
         checksGroup.emplace_back (AudioTestBuilder::Check {
-            std::make_unique<std::decay_t<MatcherType>> (std::forward<MatcherType> (matcher)),
+            hart::make_unique<DecayedType> (std::forward<MatcherType> (matcher)),
             signalAssertionLevel,
             false,  // shouldSkip
             shouldPass

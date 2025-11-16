@@ -8,6 +8,7 @@
 
 #include "hart_audio_buffer.hpp"
 #include "envelopes/hart_envelope.hpp"
+#include "hart_utils.hpp"  // make_unique()
 
 namespace hart
 {
@@ -182,7 +183,7 @@ public:
         if (! supportsEnvelopeFor(paramId))
             HART_THROW_OR_RETURN (hart::UnsupportedError, std::string ("DSP doesn't support envelopes for param ID: ") + std::to_string (paramId), *this);
 
-        m_envelopes.emplace (paramId, std::make_unique<Envelope> (std::move (envelope)));
+        m_envelopes.emplace (paramId, hart::make_unique<Envelope> (std::move (envelope)));
         return *this;
     }
 
@@ -326,10 +327,10 @@ inline std::ostream& operator<< (std::ostream& stream, const DSP<SampleType>& ds
 /// @ingroup DSP
 #define HART_DSP_DEFINE_COPY_AND_MOVE(ClassName) \
     std::unique_ptr<DSP<SampleType>> copy() const override { \
-        return std::make_unique<ClassName> (*this); \
+        return hart::make_unique<ClassName> (*this); \
     } \
     std::unique_ptr<DSP<SampleType>> move() override { \
-        return std::make_unique<ClassName> (std::move (*this)); \
+        return hart::make_unique<ClassName> (std::move (*this)); \
     }
 
 /// @brief Forbids @ref hart::DSP::copy() and @ref hart::DSP::move() methods
@@ -342,7 +343,7 @@ inline std::ostream& operator<< (std::ostream& stream, const DSP<SampleType>& ds
 /// by reference, copy or explicit move, but you still can pass
 /// it wrapped into a smart pointer like so:
 /// ```cpp
-/// processAudioWith (std::make_unique<MyDspType>()).withThis().withThat().process();
+/// processAudioWith (hart::make_unique<MyDspType>()).withThis().withThat().process();
 /// ```
 /// But it's still better to get your move and copy semantics figured out - this is a
 /// perfect chance to stress-test your effect's resource management, among other things!

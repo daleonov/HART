@@ -30,7 +30,11 @@ public:
         m_referenceSignal (referenceSignal.copy()),
         m_epsilon (epsilon)
     {
-        static_assert (std::is_base_of_v<Signal<SampleType>, std::decay_t<SignalType>>, "SignalType must be a hart::Signal subclass");
+        using DecayedType = typename std::decay<SignalType>::type;
+        static_assert (
+            std::is_base_of<Signal<SampleType>, DecayedType>::value,
+            "SignalType must be a hart::Signal subclass"
+            );
     }
 
     EqualsTo (EqualsTo&& other):

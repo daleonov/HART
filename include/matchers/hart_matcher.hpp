@@ -4,6 +4,7 @@
 #include <string>
 
 #include "hart_audio_buffer.hpp"
+#include "hart_utils.hpp"  // make_unique()
 
 /// @defgroup Matchers Matchers
 /// @brief Check audio
@@ -69,6 +70,9 @@ public:
     /// conventions for returned text - basically, put something like "MyClass(value1, value2)" (with no quotes)
     /// into the stream whenever possible, or "<Readable info in angled brackets>" otherwise.
     virtual std::string describe() const = 0;
+
+    /// @brief Destructor
+    virtual ~Matcher() = default;
 };
 
 /// @brief Defines @ref hart::Matcher::copy() and @ref hart::Matcher::move() methods
@@ -85,10 +89,10 @@ public:
 /// @ingroup Matchers
 #define HART_MATCHER_DEFINE_COPY_AND_MOVE(ClassName) \
     std::unique_ptr<Matcher<SampleType>> copy() const override { \
-        return std::make_unique<ClassName> (*this); \
+        return hart::make_unique<ClassName> (*this); \
     } \
     std::unique_ptr<Matcher<SampleType>> move() override { \
-        return std::make_unique<ClassName> (std::move (*this)); \
+        return hart::make_unique<ClassName> (std::move (*this)); \
     }
 
 /// @brief Forbids @ref hart::Matcher::copy() and @ref hart::Matcher::move() methods
@@ -101,7 +105,7 @@ public:
 /// by reference, copy or explicit move, but you still can pass
 /// it wrapped into a smart pointer like so:
 /// ```cpp
-/// processAudioWith (std::make_unique<MyDspType>()).withThis().withThat().process();
+/// processAudioWith (hart::make_unique<MyDspType>()).withThis().withThat().process();
 /// ```
 /// But it's still better to get your move and copy semantics figured out - this is a
 /// perfect chance to stress-test your effect's resource management, among other things!

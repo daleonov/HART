@@ -159,11 +159,14 @@ public:
     /// @brief Adds a DSP effect to the end of signal's DSP chain by moving it
     /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
     /// @param dsp A DSP effect instance
-    template <typename DerivedDSP, typename = std::enable_if_t<std::is_base_of_v<DSP<SampleType>, std::decay_t<DerivedDSP>>>>
+
+    template <typename DerivedDSP,
+              typename = typename std::enable_if<std::is_base_of<DSP<SampleType>,
+                                                                 typename std::decay<DerivedDSP>::type>::value>::type>
     Signal& followedBy (DerivedDSP&& dsp)
     {
         dspChain.emplace_back (
-            std::make_unique<std::decay_t<DerivedDSP>> (std::forward<DerivedDSP> (dsp))
+            hart::make_unique<typename std::decay<DerivedDSP>::type> (std::forward<DerivedDSP> (dsp))
         );
         return *this;
     }
@@ -234,7 +237,8 @@ private:
 /// @brief Adds a DSP effect to the end of signal's DSP chain by moving it
 /// @relates Signal
 /// @ingroup Signals
-template<typename SampleType, typename DerivedDSP, std::enable_if_t<std::is_base_of_v<DSP<SampleType>, std::decay_t<DerivedDSP>>>>
+template<typename SampleType,
+         typename DerivedDSP, typename std::enable_if<std::is_base_of<DSP<SampleType>, typename std::decay<DerivedDSP>::type>::value>::type>
 Signal<SampleType>& operator>> (Signal<SampleType>& signal, DerivedDSP&& dsp)
 {
     return signal.followedBy (std::move (dsp));
@@ -275,10 +279,10 @@ Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, const DSP<SampleTy
 /// @ingroup Signals
 #define HART_SIGNAL_DEFINE_COPY_AND_MOVE(ClassName) \
     std::unique_ptr<Signal<SampleType>> copy() const override { \
-        return std::make_unique<ClassName> (*this); \
+        return hart::make_unique<ClassName> (*this); \
     } \
     std::unique_ptr<Signal<SampleType>> move() override { \
-        return std::make_unique<ClassName> (std::move (*this)); \
+        return hart::make_unique<ClassName> (std::move (*this)); \
     }
 
 /// @brief Forbids @ref hart::Signal::copy() and @ref hart::Signal::move() methods
@@ -292,8 +296,8 @@ Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, const DSP<SampleTy
 /// it wrapped into a smart pointer like so:
 /// ```cpp
 /// processAudioWith (MyDSP())
-///    .withInputSignal(std::make_unique<MyDspType>())  // As input signal
-///    .expectTrue (EqualsTo (std::make_unique<MyDspType>()))  // As reference signal
+///    .withInputSignal(hart::make_unique<MyDspType>())  // As input signal
+///    .expectTrue (EqualsTo (hart::make_unique<MyDspType>()))  // As reference signal
 ///    .process();
 /// ```
 /// @ingroup Signals

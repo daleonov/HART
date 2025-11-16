@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <cmath>  // pow(), abs()
 
 #include "envelopes/hart_envelope.hpp"
@@ -61,20 +62,22 @@ public:
 
     SegmentedEnvelope& hold (double duration_s)
     {
-        m_segments.push_back ({duration_s, m_endValue, Shape::linear, true});
+        //m_segments.emplace_back (duration_s, m_endValue, Shape::linear, true);
+        m_segments.push_back (Segment { duration_s, m_endValue, Shape::linear, true });
         return *this;
     }
 
     SegmentedEnvelope& rampTo (double targetValue, double duration_s, Shape shape = Shape::linear)
     {
-        m_segments.push_back ({duration_s, targetValue, shape, false});
+        m_segments.push_back (Segment { duration_s, targetValue, shape, false });
+        //m_segments.emplace_back (duration_s, targetValue, shape, false);
         m_endValue = targetValue;
         return *this;
     }
 
     std::unique_ptr<Envelope> copy() const override
     {
-        return std::make_unique<SegmentedEnvelope> (*this);
+        return hart::make_unique<SegmentedEnvelope> (*this);
     }
 
 private:
@@ -82,8 +85,11 @@ private:
     {
         double durationSeconds;
         double targetValue;
-        Shape shape = Shape::linear;
-        bool isHold = false;
+        Shape shape;
+        bool isHold;
+
+        Segment (double d, double t, Shape s = Shape::linear, bool h = false):
+            durationSeconds (d), targetValue (t), shape (s), isHold (h) {}
     };
 
     const double m_resetValue;

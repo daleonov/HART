@@ -14,6 +14,7 @@ namespace hart
 
 // TODO: skipTo()
 // TODO: Add "normalize" option?
+// TODO: Add an entity that reuses wav data if a WavFile for a previously opened file gets instantiated
 
 /// @brief Produces audio from a wav file
 /// @details Original levels from the wav file are preserved

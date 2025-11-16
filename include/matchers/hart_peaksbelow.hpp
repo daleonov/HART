@@ -24,7 +24,7 @@ public:
     /// @param toleranceLinear Absolute tolerance for comparing frames, in linear domain (not decibels)
     PeaksBelow (SampleType thresholdDb, SampleType toleranceLinear = 1e-3):
         m_thresholdDb (thresholdDb),
-        m_thresholdLinear (decibelsToRatio (thresholdDb) + m_toleranceLinear)
+        m_thresholdLinear (decibelsToRatio (thresholdDb) + toleranceLinear)
     {
     }
 

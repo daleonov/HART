@@ -1,5 +1,16 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.10)  # Can build with older cmake versions, but pre-3.10 requirement triggers warning on modern systems
 project(HART VERSION 0.0.1 LANGUAGES C CXX)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_library(HART INTERFACE)
+
+target_include_directories(HART INTERFACE
+    include/
+    dependencies/CLI11/
+    dependencies/dr_libs/
+)
 
 add_executable(HART_Examples
     src/hart.cpp
@@ -7,11 +18,10 @@ add_executable(HART_Examples
     examples/example_test_booster.cpp
 )
 
+target_link_libraries(HART_Examples PRIVATE HART)
+
 target_include_directories(HART_Examples PRIVATE
-    include/
     examples/
-    dependencies/CLI11/
-    dependencies/dr_libs/
 )
 
 add_executable(HART_Tests
@@ -22,9 +32,4 @@ add_executable(HART_Tests
     tests/test_main.cpp
 )
 
-target_include_directories(HART_Tests PRIVATE
-    include/
-    examples/
-    dependencies/CLI11/
-    dependencies/dr_libs/
-)
+target_link_libraries(HART_Tests PRIVATE HART)

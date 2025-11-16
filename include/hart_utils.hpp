@@ -4,6 +4,7 @@
 #include <cctype>  // isalpha()
 #include <cmath>  // pow()
 #include <limits>  // infinity()
+#include <memory>
 #include <string>
 #include <unordered_map>
 
@@ -82,6 +83,14 @@ template <typename KeyType, typename ValueType>
 inline static bool contains (const std::unordered_map<KeyType, ValueType>& map, const KeyType& key)
 {
     return map.find (key) != map.end();
+}
+
+// For C++11 compatibility
+// If you're one C++14 or later, just use STL version
+template<typename ObjectType, typename... Args>
+std::unique_ptr<ObjectType> make_unique (Args&&... args)
+{
+    return std::unique_ptr<ObjectType> (new ObjectType (std::forward<Args> (args)...));
 }
 
 }  // namespace hart

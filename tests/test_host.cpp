@@ -38,14 +38,14 @@ HART_TEST ("Host - DSP Move, Copy and Transfer")
         .process();
 
     // 3. Transfer ownership, if implementing copy/move semantics is not an option:
-    auto ownMe = std::make_unique<GainDb>();
+    auto ownMe = hart::make_unique<GainDb>();
     processAudioWith (std::move (ownMe))
         .withInputSignal (SineWave())
         .expectTrue (EqualsTo (SineWave()))
         .process();
 
     // ...or like so:
-    processAudioWith (std::make_unique<GainDb>())
+    processAudioWith (hart::make_unique<GainDb>())
         .withInputSignal (SineWave())
         .expectTrue (EqualsTo (SineWave()))
         .process();
