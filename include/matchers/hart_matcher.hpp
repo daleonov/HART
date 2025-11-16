@@ -74,6 +74,7 @@ public:
     /// @retval MatcherFailureDetails::description Readable description of why the match has failed.
     /// Do not include the value of observed frame value or its timing in the description, as well as
     /// any of values printed by represent(), as all of this will be added to the output anyway.
+    /// Also, query @ref CLIConfig for number of displayed decimal places, whenever applicable.
     /// @see MatcherFailureDetails
     virtual MatcherFailureDetails getFailureDetails() const = 0;
 

@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <sstream>
 
+#include "hart_cliconfig.hpp"
 #include "matchers/hart_matcher.hpp"
 #include "hart_utils.hpp"  // decibelsToRatio()
 
@@ -63,8 +64,8 @@ public:
     virtual MatcherFailureDetails getFailureDetails() const override
     {
         std::stringstream stream;
-        stream << std::fixed << std::setprecision (1)
-            << "Observed audio peaks at " << m_observedPeakDb << " dB";
+        stream << std::fixed << std::setprecision (CLIConfig::get().getDbValueDisplayDecimals())
+            << "Observed audio peaks at at least " << m_observedPeakDb << " dB";
 
         MatcherFailureDetails details;
         details.frame = m_failedFrame;

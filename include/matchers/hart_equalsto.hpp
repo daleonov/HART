@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <sstream>
 
+#include "hart_cliconfig.hpp"
 #include "matchers/hart_matcher.hpp"
 #include "signals/hart_signal.hpp"
 #include "hart_utils.hpp"
@@ -92,15 +93,18 @@ public:
 
     virtual MatcherFailureDetails getFailureDetails() const override
     {
-        std::stringstream stream;
+        const int linDecimals = CLIConfig::get().getLinearValueDisplayDecimals();
+        const int dbDecimals = CLIConfig::get().getDbValueDisplayDecimals();
         const SampleType m_differenceLinear = std::abs (m_failedExpectedValue - m_failedObservedValue);
-        stream << std::fixed << std::setprecision (8)
+
+        std::stringstream stream;
+        stream << std::fixed << std::setprecision (linDecimals)
             << "Expected sample value: " << m_failedExpectedValue
-            << std::setprecision (1)
+            << std::setprecision (dbDecimals)
             << " (" << ratioToDecibels (m_failedExpectedValue) << " dB)"
-            <<  std::setprecision (8)
+            <<  std::setprecision (linDecimals)
             << ", difference: " << m_differenceLinear
-            << std::setprecision (1)
+            << std::setprecision (dbDecimals)
             << " (" << ratioToDecibels (m_differenceLinear) << " dB)";
 
         MatcherFailureDetails details;

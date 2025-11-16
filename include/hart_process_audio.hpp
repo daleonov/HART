@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "hart_audio_buffer.hpp"
+#include "hart_cliconfig.hpp"
 #include "dsp/hart_dsp_all.hpp"
 #include "hart_expectation_failure_messages.hpp"
 #include "matchers/hart_matcher.hpp"
@@ -423,17 +424,21 @@ private:
 
     void appendFailureDetails (std::stringstream& stream, const MatcherFailureDetails& details, AudioBuffer<SampleType>& observedAudioBlock)
     {
+        const int linDecimals = CLIConfig::get().getLinearValueDisplayDecimals();
+        const int dbDecimals = CLIConfig::get().getDbValueDisplayDecimals();
+        const int secDecimals = CLIConfig::get().getSecondsValueDisplayDecimals();
+
         const double timestampSeconds = static_cast<double> (offsetFrames + details.frame) / m_sampleRateHz;
         const SampleType sampleValue = observedAudioBlock[details.channel][details.frame];
 
         stream << std::endl
             << "Channel: " << details.channel << std::endl
             << "Frame: " << details.frame << std::endl
-            << std::fixed << std::setprecision (3)
+            << std::fixed << std::setprecision (secDecimals)
             << "Time: " << timestampSeconds << " seconds" << std::endl
-            << std::setprecision (8)
+            << std::setprecision (linDecimals)
             << "Sample value: " << sampleValue
-            << std::setprecision (1)
+            << std::setprecision (dbDecimals)
             << " (" << ratioToDecibels (std::abs (sampleValue)) << " dB)" << std::endl
             << details.description;
     }
