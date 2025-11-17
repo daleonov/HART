@@ -30,7 +30,7 @@ public:
                 HART_THROW (hart::ValueError, "Invalid frequency value");
         }
 
-    bool supportsNumChannels (size_t numChannels) const override { return true; };
+    bool supportsNumChannels (size_t /* numChannels */) const override { return true; };
 
     void prepare (double sampleRateHz, size_t /* numOutputChannels */, size_t /*maxBlockSizeFrames*/) override
     {

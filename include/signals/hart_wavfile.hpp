@@ -67,7 +67,7 @@ public:
         drwav_free (pcmFrames, nullptr);
 
         m_wavSampleRateHz = static_cast<double> (wavSampleRateHz);
-        m_wavNumChannels = static_cast<int> (numChannels);
+        m_wavNumChannels = static_cast<size_t> (numChannels);
     }
 
     /// @copydoc Signal::supportsNumChannels()
@@ -94,7 +94,6 @@ public:
         // TODO: Add support for number of channels different from the wav file
         // TODO: Add resampling
         const size_t numFrames = output.getNumFrames();
-        const size_t numChannels = m_wavNumChannels;
         size_t frameInOutputBuffer = 0;
         size_t frameInWavBuffer = m_wavOffsetFrames;
 
@@ -137,7 +136,7 @@ public:
 private:
     const std::string m_filePath;
     const Loop m_loop;
-    int m_wavNumChannels;
+    size_t m_wavNumChannels;
     double m_wavSampleRateHz;
     size_t m_wavOffsetFrames = 0;
     std::shared_ptr<AudioBuffer<float>> m_wavFrames;

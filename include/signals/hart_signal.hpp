@@ -58,7 +58,7 @@ public:
             return *this;
 
         m_numChannels = other.m_numChannels;
-        dspChain.reset();
+        dspChain.clear();
 
         if (other.dspChain.size() == 0)
             return *this;
@@ -88,14 +88,14 @@ public:
     /// @note This method should only care about the Signal itself, and not the attached effects in DSP chain - they'll be queried separately
     /// @param numChannels Number of output channels that will need to be filled
     /// @return true if signal is capable of filling this many channels with audio, false otherwise
-    virtual bool supportsNumChannels (size_t numChannels) const { return true; };
+    virtual bool supportsNumChannels (size_t /* numChannels */) const { return true; };
 
     /// @brief Tells whether this Signal supports given sample rate
     /// @details It is guaranteed to be called before @ref prepare()
     /// @note This method should only care about the Signal itself, and not the attached effects in DSP chain - they'll be queried separately
     /// @param sampleRateHz sample rate at which the audio should be generated
     /// @return true if signal is capable of generating audio at a given sample rate, false otherwise
-    virtual bool supportsSampleRate (double sampleRateHz) const { return true; }
+    virtual bool supportsSampleRate (double /* sampleRateHz */) const { return true; }
 
     /// @brief Prepare the signal for rendering 
     /// @details This method is guaranteed to be called after @ref supportsNumChannels() and supportsSampleRate(),

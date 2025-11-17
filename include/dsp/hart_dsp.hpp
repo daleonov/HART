@@ -107,13 +107,13 @@ public:
     /// @brief Tells whether this effect accepts automation envelopes for a particular parameter
     /// @param paramId Some ID that your subclass understands
     /// @return true if your subclass can process automation for this parameter, false otherwise
-    virtual bool supportsEnvelopeFor (int paramId) const { return false; }
+    virtual bool supportsEnvelopeFor (int /* paramId */) const { return false; }
 
     /// @brief Tells whether this effect supports given sample rate
     /// @details It is guaranteed to be called before @ref prepare()
     /// @param sampleRateHz Sample rate in question
     /// @return true if effect is capable of interpreting and processing in a given sample rate, false otherwise
-    virtual bool supportsSampleRate (double sampleRateHz) const { return true; }
+    virtual bool supportsSampleRate (double /* sampleRateHz */) const { return true; }
 
     /// @brief Returns a smart pointer with a copy of this object
     /// @details Just put one of those two macros into your class body, and your @ref copy() and @ref move() are sorted:

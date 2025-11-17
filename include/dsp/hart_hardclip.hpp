@@ -78,9 +78,7 @@ public:
         stream << dbPrecision << "HardClip (" << m_initialThresholdDb << "_dB)";
     }
 
-    /// @param id Only @ref HardClip::thresholdDb is accepted
-    /// @return true for @ref HardClip::thresholdDb, false otherwise
-    bool supportsEnvelopeFor (int id) const override
+    bool supportsEnvelopeFor (int /* id */) const override
     {
         return false;
     }
