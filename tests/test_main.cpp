@@ -4,5 +4,5 @@
 
 int main (int argc, char** argv)
 {
-    return HART_RUN_ALL_TESTS (argc, argv);
+    HART_RUN_ALL_TESTS (argc, argv);
 }

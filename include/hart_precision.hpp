@@ -17,7 +17,7 @@ namespace hart {
 /// @see CLIConfig::getLinDecimals()
 inline std::ostream& linPrecision (std::ostream& stream)
 {
-    return stream << std::fixed << std::setprecision (CLIConfig::get().getLinDecimals());
+    return stream << std::fixed << std::setprecision (CLIConfig::getInstance().getLinDecimals());
 }
 
 /// @brief Sets number of decimal places for values in decibels
@@ -25,7 +25,7 @@ inline std::ostream& linPrecision (std::ostream& stream)
 /// @see CLIConfig::getDbDecimals()
 inline std::ostream& dbPrecision (std::ostream& stream)
 {
-    return stream << std::fixed << std::setprecision (CLIConfig::get().getDbDecimals());
+    return stream << std::fixed << std::setprecision (CLIConfig::getInstance().getDbDecimals());
 }
 
 /// @brief Sets number of decimal places for values in seconds
@@ -33,7 +33,7 @@ inline std::ostream& dbPrecision (std::ostream& stream)
 /// @see CLIConfig::getSecDecimals()
 inline std::ostream& secPrecision (std::ostream& stream)
 {
-    return stream << std::fixed << std::setprecision (CLIConfig::get().getSecDecimals());
+    return stream << std::fixed << std::setprecision (CLIConfig::getInstance().getSecDecimals());
 }
 
 /// @brief Sets number of decimal places for values in hertz
@@ -41,7 +41,7 @@ inline std::ostream& secPrecision (std::ostream& stream)
 /// @see CLIConfig::getHzDecimals()
 inline std::ostream& hzPrecision (std::ostream& stream)
 {
-    return stream << std::fixed << std::setprecision (CLIConfig::get().getHzDecimals());
+    return stream << std::fixed << std::setprecision (CLIConfig::getInstance().getHzDecimals());
 }
 
 /// @brief Sets number of decimal places for values in radians
@@ -49,7 +49,7 @@ inline std::ostream& hzPrecision (std::ostream& stream)
 /// @see CLIConfig::getRadDecimals()
 inline std::ostream& radPrecision (std::ostream& stream)
 {
-    return stream << std::fixed << std::setprecision (CLIConfig::get().getRadDecimals());
+    return stream << std::fixed << std::setprecision (CLIConfig::getInstance().getRadDecimals());
 }
 
 /// @}

@@ -163,9 +163,15 @@ public:
     /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
     /// @param dsp A DSP effect instance
 
-    template <typename DerivedDSP,
-              typename = typename std::enable_if<std::is_base_of<DSP<SampleType>,
-                                                                 typename std::decay<DerivedDSP>::type>::value>::type>
+    template <
+        typename DerivedDSP,
+        typename = typename std::enable_if<
+            std::is_base_of<
+                DSP<SampleType>,
+                typename std::decay<DerivedDSP>::type
+                >::value
+            >::type
+        >
     Signal& followedBy (DerivedDSP&& dsp)
     {
         dspChain.emplace_back (

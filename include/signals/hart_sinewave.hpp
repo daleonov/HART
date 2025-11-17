@@ -39,7 +39,7 @@ public:
 
     void renderNextBlock (AudioBuffer<SampleType>& output) override
     {
-        const double phaseIncrement = m_twoPi * m_frequencyHz / m_sampleRateHz;
+        const double phaseIncrement = hart::twoPi * m_frequencyHz / m_sampleRateHz;
 
         for (size_t frame = 0; frame < output.getNumFrames(); ++frame)
         {
@@ -68,7 +68,6 @@ public:
     HART_SIGNAL_DEFINE_COPY_AND_MOVE (SineWave);
 
 private:
-    static constexpr double m_twoPi = 2.0 * 3.141592653589793;
     const double m_frequencyHz;
     const double m_initialPhaseRadians;
     double m_phaseRadians;

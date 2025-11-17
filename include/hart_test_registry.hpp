@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "hart_cliconfig.hpp"
+#include "hart_ascii_art.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_expectation_failure_messages.hpp"
 
@@ -38,17 +38,14 @@ public:
         tests.emplace_back (TestInfo {name, tags, func});
     }
 
-    int runAll (int argc, char** argv)
+    int runAll()
     {
-        const int parseCommandLineArgsResult = hart::CLIConfig::get().parseCommandLineArgs (argc, argv);
-    
-        if (parseCommandLineArgsResult != 0)
-            return parseCommandLineArgsResult;
-
         size_t numPassed = 0;
         size_t numFailed = 0;
 
         // TODO: Optional shuffle before running
+
+        std::cout << hartAsciiArt << std::endl;
 
         for (const TestInfo& test : tests)
         {
@@ -74,14 +71,20 @@ public:
 
             if (assertionFailed || expectationsFailed)
             {
+                constexpr char separator[] = "-------------------------------------------";
                 std::cout << "[  </3   ] " << test.name << " - failed" << std::endl;
 
                 if (assertionFailed)
-                    std::cout << "           " << assertionFailMessage << std::endl;
+                {
+                    std::cout << separator << std::endl << assertionFailMessage << std::endl;
+                }
 
                 for (const std::string& expectationFailureMessage : ExpectationFailureMessages::get())
-                    std::cout << "           "  << expectationFailureMessage << std::endl;
+                {
+                    std::cout << separator << std::endl << expectationFailureMessage << std::endl;
+                }
 
+                std::cout << separator << std::endl;
                 ++numFailed;
             }
             else
@@ -98,6 +101,8 @@ public:
         if (numFailed > 0)
             std::cout << "[ FAILED ] " << numFailed << '/' << tests.size() << std::endl;
 
+        const char* resultAsciiArt = numFailed > 0 ? failAsciiArt : passAsciiArt;
+        std::cout << std::endl << passAsciiArt << std::endl;
         return (int) (numFailed != 0);
     }
 
@@ -105,6 +110,11 @@ private:
     TestRegistry() = default;  // Private ctor for singleton
     std::vector<TestInfo> tests;
     std::unordered_set<std::string> registeredTestNames;
+
+    void run (TestInfo& testInfo)
+    {
+
+    }
 };
 
 }  // namespace hart

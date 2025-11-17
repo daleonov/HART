@@ -22,7 +22,7 @@ public:
     /// @brief Creates a Signal that produces white noise
     /// @param randomSeed Seed for the RNG
     /// @details Two signals with the same seed are guaranteed to produce the identical audio
-    WhiteNoise (uint_fast32_t randomSeed = CLIConfig::get().getRandomSeed()):
+    WhiteNoise (uint_fast32_t randomSeed = CLIConfig::getInstance().getRandomSeed()):
         m_randomSeed (randomSeed)
     {
         reset();

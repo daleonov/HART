@@ -8,6 +8,7 @@
 
 #include "hart_audio_buffer.hpp"
 #include "dsp/hart_dsp_all.hpp"
+#include "hart_cliconfig.hpp"
 #include "envelopes/hart_envelopes_all.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_expectation_failure_messages.hpp"
@@ -48,6 +49,13 @@ namespace hart
 
 #define HART_TEST(name) HART_TEST_WITH_TAGS(name, "")
 
-#define HART_RUN_ALL_TESTS(argc, argv) hart::TestRegistry::getInstance().runAll (argc, argv)
+#define HART_RUN_ALL_TESTS(argc, argv) \
+    do \
+    { \
+        hart::CLIConfig::getInstance().initCommandLineArgs(); \
+        CLI11_PARSE (hart::CLIConfig::getInstance().getCLIApp(), argc, argv); \
+        return hart::TestRegistry::getInstance().runAll(); \
+    } \
+    while (false);
 
 } // namespace hart

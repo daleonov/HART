@@ -76,7 +76,7 @@ inline static std::string toAbsolutePath (const std::string& path)
     if (isAbsolutePath(path))
         return path;
 
-    return CLIConfig::get().getDataRootPath() + '/' + path;
+    return CLIConfig::getInstance().getDataRootPath() + '/' + path;
 }
 
 template <typename KeyType, typename ValueType>

@@ -89,6 +89,7 @@ public:
     void renderNextBlock (AudioBuffer<SampleType>& output) override
     {
         // TODO: Add support for number of channels different from the wav file
+        // TODO: Add resampling
         const size_t numFrames = output.getNumFrames();
         const size_t numChannels = m_wavNumChannels;
         size_t frameInOutputBuffer = 0;
