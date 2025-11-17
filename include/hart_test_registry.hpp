@@ -107,7 +107,7 @@ public:
             std::cout << "[ FAILED ] " << numFailed << '/' << tests.size() << std::endl;
 
         const char* resultAsciiArt = numFailed > 0 ? failAsciiArt : passAsciiArt;
-        std::cout << std::endl << passAsciiArt << std::endl;
+        std::cout << std::endl << resultAsciiArt << std::endl;
         return (int) (numFailed != 0);
     }
 

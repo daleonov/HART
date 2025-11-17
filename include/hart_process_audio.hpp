@@ -242,6 +242,12 @@ public:
         return *this;
     }
 
+    AudioTestBuilder& withLabel (const std::string& testLabel)
+    {
+        m_testLabel = testLabel;
+        return *this;
+    }
+
     void process()
     {
         m_durationFrames = (size_t) std::round (m_sampleRateHz * m_durationSeconds);
@@ -339,6 +345,7 @@ private:
     double m_durationSeconds = 0.1;
     size_t m_durationFrames = static_cast<size_t> (m_durationSeconds * m_sampleRateHz);
     size_t offsetFrames = 0;
+    std::string m_testLabel = {};
 
     std::vector<Check> perBlockChecks;
     std::vector<Check> fullSignalChecks;
@@ -395,7 +402,12 @@ private:
                 if (assertionLevel == SignalAssertionLevel::assert)
                 {
                     std::stringstream stream;
-                    stream << (check.shouldPass ? "assertTrue() failed" : "assertFalse() failed") << std::endl << *matcher;
+                    stream << (check.shouldPass ? "assertTrue() failed" : "assertFalse() failed");
+
+                    if (! m_testLabel.empty())
+                        stream << " at \"" << m_testLabel << "\"";
+
+                    stream << std::endl << "Condition: " << *matcher;
 
                     if (check.shouldPass)
                         appendFailureDetails (stream, matcher->getFailureDetails(), outputBlock);
@@ -405,7 +417,12 @@ private:
                 else
                 {
                     std::stringstream stream;
-                    stream << (check.shouldPass ? "expectTrue() failed" : "expectFalse() failed") << std::endl << *matcher;
+                    stream << (check.shouldPass ? "expectTrue() failed" : "expectFalse() failed");
+
+                    if (!m_testLabel.empty())
+                        stream << " at \"" << m_testLabel << "\"";
+
+                    stream << std::endl << "Condition: " << * matcher;
 
                     if (check.shouldPass)
                         appendFailureDetails (stream, matcher->getFailureDetails(), outputBlock);

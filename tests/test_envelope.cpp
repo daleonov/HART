@@ -19,6 +19,7 @@ HART_TEST ("Envelope - Gain Envelope Regression")
         .rampTo (decibelsToRatio (-10_dB), 35_ms, SegmentedEnvelope::Shape::sCurve);
 
     processAudioWith (GainLinear().withEnvelope (GainLinear::gainLinear, gainEnvelopeA))
+        .withLabel ("Envelope A")
         .withInputSignal (SineWave (2_kHz))
         .withDuration (75_ms)
         .saveOutputTo ("Gain Envelope A Fail.wav", hart::Save::whenFails)
@@ -45,6 +46,7 @@ HART_TEST ("Envelope - Gain Envelope Regression")
         .rampTo (decibelsToRatio (-3_dB), 32_ms, SegmentedEnvelope::Shape::exponential);
 
     processAudioWith (GainLinear().withEnvelope (GainLinear::gainLinear, gainEnvelopeC))
+        .withLabel ("Envelope C")
         .withInputSignal (SineWave (2.5_kHz))
         .withDuration (75_ms)
         .saveOutputTo ("Gain Envelope C Fail.wav", hart::Save::whenFails)

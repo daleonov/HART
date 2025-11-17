@@ -16,16 +16,19 @@ using SineWave = hart::SineWave<float>;
 HART_TEST ("DSP Chains - Basic Gain")
 {
     processAudioWith (GainDb (0_dB))
+        .withLabel ("followedBy() instead of >>")
         .withInputSignal (SineWave().followedBy (GainDb (-3_dB)))
         .expectTrue (PeaksAt (-3_dB))
         .process();
 
     processAudioWith (GainDb (0_dB))
+        .withLabel ("Adjusting Signal's level")
         .withInputSignal (SineWave() >> GainDb (-3_dB))
         .expectTrue (PeaksAt (-3_dB))
         .process();
 
     processAudioWith (GainDb (-2_dB))
+        .withLabel ("Gain accumulation")
         .withInputSignal (SineWave() >> GainDb (-1_dB))
         .expectTrue (PeaksAt (-3_dB))
         .expectTrue (EqualsTo (SineWave() >> GainDb (-3.0_dB)))
@@ -78,6 +81,7 @@ HART_TEST ("DSP Chains - Long Chains")
         signalWithLongFxChainA >> GainDb (gainPerInstanceDb);
 
     processAudioWith (GainDb (0_dB))
+        .withLabel ("Equal gains")
         .withInputSignal (signalWithLongFxChainA)
         .withDuration (20_ms)  // A lot of DSP instances to process, so cutting some corners here
         .expectTrue (PeaksAt (gainTargetDb))
@@ -86,7 +90,7 @@ HART_TEST ("DSP Chains - Long Chains")
     // 2. Random gains
 
     auto signalWithLongFxChainB = SineWave();
-    const uint_fast32_t seed = hart::CLIConfig::get().getRandomSeed();
+    const uint_fast32_t seed = hart::CLIConfig::getInstance().getRandomSeed();
     const auto gainsDb = generateRandomValues<1000> (seed, -1.0, 1.0);  // A lot of values, but small ones, to avoid large accumulated gains
     double gainTotalDb = 0.0;
 
@@ -97,6 +101,7 @@ HART_TEST ("DSP Chains - Long Chains")
     }
 
     processAudioWith (GainDb (0_dB))
+        .withLabel ("Random gains")
         .withInputSignal (signalWithLongFxChainB)
         .expectTrue (PeaksAt (gainTotalDb))
         .process();
@@ -114,6 +119,7 @@ HART_TEST ("DSP Chains - Long Chains")
     }
 
     processAudioWith (GainDb (0_dB))
+        .withLabel ("Clippers with random thresholds")
         .withInputSignal (signalWithLongFxChainC)
         .expectTrue (PeaksAt (expectedPeakDb))
         .process();
