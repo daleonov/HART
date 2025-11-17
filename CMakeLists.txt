@@ -25,6 +25,7 @@ target_include_directories(HART_Examples PRIVATE
 )
 
 add_executable(HART_Tests
+    tests/generate_data.cpp
     tests/test_dsp.cpp
     tests/test_dsp_chains.cpp
     tests/test_envelope.cpp

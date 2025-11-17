@@ -8,7 +8,7 @@ using SegmentedEnvelope = hart::SegmentedEnvelope;
 using SineWave = hart::SineWave<float>;
 using WavFile = hart::WavFile<float>;
 
-HART_TEST ("Envelope - Gain Envelope Regression")
+HART_GENERATE ("Envelope - Gain Envelope Regression")
 {
     HART_REQUIRES_DATA_PATH_ARG;
 
@@ -22,8 +22,7 @@ HART_TEST ("Envelope - Gain Envelope Regression")
         .withLabel ("Envelope A")
         .withInputSignal (SineWave (2_kHz))
         .withDuration (75_ms)
-        .saveOutputTo ("Gain Envelope A Fail.wav", hart::Save::whenFails)
-        .expectTrue (EqualsTo (WavFile ("Gain Envelope A.wav")))
+        .saveOutputTo ("Gain Envelope A Fail.wav", hart::Save::always)
         .process();
 
     const auto gainEnvelopeB = SegmentedEnvelope (decibelsToRatio (-12_dB))
@@ -36,8 +35,7 @@ HART_TEST ("Envelope - Gain Envelope Regression")
         .withLabel ("Envelope B")
         .withInputSignal (SineWave (3_kHz))
         .withDuration (75_ms)
-        .saveOutputTo ("Gain Envelope B Fail.wav", hart::Save::whenFails)
-        .expectTrue (EqualsTo (WavFile ("Gain Envelope B.wav")))
+        .saveOutputTo ("Gain Envelope B Fail.wav", hart::Save::always)
         .process();
 
     const auto gainEnvelopeC = SegmentedEnvelope (decibelsToRatio (-1_dB))
@@ -50,7 +48,6 @@ HART_TEST ("Envelope - Gain Envelope Regression")
         .withLabel ("Envelope C")
         .withInputSignal (SineWave (2.5_kHz))
         .withDuration (75_ms)
-        .saveOutputTo ("Gain Envelope C Fail.wav", hart::Save::whenFails)
-        .expectTrue (EqualsTo (WavFile ("Gain Envelope C.wav")))
+        .saveOutputTo ("Gain Envelope C Fail.wav", hart::Save::always)
         .process();
 }

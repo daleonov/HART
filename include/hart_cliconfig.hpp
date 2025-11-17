@@ -18,7 +18,7 @@ public:
     void initCommandLineArgs()
     {
         app.add_option ("--data-root-path,-d", m_dataRootPath, "Data root path");
-        app.add_option ("--tags,-t", m_tags, "Test tags");
+        app.add_option ("--tags,-t", m_tags, "Test tags. Nut supported yet!");
         app.add_option ("--seed,-s", m_seed, "Random seed")->default_val (0);
 
         app.add_option (
@@ -51,7 +51,7 @@ public:
             "Number of displayed decimal places for values in radians in test output"
             )->default_val (1);
 
-        app.add_flag ("--generators", m_runGeneratorsNotTests, "Run generators instead of tests");
+        app.add_flag ("--run-generators,-g", m_runGeneratorsNotTests, "Run generators instead of tests");
         app.add_flag ("--shuffle", m_shuffle, "Shuffle test order");
     }
 
@@ -74,6 +74,8 @@ public:
 
     /// @see radPrecision
     int getRadDecimals() { return m_radDecimals; }
+
+    bool shouldRunGenerators() { return m_runGeneratorsNotTests; }
 
 private:
     CLI::App app { "HART" };

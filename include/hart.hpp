@@ -35,17 +35,22 @@ namespace hart
 #define HART_CONCAT(x, y) HART_CONCAT_IMPL(x, y)
 #define HART_UNIQUE_ID(x) HART_CONCAT(x, __LINE__)
 
-#define HART_TEST_WITH_TAGS(name, tags) \
-    static void HART_UNIQUE_ID(func_)(); \
+#define HART_ITEM_WITH_TAGS(name, tags, category) \
+    static void HART_UNIQUE_ID(HART_RunTask)(); \
         namespace { \
-            struct HART_UNIQUE_ID(registrar_) { \
-                HART_UNIQUE_ID(registrar_)() { \
-                    hart::TestRegistry::getInstance().add (name, tags, &HART_UNIQUE_ID(func_)); \
+            struct HART_UNIQUE_ID(HART_RegistrarType) { \
+                HART_UNIQUE_ID(HART_RegistrarType)() { \
+                    hart::TestRegistry::getInstance().add (name, tags, category, &HART_UNIQUE_ID (HART_RunTask)); \
                 } \
             }; \
         } \
-        static HART_UNIQUE_ID(registrar_) HART_UNIQUE_ID(registrar_instance_); \
-        static void HART_UNIQUE_ID(func_)()
+    static HART_UNIQUE_ID(HART_RegistrarType) HART_UNIQUE_ID(HART_registrar); \
+    static void HART_UNIQUE_ID(HART_RunTask)()
+
+#define HART_TEST_WITH_TAGS(name, tags) HART_ITEM_WITH_TAGS(name, tags, hart::TaskCategory::test)
+#define HART_GENERATE_WITH_TAGS(name, tags) HART_ITEM_WITH_TAGS(name, tags, hart::TaskCategory::generate)
+#define HART_TEST(name) HART_TEST_WITH_TAGS(name, "")
+#define HART_GENERATE(name) HART_GENERATE_WITH_TAGS(name, "")
 
 #if HART_DO_NOT_THROW_EXCEPTIONS
 /// @brief Put it at the beginning of your tese case if it requires a properly set data path
@@ -57,7 +62,6 @@ namespace hart
 #define HART_REQUIRES_DATA_PATH_ARG if (hart::CLIConfig::getInstance().getDataRootPath().empty()) { throw hart::ConfigurationError ("This test requires a data path set by the --data-root-path CLI argument, but it's empty"); }
 #endif  // HART_DO_NOT_THROW_EXCEPTIONS
 
-#define HART_TEST(name) HART_TEST_WITH_TAGS(name, "")
 
 #define HART_RUN_ALL_TESTS(argc, argv) \
     do \
