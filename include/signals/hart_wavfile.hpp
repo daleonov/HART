@@ -41,6 +41,8 @@ public:
         m_filePath (filePath),
         m_loop (loop)
     {
+        // TODO: Check if the file exists first
+
         drwav_uint64 numFrames;
         unsigned int numChannels;
         unsigned int wavSampleRateHz;
