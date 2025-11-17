@@ -60,6 +60,12 @@ class UnsupportedError:
     using std::runtime_error::runtime_error;
 };
 
+class ConfigurationError:
+    public std::runtime_error
+{
+    using std::runtime_error::runtime_error;
+};
+
 #ifndef HART_STRINGIFY
 #define HART_STRINGIFY(x) HART_STRINGIFY2(x)
 #define HART_STRINGIFY2(x) #x
@@ -68,7 +74,7 @@ class UnsupportedError:
 #define HART_LINE_STRING HART_STRINGIFY(__LINE__)
 
 #if HART_DO_NOT_THROW_EXCEPTIONS
-#define HART_THROW(ExceptionType, message) do { std::cout << #ExceptionType << " triggered: \"" << message << "\", file: " << __FILE__ << ", line: " << __LINE__ << std::endl } while (0)
+#define HART_THROW(ExceptionType, message) do { std::cout << #ExceptionType << " triggered: \"" << message << "\", file: " << __FILE__ << ", line: " << __LINE__ << std::endl; } while (0)
 #else
 #define HART_THROW(ExceptionType, message) do { throw ExceptionType (std::string (message) +  ", file: " __FILE__ ", line: " HART_LINE_STRING); } while (0)
 #endif  // HART_DO_NOT_THROW_EXCEPTIONS

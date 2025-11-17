@@ -10,6 +10,8 @@ using WavFile = hart::WavFile<float>;
 
 HART_TEST ("Envelope - Gain Envelope Regression")
 {
+    HART_REQUIRES_DATA_PATH_ARG;
+
     const auto gainEnvelopeA = SegmentedEnvelope (decibelsToRatio (-10_dB))
         .hold (5_ms)
         .rampTo (decibelsToRatio (0_dB), 25_ms, SegmentedEnvelope::Shape::sCurve)

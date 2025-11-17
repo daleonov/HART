@@ -230,6 +230,7 @@ public:
         return *this;
     }
 
+    /// @see HART_REQUIRES_DATA_PATH_ARG
     AudioTestBuilder& saveOutputTo (const std::string& path, Save mode = Save::always, WavFormat wavFormat = WavFormat::pcm24)
     {
         if (path.empty())

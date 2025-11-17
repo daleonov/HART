@@ -63,6 +63,11 @@ public:
                 assertionFailMessage = e.what();
                 assertionFailed = true;
             }
+            catch (const hart::ConfigurationError& e)
+            {
+                assertionFailMessage = e.what();
+                assertionFailed = true;
+            }
 
             // TODO: Output test durations
 

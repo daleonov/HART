@@ -47,6 +47,16 @@ namespace hart
         static HART_UNIQUE_ID(registrar_) HART_UNIQUE_ID(registrar_instance_); \
         static void HART_UNIQUE_ID(func_)()
 
+#if HART_DO_NOT_THROW_EXCEPTIONS
+/// @brief Put it at the beginning of your tese case if it requires a properly set data path
+/// @details For example, when using relative paths to the wav files. The test will instantly fail is the path is not set.
+#define HART_REQUIRES_DATA_PATH_ARG do { hart::ExpectationFailureMessages::get().emplace_back ("This test requires a data path set by the --data-root-path CLI argument, but it's empty"); return; } while (0)
+#else
+/// @brief Put it at the beginning of your tese case if it requires a properly set data path
+/// @details For example, when using relative paths to the wav files. The test will instantly fail is the path is not set.
+#define HART_REQUIRES_DATA_PATH_ARG do { throw hart::ConfigurationError ("This test requires a data path set by the --data-root-path CLI argument, but it's empty"); } while (0)
+#endif  // HART_DO_NOT_THROW_EXCEPTIONS
+
 #define HART_TEST(name) HART_TEST_WITH_TAGS(name, "")
 
 #define HART_RUN_ALL_TESTS(argc, argv) \

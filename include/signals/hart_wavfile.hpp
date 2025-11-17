@@ -34,6 +34,7 @@ public:
     /// @param filePath Path to a wav file
     /// Can be absolute or relative. If a relative path is used, it will resolve
     /// as relative to a data root path provided via respective CLI argument.
+    /// @see HART_REQUIRES_DATA_PATH_ARG
     /// @param loop Indicates whether the signal should loop the audio or produce
     /// silence after wav file runs out of frames.
     WavFile (const std::string& filePath, Loop loop = Loop::no):
