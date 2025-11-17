@@ -52,7 +52,7 @@ public:
             )->default_val (1);
 
         app.add_flag ("--run-generators,-g", m_runGeneratorsNotTests, "Run generators instead of tests");
-        app.add_flag ("--shuffle", m_shuffle, "Shuffle test order");
+        app.add_flag ("--shuffle", m_shuffle, "Shuffle task order. Obeys --seed value.");
     }
 
     CLI::App& getCLIApp() { return app; }
@@ -76,6 +76,7 @@ public:
     int getRadDecimals() { return m_radDecimals; }
 
     bool shouldRunGenerators() { return m_runGeneratorsNotTests; }
+    bool shouldShuffleTasks() { return m_shuffle; }
 
 private:
     CLI::App app { "HART" };

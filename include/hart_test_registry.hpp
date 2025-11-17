@@ -1,6 +1,8 @@
 #pragma once
 
+#include <algorithm>  // shuffle()
 #include <iostream>
+#include <random>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -67,6 +69,9 @@ public:
             std::cout << "Nothing to run!" << std::endl;
             return 0;
         }
+
+        if (CLIConfig::getInstance().shouldShuffleTasks())
+            shuffleTasks (tasks);
 
         for (const TaskInfo& task : tasks)
             runTask (task);
@@ -149,6 +154,12 @@ private:
             std::cout << "[   <3   ] " << task.name << " - passed" << std::endl;
             ++tasksPassed;
         }
+    }
+
+    static void shuffleTasks (std::vector<TaskInfo>& tasks)
+    {
+        std::mt19937 rng (CLIConfig::getInstance().getRandomSeed());
+        std::shuffle (tasks.begin(), tasks.end(), rng);
     }
 };
 
