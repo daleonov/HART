@@ -28,6 +28,10 @@ svg_file_path = r"D:\Projects\HART\docs\doxygen\html\hart__dsp_8hpp__incl.svg"
 def rose_pine_ify(svg_file_path):
     soup = bs4.BeautifulSoup(open(svg_file_path).read(), features='xml')
 
+    # Background
+    for polygon in soup.find_all('polygon', fill='white', stroke='transparent'):
+        polygon['fill'] = 'none'
+
     # Base classes
     for polygon in soup.find_all('polygon', fill='white', stroke='#666666'):
         polygon['fill'] = rose_pine['gold']
