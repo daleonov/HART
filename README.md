@@ -1,4 +1,10 @@
-# Overview
+# HART
+
+High-level Audio Regression and Testing
+
+📚 Docs: https://daleonov.github.io/HART/
+
+🎓 Tutorial: https://daleonov.github.io/HART/TestingYourDspInHart.html
 
 ## What is HART?
 
@@ -134,8 +140,4 @@ Expected sample value: 0.310784 (-10.2 dB), difference: 0.001190 (-58.5 dB)
 
 ## What's next?
 
-See @ref TestingYourDspInHart to learn how to use it.
-
 Note that HART is still in its infancy! It still needs some time to land on somewhat final API, and become a complete and bug-free solution we all want it to be. Speaking of complete and bug-free, contributions are very welcome!
-
-Github repo: https://github.com/daleonov/HART
