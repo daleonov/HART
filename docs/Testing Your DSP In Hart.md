@@ -36,7 +36,7 @@ public:
 
     void reset() override;
     void setValue (int id, double value) override;
-    void print (std::ostream& stream) const override;
+    void represent (std::ostream& stream) const override;
     bool supportsEnvelopeFor (int id) const override;
     bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels);
     virtual bool supportsSampleRate (double sampleRateHz) const;
@@ -104,7 +104,12 @@ It's probably pretty clear what this tests is trying to express, but let's break
 You create your wrapped effect's instance and hand it over to the test host (test runner). There are a few ways to do it, but in any case it will own and instance of your effect. You create, run the test, and it's gone. For the next test, you make another instance of the effect. I might relax this rule and let you pass a non-owned pointer to it, if enought people as me to, but right now I think this is the way to do it.
 
 If your effect doesn't have copy/move semantics, you can still pass it wrapped in a smart pointer like so:
-``` processAudioWith (std::make_unique<MyDSPWrapper>())```. So if your object is not trivially movable or copyable, you can still use HART for testing it with.
+
+```cpp
+processAudioWith (std::make_unique<MyDSPWrapper>())
+```
+
+So if your object is not trivially movable or copyable, you can still use HART for testing it with.
 
 ### [2] Defining input signal
 
@@ -133,6 +138,8 @@ You can do two levels of assertions: "expect" and "assert". Like in other test f
 You can have as many assertions/expectations in a single test - just keep chaining them together. They will be checked in that order, whenever possible. Hovewer, some matchers need to wait for the full signal to be generated (like ```PeaksAt```), while others can work on block-by-block basis (like ```EqualsTo```), so the order is not guaranteed.
 
 You also have ```HART_ASSERT_TRUE()``` and ```HART_EXPECT_TRUE()``` for trivial non-audio checks, in case you need them. But you shoudn't use HART for testing everything - use it for audio tests, and stick with Google Test (gtest) or Catch2 for everything else.
+
+See @ref hart::AudioTestBuilder for the full list of options you can set.
 
 ### [5] Run the test
 
@@ -203,7 +210,7 @@ processAudioWith (MyDSPWrapper())
     .process();
 ```
 
-Done! See Signals::WavFile for the details.
+Done! See @ref Signals::WavFile for the details. You might also want to put the @ref HART_REQUIRES_DATA_PATH_ARG macro at the beginning of test cases that use relative path - it will remind you to pass the respective CLI argument of you forgot to do so.
 
 ## Generating test signals
 
@@ -252,7 +259,7 @@ But wait, there's more! Remember when we set sine gave's level to 2.5 dB in the 
 
 Here's how you do it. To express this curve, you can do something like this:
 
-```c++
+```cpp
 const auto myGainEnvelope = SegmentedEnvelope (decibelsToRatio (-3_dB))
     .hold (10_ms)
     .rampTo (decibelsToRatio (-10_dB), 5_ms)
@@ -313,8 +320,30 @@ There's also a ```supportsEnvelopeFor()``` callback that will get triggered by t
 
 ## LFOs
 
-## Generating audio for regression tests
+It's also possible to use @ref hart::Signal and an envelope parameter. For example, automating gain with a SineWave, like an LFO. It's not implemented yet, but if you want to beat me to it, just subclass hart::Envelope and make your own!
+
+## Generating audio for regression and acceptance tests
+
+Obviuosly, if you want to compare your effect's output to pre-recorded wav's, you need those wav files first. You can do it with just regular test cases, of course, but HART has special ones just for this. Use @ref HART_GENERATE() or @ref HART_GENERATE_WITH_TAGS() instead of usual tests. Under the hood, they're pretty much the same as regular test cases, but will help to keep "test" and "generate" tasks separate, of you choose to do them in the same target (project).
+
+To run tasks defined with those macros run your HART test binary with a ```--run-generators``` (or ```-g```) flag. It will skip all tests and run the generators. Without this flag, it will run only tests, and skip the generators.
 
 ## Command line interface
 
+If you run your test binary with a ```--help``` CLI argument, it will tell you everything you need to know. Things you can do with it:
+
+* Set data root path for your relative file paths (like wav files)
+
+* Set random seed for everything random. By the way, everything random is guaranteed to be deterministin in HART!
+
+* Set number of decimal points for various values (like decibels, seconds etc)
+
+* Choose to run just tests or just generators
+
+* Ask HART to shuffle your test cases
+
+Someday there will be option for tags and threaded runs as well. Hopefully!
+
 ## Some more test examples
+
+Check ```tests``` directory for the examples. Is there a better way to document an automated test framework, than to read the tests used by it to test itself?
