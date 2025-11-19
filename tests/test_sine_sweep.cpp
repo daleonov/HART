@@ -78,3 +78,16 @@ HART_TEST ("SineSweep - Fixed Frequency")
         .expectTrue (EqualsTo (SineWave (1234_Hz)))
         .process();
 }
+
+HART_TEST ("SineSweep - Initial Phase")
+{
+    processAudioWith (GainDb (0_dB))
+        .withDuration (300_ms)
+        .withInputSignal (SineSweep (300_ms))
+        .expectTrue (PeaksAt (0_dB))
+        .expectFalse (EqualsTo (SineSweep (300_ms).withPhase (hart::halfPi)))
+        .expectFalse (EqualsTo (SineSweep (300_ms).withPhase (hart::pi)))
+        .expectTrue (EqualsTo (SineSweep (300_ms).withPhase (hart::twoPi)))
+        .expectTrue (EqualsTo (SineSweep (300_ms).withPhase (8 * hart::twoPi)))
+        .process();
+}

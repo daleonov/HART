@@ -32,13 +32,16 @@ public:
         double startFrequencyHz = 20.0,
         double endFrequencyHz = 20.0e3,
         SweepType type = SweepType::log,
-        Loop loop = Loop::no
+        Loop loop = Loop::no,
+        double initialPhaseRadians = 0.0
         ):
         m_durationSeconds (durationSeconds),
         m_startFrequencyHz (startFrequencyHz),
         m_endFrequencyHz (endFrequencyHz),
         m_type (type),
         m_loop (loop),
+        m_initialPhaseRadians (wrapPhase (initialPhaseRadians)),
+        m_currentPhaseRadians (m_initialPhaseRadians),
         m_generateSilence (floatsEqual (durationSeconds, 0.0)),
         m_isFixedFrequency (floatsEqual (m_startFrequencyHz, m_endFrequencyHz)),
         m_frequencyRatio (m_endFrequencyHz / m_startFrequencyHz)
@@ -52,27 +55,32 @@ public:
 
     SineSweep withDuration (double durationSeconds)
     {
-        return SineSweep (durationSeconds, m_startFrequencyHz, m_endFrequencyHz, m_type, m_loop);
+        return SineSweep (durationSeconds, m_startFrequencyHz, m_endFrequencyHz, m_type, m_loop, m_initialPhaseRadians);
     }
 
     SineSweep withType (SweepType type)
     {
-        return SineSweep (m_durationSeconds, m_startFrequencyHz, m_endFrequencyHz, type, m_loop);
+        return SineSweep (m_durationSeconds, m_startFrequencyHz, m_endFrequencyHz, type, m_loop, m_initialPhaseRadians);
     }
 
     SineSweep withLoop (Loop loop)
     {
-        return SineSweep (m_durationSeconds, m_startFrequencyHz, m_endFrequencyHz, m_type, loop);
+        return SineSweep (m_durationSeconds, m_startFrequencyHz, m_endFrequencyHz, m_type, loop, m_initialPhaseRadians);
+    }
+
+    SineSweep withPhase (double initialPhaseRadians)
+    {
+        return SineSweep (m_durationSeconds, m_startFrequencyHz, m_endFrequencyHz, m_type, m_loop, initialPhaseRadians);
     }
 
     SineSweep withStartFrequency (double startFrequencyHz)
     {
-        return SineSweep (m_durationSeconds, startFrequencyHz, m_endFrequencyHz, m_type, m_loop);
+        return SineSweep (m_durationSeconds, startFrequencyHz, m_endFrequencyHz, m_type, m_loop, m_initialPhaseRadians);
     }
 
     SineSweep withEndFrequency (double endFrequencyHz)
     {
-        return SineSweep (m_durationSeconds, m_startFrequencyHz, endFrequencyHz, m_type, m_loop);
+        return SineSweep (m_durationSeconds, m_startFrequencyHz, endFrequencyHz, m_type, m_loop, m_initialPhaseRadians);
     }
 
     bool supportsNumChannels (size_t /*numChannels*/) const override { return true; }
@@ -127,7 +135,7 @@ public:
     void reset() override
     {
         m_posFrames = 0;
-        m_currentPhaseRadians = 0;
+        m_currentPhaseRadians = m_initialPhaseRadians;
         m_generateSilence = floatsEqual (m_durationSeconds, 0.0);
         m_reverseFrequencyDirection = false;
     }
@@ -156,11 +164,11 @@ private:
     double m_sampleRateHz = 0.0;
     size_t m_durationFrames = 0;
     size_t m_posFrames = 0;
+    const double m_initialPhaseRadians;
+    double m_currentPhaseRadians;
     bool m_generateSilence;
     const bool m_isFixedFrequency;
     const double m_frequencyRatio;
-
-    double m_currentPhaseRadians = 0.0;
     bool m_reverseFrequencyDirection = false;
 
     void fillWithSilence (AudioBuffer<SampleType>& output, size_t startingFrame = 0)
