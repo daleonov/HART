@@ -158,6 +158,15 @@ public:
         return *this;
     }
 
+    /// @brief Adds a DSP effect to the end of signal's DSP chain by transfering a smart pointer
+    /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
+    /// @param dsp A DSP effect instance
+    Signal& followedBy (std::unique_ptr<DSP<SampleType>> dsp)
+    {
+        dspChain.emplace_back (std::move (dsp));
+        return *this;
+    }
+
     // TODO: Add check if rvalue
     /// @brief Adds a DSP effect to the end of signal's DSP chain by moving it
     /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
@@ -179,8 +188,6 @@ public:
         );
         return *this;
     }
-
-    // TODO: followedBy (std::unique_ptr<DSP<SampleType>> dsp)
 
     /// @brief Prepares the signal and all attached effects in the DSP chain for rendering
     /// @details This method is intended to be called by Signal hosts like AudioTestBuilder or Matcher.
@@ -263,8 +270,6 @@ std::ostream& operator<< (std::ostream& stream, const Signal<SampleType>& signal
     return stream;
 }
 
-// TODO: Overload >> for unique ptrs (multiple)
-
 /// @brief Adds a DSP effect to the end of signal's DSP chain by moving it
 /// @relates Signal
 /// @ingroup Signals
@@ -291,6 +296,26 @@ template<typename SampleType>
 Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, const DSP<SampleType>& dsp)
 {
     return std::move (signal.followedBy (dsp));
+}
+
+/// @brief Adds a DSP effect to the end of signal's DSP chain by transfering it
+/// @relates Signal
+/// @ingroup Signals
+template<typename SampleType>
+Signal<SampleType>& operator>> (Signal<SampleType>& signal, std::unique_ptr<DSP<SampleType>> dsp)
+{
+    signal.followedBy (std::move (dsp));
+    return signal;
+}
+
+/// @brief Adds a DSP effect to the end of signal's DSP chain by transfering it
+/// @relates Signal
+/// @ingroup Signals
+template<typename SampleType>
+Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, std::unique_ptr<DSP<SampleType>> dsp)
+{
+    signal.followedBy (std::move (dsp));
+    return std::move (signal);
 }
 
 }  // namespace hart
