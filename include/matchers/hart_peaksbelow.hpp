@@ -87,9 +87,9 @@ private:
     const SampleType m_thresholdDb;
     const SampleType m_thresholdLinear;
 
-    size_t m_failedFrame;
-    int m_failedChannel;
-    SampleType m_observedPeakDb;
+    size_t m_failedFrame = 0;
+    size_t m_failedChannel = 0;
+    SampleType m_observedPeakDb = (SampleType) 0;
 };
 
 }  // namespace hart

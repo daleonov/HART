@@ -119,10 +119,10 @@ private:
     std::unique_ptr<Signal<SampleType>> m_referenceSignal;
     const SampleType m_toleranceLinear;
 
-    size_t m_failedFrame;
-    int m_failedChannel;
-    SampleType m_failedObservedValue;
-    SampleType m_failedExpectedValue;
+    size_t m_failedFrame = 0;
+    size_t m_failedChannel = 0;
+    SampleType m_failedObservedValue = (SampleType) 0;
+    SampleType m_failedExpectedValue = (SampleType) 0;
 
     inline bool notEqual (SampleType x, SampleType y)
     {

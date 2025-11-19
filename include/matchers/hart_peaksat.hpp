@@ -100,9 +100,9 @@ private:
     const SampleType m_targetLinear;
     const SampleType m_toleranceLinear;
 
-    size_t m_failedFrame;
-    int m_failedChannel;
-    SampleType m_observedPeakDb;
+    size_t m_failedFrame = 0;
+    size_t m_failedChannel = 0;
+    SampleType m_observedPeakDb = (SampleType) 0;
 };
 
 }  // namespace hart

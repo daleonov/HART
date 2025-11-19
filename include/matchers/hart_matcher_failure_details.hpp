@@ -10,8 +10,8 @@ namespace hart
 /// @ingroup Matchers
 struct MatcherFailureDetails
 {
-    size_t frame;  ///< Index of frame at which the match has failed
-    size_t channel;  ///< Index of channel at which the failure was detected
+    size_t frame = 0;  ///< Index of frame at which the match has failed
+    size_t channel = 0;  ///< Index of channel at which the failure was detected
     std::string description;  ///< Readable description of why the match has failed.
 };
 
