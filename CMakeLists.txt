@@ -37,6 +37,7 @@ add_executable(HART_Tests
     tests/test_envelope.cpp
     tests/test_host.cpp
     tests/test_main.cpp
+    tests/test_sine_sweep.cpp
 )
 
 target_link_libraries(HART_Tests PRIVATE HART)

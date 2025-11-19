@@ -55,6 +55,24 @@ inline static SampleType floatsNotEqual (SampleType a, SampleType b, SampleType 
     return std::abs (a - b) >= epsilon;
 }
 
+template <typename SampleType>
+inline static size_t roundToSizeT (SampleType x)
+{
+    return static_cast<size_t> (x + (SampleType) 0.5);
+}
+
+/// @brief Keeps phase in 0..twoPi range
+template <typename SampleType>
+SampleType wrapPhase (const SampleType phaseRadians)
+{
+    SampleType wrappedPhaseRadians = std::remainder (phaseRadians, (SampleType) hart::twoPi);
+
+    if (wrappedPhaseRadians < 0.0)
+        wrappedPhaseRadians += hart::twoPi;
+
+    return wrappedPhaseRadians;
+}
+
 inline static bool isAbsolutePath (const std::string& path)
 {
     if (path.empty())
