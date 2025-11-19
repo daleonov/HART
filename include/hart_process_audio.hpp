@@ -12,6 +12,7 @@
 #include "dsp/hart_dsp_all.hpp"
 #include "hart_expectation_failure_messages.hpp"
 #include "matchers/hart_matcher.hpp"
+#include "hart_plot.hpp"
 #include "hart_precision.hpp"
 #include "hart_wavwriter.hpp"
 #include "signals/hart_signals_all.hpp"
@@ -242,6 +243,16 @@ public:
         return *this;
     }
 
+    AudioTestBuilder& savePlotTo (const std::string& path, Save mode = Save::always)
+    {
+        if (path.empty())
+            return *this;
+
+        m_savePlotPath = toAbsolutePath (path);
+        m_savePlotMode = mode;
+        return *this;
+    }
+
     AudioTestBuilder& withLabel (const std::string& testLabel)
     {
         m_testLabel = testLabel;
@@ -286,6 +297,7 @@ public:
         m_inputSignal->prepareWithDSPChain (m_sampleRateHz, m_numInputChannels, m_blockSizeFrames);
         offsetFrames = 0;
 
+        AudioBuffer<SampleType> fullInputBuffer (m_numInputChannels);
         AudioBuffer<SampleType> fullOutputBuffer (m_numOutputChannels);
         bool atLeastOneCheckFailed = false;
 
@@ -302,6 +314,7 @@ public:
 
             const bool allChecksPassed = processChecks (perBlockChecks, outputBlock);
             atLeastOneCheckFailed |= ! allChecksPassed;
+            fullInputBuffer.appendFrom (inputBlock);
             fullOutputBuffer.appendFrom (outputBlock);
 
             offsetFrames += blockSizeFrames;
@@ -312,6 +325,9 @@ public:
 
         if (m_saveOutputMode == Save::always || (m_saveOutputMode == Save::whenFails && atLeastOneCheckFailed))
             WavWriter<SampleType>::writeBuffer (fullOutputBuffer, m_saveOutputPath, m_sampleRateHz, m_saveOutputWavFormat);
+    
+        if (m_savePlotMode == Save::always || (m_savePlotMode == Save::whenFails && atLeastOneCheckFailed))
+            plotData (fullInputBuffer, fullOutputBuffer, m_sampleRateHz, m_savePlotPath);
     }
 
 private:
@@ -353,6 +369,9 @@ private:
     std::string m_saveOutputPath;
     Save m_saveOutputMode = Save::never;
     WavFormat m_saveOutputWavFormat = WavFormat::pcm24;
+
+    std::string m_savePlotPath;
+    Save m_savePlotMode = Save::never;
 
     void addCheck (const Matcher<SampleType>& matcher, SignalAssertionLevel signalAssertionLevel, bool shouldPass)
     {
