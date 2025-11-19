@@ -142,7 +142,7 @@ public:
 
         for (size_t frame = 0; frame < output.getNumFrames(); ++frame)
         {
-            const SampleType value = std::sin (m_currentPhaseRadians);
+            const SampleType value = (SampleType) std::sin (m_currentPhaseRadians);
 
             for (size_t channel = 0; channel < output.getNumChannels(); ++channel)
                 output[channel][frame] = value;

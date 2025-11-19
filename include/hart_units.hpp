@@ -27,9 +27,9 @@ constexpr double operator"" _Hz (long double val) { return static_cast<double> (
 constexpr double operator"" _Hz (unsigned long long int val) { return static_cast<double> (val); }
 constexpr double operator"" _kHz (long double val) { return static_cast<double> (1e3 * val); }
 constexpr double operator"" _kHz (unsigned long long val) { return static_cast<double> (1e3 * val); }
-constexpr double operator"" _rad (long double val) { return val; }
+constexpr double operator"" _rad (long double val) { return static_cast<double> (val); }
 constexpr double operator"" _rad (unsigned long long val) { return static_cast<double>(val); }
-constexpr double operator"" _deg (long double val) { return val * hart::pi / 180.0; }
+constexpr double operator"" _deg (long double val) { return static_cast<double> (val * hart::pi / 180.0); }
 constexpr double operator"" _deg (unsigned long long val) { return static_cast<double>(val) * hart::pi / 180.0; }
 
 /// @}

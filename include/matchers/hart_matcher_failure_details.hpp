@@ -11,7 +11,7 @@ namespace hart
 struct MatcherFailureDetails
 {
     size_t frame;  ///< Index of frame at which the match has failed
-    int channel;  ///< Index of channel at which the failure was detected
+    size_t channel;  ///< Index of channel at which the failure was detected
     std::string description;  ///< Readable description of why the match has failed.
 };
 

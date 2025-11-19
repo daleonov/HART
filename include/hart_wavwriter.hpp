@@ -78,7 +78,7 @@ public:
                     for (size_t channel = 0; channel < numChannels; ++channel)
                     {
                         const double sample = static_cast<double> (buffer[channel][frame]);
-                        const int32_t pcmValue = static_cast<int32_t> (std::round (hart::clamp (scale * sample, -scale, scale)));
+                        const int16_t pcmValue = static_cast<int16_t> (std::round (hart::clamp (scale * sample, -scale, scale)));
                         pcmData[frame * numChannels + channel] = pcmValue;
                     }
                 }
