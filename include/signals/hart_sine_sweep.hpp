@@ -69,7 +69,7 @@ public:
     }
 
     /// @brief Returns a new SineSweep instance with specified duration
-    /// @description Handy if you want to skip specifying some arguments in the constructor
+    /// @details Handy if you want to skip specifying some arguments in the constructor
     /// @param durationSeconds Duration of sine sweep
     /// @return A new SineSweep instance with a specified parameter
     SineSweep withDuration (double durationSeconds)
@@ -78,7 +78,7 @@ public:
     }
 
     /// @brief Returns a new SineSweep instance with specified start frequency
-    /// @description Handy if you want to skip specifying some arguments in the constructor
+    /// @details Handy if you want to skip specifying some arguments in the constructor
     /// @param startFrequencyHz Start frequency of the sine sweep
     /// @return A new SineSweep instance with a specified parameter
     SineSweep withStartFrequency (double startFrequencyHz)
@@ -87,7 +87,7 @@ public:
     }
 
     /// @brief Returns a new SineSweep instance with specified end frequency
-    /// @description Handy if you want to skip specifying some arguments in the constructor
+    /// @details Handy if you want to skip specifying some arguments in the constructor
     /// @param endFrequencyHz End frequency of the sine sweep
     /// @return A new SineSweep instance with a specified parameter
     SineSweep withEndFrequency (double endFrequencyHz)
@@ -96,7 +96,7 @@ public:
     }
 
     /// @brief Returns a new SineSweep instance with specified sweep type
-    /// @description Handy if you want to skip specifying some arguments in the constructor
+    /// @details Handy if you want to skip specifying some arguments in the constructor
     /// @param type Linear or Log frequency sweep, see @ref SweepType
     /// @return A new SineSweep instance with a specified parameter
     SineSweep withType (SweepType type)
@@ -105,7 +105,7 @@ public:
     }
 
     /// @brief Returns a new SineSweep instance with specified loop preference
-    /// @description Handy if you want to skip specifying some arguments in the constructor
+    /// @details Handy if you want to skip specifying some arguments in the constructor
     /// @param loop If Loop::no is selected, the Signal will produce silence after duration;
     /// if Loop::yes is selected, the signal will keep on going back and forth between
     /// start and end frequencies (up and down) indefinitely.
@@ -116,7 +116,7 @@ public:
     }
 
     /// @brief Returns a new SineSweep instance with specified initial phase
-    /// @description Handy if you want to skip specifying some arguments in the constructor
+    /// @details Handy if you want to skip specifying some arguments in the constructor
     /// @param initialPhaseRadians Initial phase of the signal
     /// @return A new SineSweep instance with a specified parameter
     SineSweep withPhase (double initialPhaseRadians)

@@ -12,7 +12,7 @@ HART is a testing framework for audio DSP. It's a header-only library, and compa
 ## Test case example
 
 ```cpp
-HART_TEST_WITH_TAGS ("Ny Test Name", "[my][test][tags]")
+HART_TEST_WITH_TAGS ("My Test Name", "[my][test][tags]")
 {
 	// Create effect automation
     const auto myEnvelopeCurve = SegmentedEnvelope (-10_dB)
@@ -46,7 +46,7 @@ HART_TEST_WITH_TAGS ("Ny Test Name", "[my][test][tags]")
         .saveInputTo ("my_failed_test_input.wav")
         .saveOutputTo ("my_failed_test_output.wav")
         .expectTrue (PeaksAt (-3_dB))
-        .expectFalse (equalsTo (SineWave(2.2_kHz) >> HardClip (-3_dB) >> GainDb (+1_dB)))
+        .expectFalse (equalsTo (SineWave (2.2_kHz) >> HardClip (-3_dB) >> GainDb (+1_dB)))
         .process();
 
     // Traditional unit test assertions are also supported
