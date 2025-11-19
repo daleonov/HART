@@ -9,24 +9,39 @@
 
 namespace hart {
 
-/// @brief Sine sweep (linear or logarithmic)
+/// @brief Produces a sine sweep
+/// @details Outputs a signal at unity gain (-1.0..+1.0), linear or log sweep, up or down.
+/// Tip: If you want to get an low-high-low or a high-low-high sweep, set `loop` to Loop::yes,
+/// and duration of host's signal (see @ref AudioTestBuilder::withDuration())
+/// to 2x ```durationSeconds``` of this signal.
 /// @ingroup Signals
 template<typename SampleType>
 class SineSweep : public Signal<SampleType>
 {
 public:
+    /// @brief Determines what to do after frequency sweep is done
     enum class Loop
     {
-        no,
-        yes
+        no,  ///< Stop after finishing one sweep
+        yes  ///< Keep on sweeping back and forth
     };
 
+    /// @brief Determines how to change the frequency
     enum class SweepType
     {
-        linear,
-        log
+        linear,  ///< Linear sweep, for a white noise-like spectrum
+        log   ///< Logarithmic sweep, for a pink noise-like spectrum
     };
 
+    /// @brief Creates a sine sweep signal
+    /// @param durationSeconds Duration of sine sweep
+    /// @param startFrequencyHz Start frequency of the sine sweep
+    /// @param endFrequencyHz End frequency of the sine sweep
+    /// @param type Linear or Log frequency sweep, see @ref SweepType
+    /// @param loop If Loop::no is selected, the Signal will produce silence after duration;
+    /// if Loop::yes is selected, the signal will keep on going back and forth between
+    /// start and end frequencies (up and down) indefinitely.
+    /// @param initialPhaseRadians Initial phase of the signal
     SineSweep (
     	double durationSeconds = 1.0,
         double startFrequencyHz = 20.0,
@@ -53,34 +68,60 @@ public:
             HART_THROW_OR_RETURN_VOID (hart::ValueError, "Frequencies must be positive");
     }
 
+    /// @brief Returns a new SineSweep instance with specified duration
+    /// @description Handy if you want to skip specifying some arguments in the constructor
+    /// @param durationSeconds Duration of sine sweep
+    /// @return A new SineSweep instance with a specified parameter
     SineSweep withDuration (double durationSeconds)
     {
         return SineSweep (durationSeconds, m_startFrequencyHz, m_endFrequencyHz, m_type, m_loop, m_initialPhaseRadians);
     }
 
-    SineSweep withType (SweepType type)
-    {
-        return SineSweep (m_durationSeconds, m_startFrequencyHz, m_endFrequencyHz, type, m_loop, m_initialPhaseRadians);
-    }
-
-    SineSweep withLoop (Loop loop)
-    {
-        return SineSweep (m_durationSeconds, m_startFrequencyHz, m_endFrequencyHz, m_type, loop, m_initialPhaseRadians);
-    }
-
-    SineSweep withPhase (double initialPhaseRadians)
-    {
-        return SineSweep (m_durationSeconds, m_startFrequencyHz, m_endFrequencyHz, m_type, m_loop, initialPhaseRadians);
-    }
-
+    /// @brief Returns a new SineSweep instance with specified start frequency
+    /// @description Handy if you want to skip specifying some arguments in the constructor
+    /// @param startFrequencyHz Start frequency of the sine sweep
+    /// @return A new SineSweep instance with a specified parameter
     SineSweep withStartFrequency (double startFrequencyHz)
     {
         return SineSweep (m_durationSeconds, startFrequencyHz, m_endFrequencyHz, m_type, m_loop, m_initialPhaseRadians);
     }
 
+    /// @brief Returns a new SineSweep instance with specified end frequency
+    /// @description Handy if you want to skip specifying some arguments in the constructor
+    /// @param endFrequencyHz End frequency of the sine sweep
+    /// @return A new SineSweep instance with a specified parameter
     SineSweep withEndFrequency (double endFrequencyHz)
     {
         return SineSweep (m_durationSeconds, m_startFrequencyHz, endFrequencyHz, m_type, m_loop, m_initialPhaseRadians);
+    }
+
+    /// @brief Returns a new SineSweep instance with specified sweep type
+    /// @description Handy if you want to skip specifying some arguments in the constructor
+    /// @param type Linear or Log frequency sweep, see @ref SweepType
+    /// @return A new SineSweep instance with a specified parameter
+    SineSweep withType (SweepType type)
+    {
+        return SineSweep (m_durationSeconds, m_startFrequencyHz, m_endFrequencyHz, type, m_loop, m_initialPhaseRadians);
+    }
+
+    /// @brief Returns a new SineSweep instance with specified loop preference
+    /// @description Handy if you want to skip specifying some arguments in the constructor
+    /// @param loop If Loop::no is selected, the Signal will produce silence after duration;
+    /// if Loop::yes is selected, the signal will keep on going back and forth between
+    /// start and end frequencies (up and down) indefinitely.
+    /// @return A new SineSweep instance with a specified parameter
+    SineSweep withLoop (Loop loop)
+    {
+        return SineSweep (m_durationSeconds, m_startFrequencyHz, m_endFrequencyHz, m_type, loop, m_initialPhaseRadians);
+    }
+
+    /// @brief Returns a new SineSweep instance with specified initial phase
+    /// @description Handy if you want to skip specifying some arguments in the constructor
+    /// @param initialPhaseRadians Initial phase of the signal
+    /// @return A new SineSweep instance with a specified parameter
+    SineSweep withPhase (double initialPhaseRadians)
+    {
+        return SineSweep (m_durationSeconds, m_startFrequencyHz, m_endFrequencyHz, m_type, m_loop, initialPhaseRadians);
     }
 
     bool supportsNumChannels (size_t /*numChannels*/) const override { return true; }
