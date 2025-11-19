@@ -27,13 +27,18 @@ void plotData (const AudioBuffer<SampleType>& input, const AudioBuffer<SampleTyp
     inputSignalPlot.title ("Input audio");
     outputSignalPlot.title ("Output audio");
 
-    for (double t = 0.1; t < bufferSizeSeconds; t += 0.1)
+    const SampleType inputSamplePeak = input.getMagnitude (0, input.getNumFrames());
+    inputSignalPlot.y.minor (inputSamplePeak).minor (-inputSamplePeak);
+    const SampleType outputSamplePeak = output.getMagnitude (0, output.getNumFrames());
+    outputSignalPlot.y.minor (outputSamplePeak).minor (-outputSamplePeak);
+
+    for (double t = 0.1; t < bufferSizeSeconds + 1e-6; t += 0.1)
     {
         inputSignalPlot.x.minor (t);
         outputSignalPlot.x.minor (t);
     }
 
-    for (double t = 1.0; t < bufferSizeSeconds; t += 1.0)
+    for (double t = 1.0; t < bufferSizeSeconds + 1e-6; t += 1.0)
     {
         inputSignalPlot.x.major (t);
         outputSignalPlot.x.major (t);

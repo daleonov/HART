@@ -25,9 +25,6 @@ public:
         m_frames (other.m_frames),
         m_channelPointers (m_numChannels)
     {
-        if (m_numChannels != other.m_numChannels)
-            HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "Can't copy from a buffer with different number of channels");
-
         updateChannelPointers();
     }
 
@@ -37,9 +34,6 @@ public:
         m_frames (std::move (other.m_frames)),
         m_channelPointers (std::move (other.m_channelPointers))
     {
-        if (m_numChannels != other.m_numChannels)
-            HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "Can't move from a buffer with different number of channels");
-
         other.clear();
     }
 
@@ -138,6 +132,45 @@ public:
             m_channelPointers.resize (m_numChannels);
 
         updateChannelPointers();
+    }
+
+    SampleType getMagnitude (size_t channel, size_t startFrame, size_t numFrames) const
+    {
+        if (channel >= m_numChannels)
+            HART_THROW_OR_RETURN (hart::IndexError, "Invalid channel", (SampleType) 0);
+
+        if (startFrame + numFrames > m_numFrames || numFrames == 0)
+            HART_THROW_OR_RETURN (hart::IndexError, "Invalid frame range", (SampleType) 0);
+
+        const SampleType* start = m_channelPointers[channel] + startFrame;
+        const SampleType* peakSample = std::max_element (
+            start,
+            start + numFrames,
+            [] (SampleType a, SampleType b) { return std::abs (a) < std::abs (b); }
+            );
+
+        return std::abs (*peakSample);
+    }
+
+    SampleType getMagnitude (size_t startFrame, size_t numFrames) const
+    {
+        if (startFrame + numFrames > m_numFrames || numFrames == 0)
+                HART_THROW_OR_RETURN (hart::IndexError, "Invalid frame range", (SampleType) 0);
+
+        SampleType peakSampleAcrossAllChannels = (SampleType) 0;
+
+        for (size_t channel = 0; channel < m_numChannels; ++channel)
+        {
+            const SampleType* start = m_channelPointers[channel] + startFrame;
+            const SampleType* peakSample = std::max_element (
+                start,
+                start + numFrames,
+                [] (SampleType a, SampleType b) { return std::abs (a) < std::abs (b); }
+                );
+            peakSampleAcrossAllChannels = std::max (peakSampleAcrossAllChannels, std::abs (*peakSample));
+        }
+
+        return peakSampleAcrossAllChannels;
     }
 
     // TODO: Implement resize() and copyFrom() to avoid repeated memory re-allocations caused by spamming appendFrom()

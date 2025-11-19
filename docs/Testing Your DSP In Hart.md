@@ -198,7 +198,21 @@ processAudioWith (MyDSPWrapper())
     .process();
 ```
 
-By default, they will save the audio only when any of the checks fail, but you can tell them to save audio regardless of the result via the second argument - handy for generating data for regression tests. Supported formats are PCM at 16, 24 and 32 bits and float at 32 bit. Default is PCM24. You can use absolute or relative paths. For relative paths, set the `--data-root-path` CLI parameter to wherever you want HART to save them.
+By default, they will save the audio only when any of the checks fail, but you can tell them to save audio regardless of the result via the second argument - handy for generating data for regression tests. See @ref AudioTestBuilder::saveInputTo(), @ref AudioTestBuilder::saveOutputTo() and @ref hart::Save. Supported formats are PCM at 16, 24 and 32 bits and float at 32 bit. Default is PCM24. You can use absolute or relative paths. For relative paths, set the `--data-root-path` CLI parameter to wherever you want HART to save them.
+
+You can also log your audio as plots of your input and output waveform with @ref AudioTestBuilder::savePlotTo():
+
+```cpp
+processAudioWith (HardClip (-6_dB))
+    .withInputSignal (SineWave (60_Hz))
+    .withDuration (200_ms)
+    .savePlotTo ("Clipper.svg")
+    .process();
+```
+
+Similar to methods for saving wav files, second argument can be used to set when do you want to save it - always or when the test fails. This will create an SVG file like this:
+
+![Saved SVG image](../../assets/Clipper.svg)
 
 # Playing the pre-rendered audio
 

@@ -15,10 +15,14 @@ That's all!
 
  * It's platform-independent, and not attached to a specific compiler
 
-There are two libraries it depends on, both are included in the repo:
+There are a few libraries it depends on, both are included in the repo:
 
  * [dr_wav](https://github.com/mackron/dr_libs) for working with wav
 
  * [CLI11](https://github.com/CLIUtils/CLI11) for parsing CLI arguments
 
-Both are header-only libraries as well, and compatible with C++11.
+ * [Signalsmith's Basic C++ Plots](https://signalsmith-audio.co.uk/code/plot/html/index.html) for making plots
+
+ * [CHOC](https://github.com/Tracktion/choc) for various utilities
+
+All are header-only libraries as well, and compatible with C++11.

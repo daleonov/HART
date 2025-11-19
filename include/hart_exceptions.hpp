@@ -66,6 +66,12 @@ class ConfigurationError:
     using std::runtime_error::runtime_error;
 };
 
+class IndexError:
+    public std::runtime_error
+{
+    using std::runtime_error::runtime_error;
+};
+
 #ifndef HART_STRINGIFY
 #define HART_STRINGIFY(x) HART_STRINGIFY2(x)
 #define HART_STRINGIFY2(x) #x
