@@ -375,7 +375,11 @@ private:
 
     void addCheck (const Matcher<SampleType>& matcher, SignalAssertionLevel signalAssertionLevel, bool shouldPass)
     {
-        auto& checksGroup = matcher.canOperatePerBlock() ? perBlockChecks : fullSignalChecks;
+        const bool forceFullSignal = ! shouldPass;  // No per-block checks for inverted matchers
+        auto& checksGroup =
+            (matcher.canOperatePerBlock() && ! forceFullSignal)
+                ? perBlockChecks
+                : fullSignalChecks;
         checksGroup.emplace_back (AudioTestBuilder::Check {
             matcher.copy(),
             signalAssertionLevel,
@@ -392,7 +396,11 @@ private:
             std::is_base_of<Matcher<SampleType>, DecayedType>::value,
             "MatcherType must be a hart::Matcher subclass"
             );
-        auto& checksGroup = matcher.canOperatePerBlock() ? perBlockChecks : fullSignalChecks;
+        const bool forceFullSignal = ! shouldPass;  // No per-block checks for inverted matchers
+        auto& checksGroup =
+            (matcher.canOperatePerBlock() && ! forceFullSignal)
+                ? perBlockChecks
+                : fullSignalChecks;
         checksGroup.emplace_back (AudioTestBuilder::Check {
             hart::make_unique<DecayedType> (std::forward<MatcherType> (matcher)),
             signalAssertionLevel,
