@@ -212,7 +212,7 @@ processAudioWith (HardClip (-6_dB))
 
 Similar to methods for saving wav files, second argument can be used to set when do you want to save it - always or when the test fails. This will create an SVG file like this:
 
-![Saved SVG image](../../assets/Clipper.svg)
+![Saved SVG image](assets/Clipper.svg)
 
 # Playing the pre-rendered audio
 
