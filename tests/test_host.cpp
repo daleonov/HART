@@ -3,6 +3,7 @@
 
 using hart::processAudioWith;
 using EqualsTo = hart::EqualsTo<float>;
+using PeaksAt = hart::PeaksAt<float>;
 using GainDb = hart::GainDb<float>;
 using SineWave = hart::SineWave<float>;
 
@@ -48,5 +49,20 @@ HART_TEST ("Host - DSP Move, Copy and Transfer")
     processAudioWith (hart::make_unique<GainDb>())
         .withInputSignal (SineWave())
         .expectTrue (EqualsTo (SineWave()))
+        .process();
+}
+
+HART_TEST ("Host - DSP Re-use")
+{
+    // process() will spit out the DSP after processing...
+    auto reuseMe = processAudioWith (GainDb (-3_dB))
+        .withInputSignal (SineWave())
+        .expectTrue (PeaksAt (-3_dB))
+        .process();
+
+    /// ...so you can re-use it
+    reuseMe = processAudioWith (std::move (reuseMe))
+        .withInputSignal (SineWave())
+        .expectTrue (PeaksAt (-3_dB))
         .process();
 }

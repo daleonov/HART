@@ -330,12 +330,12 @@ public:
 
     /// @brief Perfoems the test
     /// @details Call this after setting all the test parameters
-    void process()
+    std::unique_ptr<DSP<SampleType>> process()
     {
         m_durationFrames = (size_t) std::round (m_sampleRateHz * m_durationSeconds);
 
         if (m_durationFrames == 0)
-            HART_THROW_OR_RETURN_VOID (hart::SizeError, "Nothing to process");
+            HART_THROW_OR_RETURN (hart::SizeError, "Nothing to process", std::move (m_processor));
 
         for (auto& check : perBlockChecks)
         {
@@ -362,7 +362,7 @@ public:
         }
 
         if (m_inputSignal == nullptr)
-            HART_THROW_OR_RETURN_VOID (hart::StateError, "No input signal - call withInputSignal() first!");
+            HART_THROW_OR_RETURN (hart::StateError, "No input signal - call withInputSignal() first!", std::move (m_processor));
 
         m_inputSignal->resetWithDSPChain();
         m_inputSignal->prepareWithDSPChain (m_sampleRateHz, m_numInputChannels, m_blockSizeFrames);
@@ -399,6 +399,8 @@ public:
     
         if (m_savePlotMode == Save::always || (m_savePlotMode == Save::whenFails && atLeastOneCheckFailed))
             plotData (fullInputBuffer, fullOutputBuffer, m_sampleRateHz, m_savePlotPath);
+
+        return std::move (m_processor);
     }
 
 private:

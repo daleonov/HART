@@ -111,7 +111,7 @@ If your effect doesn't have copy/move semantics, you can still pass it wrapped i
 processAudioWith (std::make_unique<MyDSPWrapper>())
 ```
 
-So if your object is not trivially movable or copyable, you can still use HART for testing it with.
+So if your object is not trivially movable or copyable, you can still use HART for testing it with. @ref AudioTestBuilder::process() will spit out your DSP instance as a smart pointer after processing, so you can re-use it multiple times, if you do not want to instantiate a new one every time.
 
 ## Defining input signal [2]
 
