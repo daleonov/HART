@@ -15,21 +15,31 @@
 namespace hart
 {
 
+/// @brief Determines whether the task is a test or a generator
+/// @private
 enum class TaskCategory
 {
     test,
     generate
 };
 
+/// @brief Runs the test cases
+/// @details For internal use by HART. You're not supposed to interact with it directly, only through the macros
+/// such as @ref HART_RUN_ALL_TESTS(), @ref HART_TEST(), @ref HART_TEST_WITH_TAGS(), @ref HART_GENERATE(), @ref HART_GENERATE_WITH_TAGS()
+/// @ingroup TestRunner
 class TestRegistry {
 public:
 
+    /// @brief Gets the singleton instance
     static TestRegistry& getInstance()
     {
         static TestRegistry reg;
         return reg;
     }
 
+    /// @brief Adds a task (test or generator)
+    /// @details Gets called when a test case is declared with a macro like @ref HART_TEST()
+    /// @private
     void add (const std::string& name, const std::string& tags, TaskCategory testCategory, void (*func)())
     {
         std::unordered_set<std::string>& registeredNamesContainer =
@@ -51,6 +61,7 @@ public:
         tasks.emplace_back (TaskInfo {name, tags, func});
     }
 
+    /// @brief Runs all tests or generators
     int runAll()
     {
         // TODO: Optional shuffle before running

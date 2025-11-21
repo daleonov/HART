@@ -20,18 +20,27 @@
 
 namespace hart {
 
+/// @defgroup TestRunner Test Runner
+/// @brief Runs the tests
+
+/// @brief Determines when to save a file
+/// @ingroup TestRunner
 enum class Save
 {
-    always,
-    whenFails,
-    never
+    always,  ///< File will be saved always, after the test is performed
+    whenFails,  ///< File will be saved only when the test has failed
+    never  ///< File will not be saved
 };
 
+/// @brief A DSP host used for building and running tests inside a test case
+/// @ingroup TestRunner
 template <typename SampleType>
 class AudioTestBuilder
 {
 public:
     /// @brief Copies the DSP instance into the host
+    /// @details DSP instance will be moved into this host, and then returned by @ref process(), so you can re-use it.
+    /// @param dsp Your DSP instance.
     template <typename DSPType>
     AudioTestBuilder (DSPType&& dsp,
         typename std::enable_if<
@@ -43,6 +52,8 @@ public:
     }
 
     /// @brief Moves the DSP instance into the host
+    /// @details DSP instance will be moved into this host, and then returned by @ref process(), so you can re-use it.
+    /// @param dsp Your DSP instance
     template <typename DSPType>
     AudioTestBuilder (DSPType&& dsp,
         typename std::enable_if<
@@ -54,11 +65,17 @@ public:
     }
 
     /// @brief Transfers the DSP smart pointer into the host
+    /// @details Use this if your DSP does not support copying or moving. It will be owned by this host,
+    /// and then returned by @ref process(), so you can re-use it.
+    /// @param dsp A smart pointer to your DSP instance
     AudioTestBuilder (std::unique_ptr<DSP<SampleType>> dsp)
     : m_processor (std::move (dsp))
     {
     }
 
+    /// @brief Sets the sample rate for the test
+    /// @details All the signals, effects and sub hosts are guaranteed to be initialized to this sample rate
+    /// @param sampleRateHz Sample rate in Hz. You can use frequency-related literails from @ref Units.
     AudioTestBuilder& withSampleRate (double sampleRateHz)
     {
         if (sampleRateHz <= 0)
@@ -71,6 +88,8 @@ public:
         return *this;
     }
 
+    /// @brief Sets the block size for the test
+    /// @param blockSizeFrames Block size in frames (samples)
     AudioTestBuilder& withBlockSize (size_t blockSizeFrames)
     {
         if (blockSizeFrames == 0)
@@ -80,6 +99,10 @@ public:
         return *this;
     }
 
+    /// @brief Sets the initial param value for the tested DSP
+    /// @details It will call @ref DSP::setValue() for DSP under test
+    /// @param id Parameter ID (see @ref DSP::setValue())
+    /// @param value Value that needs to be set
     AudioTestBuilder& withValue (int id, double value)
     {
         // TODO: Handle cases when processor already has an envelope for this id
@@ -87,6 +110,8 @@ public:
         return *this;
     }
 
+    /// @brief Sets the total duration of the input signal to be processed
+    /// @param Duration of the signal in seconds. You can use time-related literails from @ref Units.
     AudioTestBuilder& withDuration (double durationSeconds)
     {
         if (durationSeconds < 0)
@@ -96,12 +121,19 @@ public:
         return *this;
     }
 
+    /// @brief Sets the input signal for the test
+    /// @param signal Input signal, see @ref Signals
     AudioTestBuilder& withInputSignal (const Signal<SampleType>& signal)
     {
+        // TODO: Implement moving/transfering a signal instance as well
         m_inputSignal = std::move (signal.copy());
         return *this;
     }
 
+    /// @brief Sets arbitrary number of input channels
+    /// @details For common mono and stereo cases, you may use dedicated methods like @ref inStereo() or
+    /// @ref withMonoInput() instead of this one for better readability.
+    /// @param numInputChannels Number of input channels
     AudioTestBuilder& withInputChannels (size_t numInputChannels)
     {   
         if (numInputChannels == 0)
@@ -114,6 +146,10 @@ public:
         return *this;
     }
 
+    /// @brief Sets arbitrary number of output channels
+    /// @details For common mono and stereo cases, you may use dedicated methods like @ref inMono() or
+    /// @ref withStereoOutput() instead of this one for better readability.
+    /// @param numOutputChannels Number of output channels
     AudioTestBuilder& withOutputChannels (size_t numOutputChannels)
     {   
         if (numOutputChannels == 0)
@@ -126,44 +162,52 @@ public:
         return *this;
     }
 
+    /// @brief Sets number of input channels to two
     AudioTestBuilder& withStereoInput()
     {
         return this->withInputChannels (2);
     }
 
+    /// @brief Sets number of output channels to two
     AudioTestBuilder& withStereoOutput()
     {
         return this->withOutputChannels (2);
     }
 
+    /// @brief Sets number of input channels to one
     AudioTestBuilder& withMonoInput()
     {
         return this->withInputChannels (1);
     }
 
+    /// @brief Sets number of output channels to one
     AudioTestBuilder& withMonoOutput()
     {
         return this->withOutputChannels (1);
     }
 
+    /// @brief Sets number of input and output channels to one
     AudioTestBuilder& inMono()
     {
         return this->withMonoInput().withMonoOutput();
     }
 
+    /// @brief Sets number of input and output channels to two
     AudioTestBuilder& inStereo()
     {
         return this->withStereoInput().withStereoOutput();
     }
 
-    // TODO: withLabel() for easier troubleshooting
-
+    /// @brief Adds an "expect" check
+    /// @param matcher Matcher to perform the check, see @ref Matchers
     AudioTestBuilder& expectTrue (const Matcher<SampleType>& matcher)
     {
         addCheck (matcher, SignalAssertionLevel::expect, true);
         return *this;
     }
 
+    /// @brief Adds an "expect" check
+    /// @param matcher Matcher to perform the check, see @ref Matchers
     template <typename MatcherType>
     AudioTestBuilder& expectTrue (MatcherType&& matcher)
     {
@@ -177,12 +221,16 @@ public:
         return *this;
     }
 
+    /// @brief Adds a reversed "expect" check
+    /// @param matcher Matcher to perform the check, see @ref Matchers
     AudioTestBuilder& expectFalse (const Matcher<SampleType>& matcher)
     {
         addCheck (matcher, SignalAssertionLevel::expect, false);
         return *this;
     }
 
+    /// @brief Adds a reversed "expect" check
+    /// @param matcher Matcher to perform the check, see @ref Matchers
     template <typename MatcherType>
     AudioTestBuilder& expectFalse (MatcherType&& matcher)
     {
@@ -195,12 +243,16 @@ public:
         return *this;
     }
 
+    /// @brief Adds an "assert" check
+    /// @param matcher Matcher to perform the check, see @ref Matchers
     AudioTestBuilder& assertTrue (const Matcher<SampleType>& matcher)
     {
         addCheck (matcher, SignalAssertionLevel::assert, true);
         return *this;
     }
 
+    /// @brief Adds an "assert" check
+    /// @param matcher Matcher to perform the check, see @ref Matchers
     template <typename MatcherType>
     AudioTestBuilder& assertTrue (MatcherType&& matcher)
     {
@@ -213,12 +265,16 @@ public:
         return *this;
     }
 
+    /// @brief Adds a reversed "assert" check
+    /// @param matcher Matcher to perform the check, see @ref Matchers
     AudioTestBuilder& assertFalse (const Matcher<SampleType>& matcher)
     {
         addCheck (matcher, SignalAssertionLevel::assert, false);
         return *this;
     }
 
+    /// @brief Adds a reversed "assert" check
+    /// @param matcher Matcher to perform the check, see @ref Matchers
     template <typename MatcherType>
     AudioTestBuilder& assertFalse (MatcherType&& matcher)
     {
@@ -231,6 +287,10 @@ public:
         return *this;
     }
 
+    /// @brief Enables saving output audio to a wav file
+    /// @param path File path - relative or absolute. If relative path is set, it will be appended to the provided `--data-root-path` CLI argument.
+    /// @param mode When to save, see @ref hart::Save
+    /// @param wavFormat Format of the wav file, see hart::WavFormat for supported options
     /// @see HART_REQUIRES_DATA_PATH_ARG
     AudioTestBuilder& saveOutputTo (const std::string& path, Save mode = Save::always, WavFormat wavFormat = WavFormat::pcm24)
     {
@@ -243,6 +303,11 @@ public:
         return *this;
     }
 
+    /// @brief Enables saving a plot to an SVG file
+    /// @details This will plot an input and output audio as a waveform
+    /// @param path File path - relative or absolute. If relative path is set, it will be appended to the provided `--data-root-path` CLI argument.
+    /// @param mode When to save, see @ref hart::Save
+    /// @see HART_REQUIRES_DATA_PATH_ARG
     AudioTestBuilder& savePlotTo (const std::string& path, Save mode = Save::always)
     {
         if (path.empty())
@@ -253,12 +318,18 @@ public:
         return *this;
     }
 
+    /// @brief Adds a label to the test
+    /// @details Useful when you call @ref process() multiple times in one test case - the label
+    /// will be put into test failure report to indicate exactly which test has failed.
+    /// @param testLabel Any text, to be used as a label
     AudioTestBuilder& withLabel (const std::string& testLabel)
     {
         m_testLabel = testLabel;
         return *this;
     }
 
+    /// @brief Perfoems the test
+    /// @details Call this after setting all the test parameters
     void process()
     {
         m_durationFrames = (size_t) std::round (m_sampleRateHz * m_durationSeconds);
@@ -482,12 +553,23 @@ private:
     }
 };
 
+/// @brief Call this to start building your test
+/// @param dsp Instance of your DSP effect
+/// @return @ref AudioTestBuilder instance - you can chain a bunch of test parameters with it.
+/// @ingroup TestRunner
+/// @relates AudioTestBuilder
 template <typename DSPType>
 AudioTestBuilder<typename std::decay<DSPType>::type::SampleTypePublicAlias> processAudioWith (DSPType&& dsp)
 {
     return AudioTestBuilder<typename std::decay<DSPType>::type::SampleTypePublicAlias> (std::forward<DSPType>(dsp));
 }
 
+/// @brief Call this to start building your test
+/// @details Call this for DSP objects that do not support moving or copying
+/// @param dsp Instance of your DSP effect wrapped in a smart pointer
+/// @return @ref AudioTestBuilder instance - you can chain a bunch of test parameters with it.
+/// @ingroup TestRunner
+/// @relates AudioTestBuilder
 template <typename DSPType>
 AudioTestBuilder<typename DSPType::SampleTypePublicAlias> processAudioWith (std::unique_ptr<DSPType>&& dsp)
 {

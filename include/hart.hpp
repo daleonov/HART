@@ -47,22 +47,47 @@ namespace hart
     static HART_UNIQUE_ID(HART_RegistrarType) HART_UNIQUE_ID(HART_registrar); \
     static void HART_UNIQUE_ID(HART_RunTask)()
 
+/// @brief Declares a test case with tags
+/// @warning Tags aren't supported yet
+/// @param name Name for the test case
+/// @param tags Tags like "[my-tag-1][my-tag-2]"
+/// @ingroup TestRunner
 #define HART_TEST_WITH_TAGS(name, tags) HART_ITEM_WITH_TAGS(name, tags, hart::TaskCategory::test)
+
+/// @brief Declares a generator with tags
+/// @details Pretty much the same as a usual test case, but will be called only if the `--run-generators` CLI flag is set
+/// @warning Tags aren't supported yet
+/// @param name Name for the generator
+/// @param tags Tags like "[my-tag-1][my-tag-2]"
+/// @ingroup TestRunner
 #define HART_GENERATE_WITH_TAGS(name, tags) HART_ITEM_WITH_TAGS(name, tags, hart::TaskCategory::generate)
+
+/// @brief Declares a test case
+/// @param name Name for the test case
+/// @ingroup TestRunner
 #define HART_TEST(name) HART_TEST_WITH_TAGS(name, "")
+
+/// @brief Declares a generator
+/// @details Pretty much the same as a usual test case, but will be called only if the `--run-generators` CLI flag is set
+/// @param name Name for generator
+/// @ingroup TestRunner
 #define HART_GENERATE(name) HART_GENERATE_WITH_TAGS(name, "")
 
 #if HART_DO_NOT_THROW_EXCEPTIONS
 /// @brief Put it at the beginning of your tese case if it requires a properly set data path
 /// @details For example, when using relative paths to the wav files. The test will instantly fail is the path is not set.
+/// @ingroup TestRunner
 #define HART_REQUIRES_DATA_PATH_ARG if (hart::CLIConfig::getInstance().getDataRootPath().empty()) { hart::ExpectationFailureMessages::get().emplace_back ("This test requires a data path set by the --data-root-path CLI argument, but it's empty"); return; }
 #else
 /// @brief Put it at the beginning of your tese case if it requires a properly set data path
 /// @details For example, when using relative paths to the wav files. The test will instantly fail is the path is not set.
+/// @ingroup TestRunner
 #define HART_REQUIRES_DATA_PATH_ARG if (hart::CLIConfig::getInstance().getDataRootPath().empty()) { throw hart::ConfigurationError ("This test requires a data path set by the --data-root-path CLI argument, but it's empty"); }
 #endif  // HART_DO_NOT_THROW_EXCEPTIONS
 
-
+/// @brief Runs all tests or generators
+/// @prief Place this macro in your `main()` function
+/// @ingroup TestRunner
 #define HART_RUN_ALL_TESTS(argc, argv) \
     do \
     { \
