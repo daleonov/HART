@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>  // max_element()
 #include <vector>
 
 #include "hart_exceptions.hpp"
