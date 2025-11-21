@@ -10,18 +10,23 @@
 namespace hart
 {
 
+/// @brief A simple envelope constructed from semgents
+/// @ingroup Envelopes
 class SegmentedEnvelope:
     public Envelope
 {
 public:
     // TODO: Log curve?
+    /// @brief Determines a shape of ramp curve
     enum class Shape
     {
-        linear,
-        exponential,
-        sCurve
+        linear,  ///< Linear curve
+        exponential,  ///< Exponential curve
+        sCurve  ///< S-curve
     };
 
+    /// @brief Creates a segmented envelope instance
+    /// @param startValue Initial value of the envelope, in any unit
     SegmentedEnvelope (double startValue):
         m_resetValue (startValue),
         m_beginValue (startValue),
@@ -60,21 +65,28 @@ public:
         m_currentValue = m_resetValue;
     }
 
-    SegmentedEnvelope& hold (double duration_s)
+    /// @brief Adds a flat horizontal section to the envelope
+    /// @param durationSeconds Duration of the new segment in seconds
+    SegmentedEnvelope& hold (double durationSeconds)
     {
-        //m_segments.emplace_back (duration_s, m_endValue, Shape::linear, true);
-        m_segments.push_back (Segment { duration_s, m_endValue, Shape::linear, true });
+        //m_segments.emplace_back (durationSeconds, m_endValue, Shape::linear, true);
+        m_segments.push_back (Segment { durationSeconds, m_endValue, Shape::linear, true });
         return *this;
     }
 
-    SegmentedEnvelope& rampTo (double targetValue, double duration_s, Shape shape = Shape::linear)
+    /// @brief Adds a transitional section to the envelope
+    /// @param targetValue Value at the end of transition, in any unit
+    /// @param durationSeconds Duration of the the transition in seconds
+    /// @param shape Shape of the transition ramp curve
+    SegmentedEnvelope& rampTo (double targetValue, double durationSeconds, Shape shape = Shape::linear)
     {
-        m_segments.push_back (Segment { duration_s, targetValue, shape, false });
-        //m_segments.emplace_back (duration_s, targetValue, shape, false);
+        m_segments.push_back (Segment { durationSeconds, targetValue, shape, false });
+        //m_segments.emplace_back (durationSeconds, targetValue, shape, false);
         m_endValue = targetValue;
         return *this;
     }
 
+    /// @brief Created a copy of the envelope wrapped in a smart pointer
     std::unique_ptr<Envelope> copy() const override
     {
         return hart::make_unique<SegmentedEnvelope> (*this);

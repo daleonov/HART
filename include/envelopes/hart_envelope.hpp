@@ -6,6 +6,10 @@
 namespace hart
 {
 
+/// @defgroup Envelopes Envelopes
+/// @brief DSP Parameter automation
+
+/// @brief Represents an Envelope curve for DSP parameters
 class Envelope
 {
 public:
