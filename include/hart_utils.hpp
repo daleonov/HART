@@ -13,18 +13,35 @@
 namespace hart
 {
 
+/// @defgroup Utilities Utilities
+/// @brief Handy functions and constants
+/// @{
+
+/// @brief Infinity
 constexpr double inf = std::numeric_limits<double>::infinity();
+
+/// @brief Infinity
 constexpr double oo = inf;
+
+/// @brief pi
 constexpr double pi = 3.14159265358979323846;
+
+/// @brief 2 * pi
 constexpr double twoPi = 2.0 * pi;
+
+/// @brief pi / 2
 constexpr double halfPi = pi / 2.0;
 
+/// @brief `std::clamp()` replacement for C++11
 template <typename NumericType>
 NumericType clamp (const NumericType& value, const NumericType& low, const NumericType& high)
 {
     return std::min<NumericType> (std::max<NumericType> (value, low), high);
 }
 
+/// @brief Converts dB to linear value (ratio)
+/// @param valueDb Value in decibels
+/// @return Value in linear domain
 template <typename SampleType>
 inline static SampleType decibelsToRatio (SampleType valueDb)
 {
@@ -34,6 +51,9 @@ inline static SampleType decibelsToRatio (SampleType valueDb)
     return std::pow (static_cast<SampleType> (10), valueDb / static_cast<SampleType> (20));
 }
 
+/// @brief Converts linear value (ratio) to dB
+/// @param valueLinear Value in linear domain
+/// @return Value in decibels
 template <typename SampleType>
 inline static SampleType ratioToDecibels (SampleType valueLinear)
 {
@@ -43,18 +63,21 @@ inline static SampleType ratioToDecibels (SampleType valueLinear)
     return static_cast<SampleType> (20 * std::log10 (valueLinear));
 }
 
+/// @brief Compares two floating point numbers within a given tolerance
 template <typename SampleType>
 inline static SampleType floatsEqual (SampleType a, SampleType b, SampleType epsilon = (SampleType) 1e-8)
 {
     return std::abs (a - b) < epsilon;
 }
 
+/// @brief Compares two floating point numbers within a given tolerance
 template <typename SampleType>
 inline static SampleType floatsNotEqual (SampleType a, SampleType b, SampleType epsilon = (SampleType) 1e-8)
 {
     return std::abs (a - b) >= epsilon;
 }
 
+/// @brief Rounds a floating point value to a `size_t` value
 template <typename SampleType>
 inline static size_t roundToSizeT (SampleType x)
 {
@@ -73,6 +96,7 @@ SampleType wrapPhase (const SampleType phaseRadians)
     return wrappedPhaseRadians;
 }
 
+/// @brief Checks if the provided file path is absolute
 inline static bool isAbsolutePath (const std::string& path)
 {
     if (path.empty())
@@ -89,6 +113,8 @@ inline static bool isAbsolutePath (const std::string& path)
     return false;
 }
 
+/// @brief Converts path to absolute, if it's relative
+/// @deials Relative paths are resolved based on a provided `--data-root-path` CLI argument 
 inline static std::string toAbsolutePath (const std::string& path)
 {
     if (isAbsolutePath(path))
@@ -97,14 +123,15 @@ inline static std::string toAbsolutePath (const std::string& path)
     return CLIConfig::getInstance().getDataRootPath() + '/' + path;
 }
 
+/// @brief `std::unordered_map::contains()` replacement for C++11
 template <typename KeyType, typename ValueType>
 inline static bool contains (const std::unordered_map<KeyType, ValueType>& map, const KeyType& key)
 {
     return map.find (key) != map.end();
 }
 
-// For C++11 compatibility
-// If you're one C++14 or later, just use STL version
+/// @brief `std::make_unique()` replacement for C++11
+/// @details For C++11 compatibility only. If you're one C++14 or later, just use STL version.
 template<typename ObjectType, typename... Args>
 std::unique_ptr<ObjectType> make_unique (Args&&... args)
 {
@@ -120,5 +147,7 @@ std::unique_ptr<ObjectType> make_unique (Args&&... args)
     { \
         stream << #ClassName "()"; \
     }
+
+/// @}
 
 }  // namespace hart
