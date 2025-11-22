@@ -255,6 +255,17 @@ public:
     /// @private
     using m_SampleType = SampleType;
 
+protected:
+    void setNumChannels (size_t numChannels)
+    {
+        m_numChannels = numChannels;
+    }
+
+    size_t getNumChannels()
+    {
+        return m_numChannels;
+    }
+
 private:
     size_t m_numChannels = 1;
     std::vector<std::unique_ptr<DSP<SampleType>>> dspChain;

@@ -28,7 +28,7 @@ public:
         reset();
     }
 
-    bool supportsNumChannels (size_t numChannels) const override { return true; };
+    bool supportsNumChannels (size_t /* numChannels */) const override { return true; };
 
     void prepare (double /*sampleRateHz*/, size_t numOutputChannels, size_t /*maxBlockSizeFrames*/) override
     {
@@ -38,7 +38,7 @@ public:
     void renderNextBlock (AudioBuffer<SampleType>& output) override
     {
         for (size_t frame = 0; frame < output.getNumFrames(); ++frame)
-            for (size_t channel = 0; channel < this->m_numChannels; ++channel)
+            for (size_t channel = 0; channel < this->getNumChannels(); ++channel)
                 output[channel][frame] = m_uniformRealDistribution (m_randomNumberGenerator);
     }
 
