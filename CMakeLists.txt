@@ -11,6 +11,7 @@ else()
 endif()
 
 add_library(HART INTERFACE)
+add_library(HART::HART ALIAS HART)
 
 target_include_directories(HART INTERFACE
     include/
