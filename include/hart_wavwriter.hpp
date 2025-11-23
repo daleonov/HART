@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "dr_wav.h"
+#include "dependencies/dr_libs/dr_wav.h"
 
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"

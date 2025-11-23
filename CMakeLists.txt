@@ -15,8 +15,6 @@ add_library(HART::HART ALIAS HART)
 
 target_include_directories(HART INTERFACE
     include/
-    dependencies/CLI11/
-    dependencies/dr_libs/
 )
 
 option(HART_BUILD_TESTS "Build HART tests" ON)

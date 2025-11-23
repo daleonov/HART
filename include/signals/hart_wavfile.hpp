@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 
-#include "dr_wav.h"
+#include "dependencies/dr_libs/dr_wav.h"
 
 #include "hart_exceptions.hpp"
 #include "signals/hart_signal.hpp"

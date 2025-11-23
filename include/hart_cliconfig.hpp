@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include "CLI11.hpp"
+#include "dependencies/CLI11/CLI11.hpp"
 
 namespace hart
 {

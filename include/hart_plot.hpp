@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../dependencies/choc/platform/choc_DisableAllWarnings.h"
-#include "../dependencies/signalsmith/plot.h"
-#include "../dependencies/choc/platform/choc_ReenableAllWarnings.h"
+#include "dependencies/choc/platform/choc_DisableAllWarnings.h"
+#include "dependencies/signalsmith/plot.h"
+#include "dependencies/choc/platform/choc_ReenableAllWarnings.h"
 
 #include "hart_audio_buffer.hpp"
 
