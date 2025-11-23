@@ -1,12 +1,6 @@
 #include "hart.hpp"
 
-using EqualsTo = hart::EqualsTo<float>;
-using HardClip = hart::HardClip<float>;
-using GainDb = hart::GainDb<float>;
-using PeaksAt = hart::PeaksAt<float>;
-using hart::processAudioWith;
-using Silence = hart::Silence<float>;
-using SineWave = hart::SineWave<float>;
+HART_DECLARE_ALIASES_FOR_FLOAT;
 
 HART_TEST ("GainDb - GainDb Values")
 {

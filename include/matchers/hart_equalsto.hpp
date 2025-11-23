@@ -130,4 +130,6 @@ private:
     }
 };
 
+HART_MATCHER_DECLARE_ALIASES_FOR (EqualsTo)
+
 }  // namespace hart

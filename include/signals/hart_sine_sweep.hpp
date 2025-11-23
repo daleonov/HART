@@ -240,4 +240,6 @@ private:
     }
 };
 
+HART_SIGNAL_DECLARE_ALIASES_FOR (SineSweep)
+
 } // namespace hart

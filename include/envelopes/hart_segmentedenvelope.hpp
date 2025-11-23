@@ -192,4 +192,6 @@ private:
     }
 };
 
+HART_ENVELOPE_DECLARE_ALIASES_FOR (SegmentedEnvelope)
+
 }  // namespace hart

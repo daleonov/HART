@@ -365,3 +365,12 @@ inline std::ostream& operator<< (std::ostream& stream, const DSP<SampleType>& ds
     }
 
 }  // namespace hart
+
+/// @private
+#define HART_DSP_DECLARE_ALIASES_FOR(ClassName) \
+    namespace aliases_float{\
+        using ClassName = hart::ClassName<float>;\
+    }\
+    namespace aliases_double{\
+        using ClassName = hart::ClassName<double>;\
+    }

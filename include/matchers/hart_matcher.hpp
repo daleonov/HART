@@ -149,3 +149,12 @@ inline std::ostream& operator<< (std::ostream& stream, const Matcher<SampleType>
 
 
 }  // namespace hart
+
+/// @private
+#define HART_MATCHER_DECLARE_ALIASES_FOR(ClassName) \
+    namespace aliases_float{\
+        using ClassName = hart::ClassName<float>;\
+    }\
+    namespace aliases_double{\
+        using ClassName = hart::ClassName<double>;\
+    }

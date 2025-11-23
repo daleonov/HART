@@ -141,4 +141,6 @@ private:
     }
 };
 
+HART_DSP_DECLARE_ALIASES_FOR (GainLinear)
+
 }  // namespace hart

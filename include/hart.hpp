@@ -97,4 +97,10 @@ namespace hart
     } \
     while (false);
 
+/// @brief Put it before you test cases to use hart classes without hart:: namespace prefix and explicit <float> template value
+#define HART_DECLARE_ALIASES_FOR_FLOAT  using namespace hart::aliases_float
+
+/// @brief Put it before you test cases to use hart classes without hart:: namespace prefix and explicit <double> template value
+#define HART_DECLARE_ALIASES_FOR_DOUBLE using namespace hart::aliases_double
+
 } // namespace hart

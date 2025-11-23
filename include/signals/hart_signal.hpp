@@ -376,3 +376,12 @@ Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, std::unique_ptr<DS
         static_assert(false, "This Signal cannot be moved"); \
         return nullptr; \
     }
+
+/// @private
+#define HART_SIGNAL_DECLARE_ALIASES_FOR(ClassName) \
+    namespace aliases_float{\
+        using ClassName = hart::ClassName<float>;\
+    }\
+    namespace aliases_double{\
+        using ClassName = hart::ClassName<double>;\
+    }

@@ -90,4 +90,6 @@ private:
     double m_thresholdLinear;
 };
 
+HART_DSP_DECLARE_ALIASES_FOR (HardClip)
+
 }  // namespace hart

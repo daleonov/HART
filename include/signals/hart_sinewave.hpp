@@ -83,4 +83,6 @@ private:
     }
 };
 
+HART_SIGNAL_DECLARE_ALIASES_FOR (SineWave)
+
 }  // namespace hart

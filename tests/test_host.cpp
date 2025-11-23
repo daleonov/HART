@@ -1,11 +1,7 @@
 #include <memory>
 #include "hart.hpp"
 
-using hart::processAudioWith;
-using EqualsTo = hart::EqualsTo<float>;
-using PeaksAt = hart::PeaksAt<float>;
-using GainDb = hart::GainDb<float>;
-using SineWave = hart::SineWave<float>;
+HART_DECLARE_ALIASES_FOR_FLOAT;
 
 HART_TEST ("Host - DSP Move, Copy and Transfer")
 {

@@ -1,16 +1,6 @@
 #include "hart.hpp"
 
-using hart::decibelsToRatio;
-using hart::processAudioWith;
-using EqualsTo = hart::EqualsTo<float>;
-using PeaksAt = hart::PeaksAt<float>;
-using PeaksBelow = hart::PeaksBelow<float>;
-using GainDb = hart::GainDb<float>;
-using SegmentedEnvelope = hart::SegmentedEnvelope;
-using Silence = hart::Silence<float>;
-using SineSweep = hart::SineSweep<float>;
-using SineWave = hart::SineWave<float>;
-using WavFile = hart::WavFile<float>;
+HART_DECLARE_ALIASES_FOR_FLOAT;
 
 HART_TEST ("SineSweep - Normal Use")
 {

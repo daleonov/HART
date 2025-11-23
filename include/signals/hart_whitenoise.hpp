@@ -63,4 +63,6 @@ private:
     std::uniform_real_distribution<SampleType> m_uniformRealDistribution {(SampleType) -1, (SampleType) 1};
 };
 
+HART_SIGNAL_DECLARE_ALIASES_FOR (WhiteNoise)
+
 }  // namespace hart

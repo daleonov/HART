@@ -35,4 +35,6 @@ public:
     HART_SIGNAL_DEFINE_COPY_AND_MOVE (Silence);
 };
 
+HART_SIGNAL_DECLARE_ALIASES_FOR (Silence)
+
 }  // namespace hart

@@ -92,4 +92,6 @@ private:
     SampleType m_observedPeakDb = (SampleType) 0;
 };
 
+HART_MATCHER_DECLARE_ALIASES_FOR (PeaksBelow)
+
 }  // namespace hart

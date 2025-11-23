@@ -1,12 +1,7 @@
 #include "hart.hpp"
 
+HART_DECLARE_ALIASES_FOR_FLOAT;
 using hart::decibelsToRatio;
-using hart::processAudioWith;
-using EqualsTo = hart::EqualsTo<float>;
-using GainLinear = hart::GainLinear<float>;
-using SegmentedEnvelope = hart::SegmentedEnvelope;
-using SineWave = hart::SineWave<float>;
-using WavFile = hart::WavFile<float>;
 
 HART_TEST ("Envelope - Gain Envelope Regression")
 {

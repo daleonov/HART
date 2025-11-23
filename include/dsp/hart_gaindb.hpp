@@ -153,4 +153,6 @@ private:
     }
 };
 
+HART_DSP_DECLARE_ALIASES_FOR (GainDb)
+
 }  // namespace hart

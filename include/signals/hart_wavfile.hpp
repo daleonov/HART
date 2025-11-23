@@ -142,4 +142,6 @@ private:
     std::shared_ptr<AudioBuffer<float>> m_wavFrames;
 };
 
+HART_SIGNAL_DECLARE_ALIASES_FOR (WavFile)
+
 }  // namespace hart

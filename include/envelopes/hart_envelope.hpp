@@ -28,3 +28,12 @@ public:
 };
 
 }  // namespace hart
+
+/// @private
+#define HART_ENVELOPE_DECLARE_ALIASES_FOR(ClassName) \
+    namespace aliases_float{\
+        using ClassName = hart::ClassName;\
+    }\
+    namespace aliases_double{\
+        using ClassName = hart::ClassName;\
+    }

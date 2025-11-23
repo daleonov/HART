@@ -579,4 +579,13 @@ AudioTestBuilder<typename DSPType::SampleTypePublicAlias> processAudioWith (std:
     return AudioTestBuilder<SampleType> (std::unique_ptr<DSP<SampleType>> (dsp.release()));
 }
 
+namespace aliases_float
+{
+    using hart::processAudioWith;
+}
+namespace aliases_double
+{
+    using hart::processAudioWith;
+}
+
 }  // namespace hart
