@@ -18,18 +18,6 @@ target_include_directories(HART INTERFACE
     dependencies/dr_libs/
 )
 
-add_executable(HART_Examples
-    src/hart.cpp
-    examples/run_tests.cpp
-    examples/example_test_booster.cpp
-)
-
-target_link_libraries(HART_Examples PRIVATE HART)
-
-target_include_directories(HART_Examples PRIVATE
-    examples/
-)
-
 add_executable(HART_Tests
     tests/generate_data.cpp
     tests/test_dsp.cpp
