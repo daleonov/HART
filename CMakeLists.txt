@@ -18,14 +18,17 @@ target_include_directories(HART INTERFACE
     dependencies/dr_libs/
 )
 
-add_executable(HART_Tests
-    tests/generate_data.cpp
-    tests/test_dsp.cpp
-    tests/test_dsp_chains.cpp
-    tests/test_envelope.cpp
-    tests/test_host.cpp
-    tests/test_main.cpp
-    tests/test_sine_sweep.cpp
-)
+option(HART_BUILD_TESTS "Build HART tests" ON)
 
-target_link_libraries(HART_Tests PRIVATE HART)
+if(HART_BUILD_TESTS)
+    add_executable(HART_Tests
+        tests/generate_data.cpp
+        tests/test_dsp.cpp
+        tests/test_dsp_chains.cpp
+        tests/test_envelope.cpp
+        tests/test_host.cpp
+        tests/test_main.cpp
+        tests/test_sine_sweep.cpp
+    )
+    target_link_libraries(HART_Tests PRIVATE HART)
+endif()  # HART_BUILD_TESTS
