@@ -4,7 +4,9 @@
 #include <string>
 #include <vector>
 
+#include "dependencies/choc/platform/choc_DisableAllWarnings.h"
 #include "dependencies/dr_libs/dr_wav.h"
+#include "dependencies/choc/platform/choc_ReenableAllWarnings.h"
 
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
