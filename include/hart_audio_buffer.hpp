@@ -1,6 +1,6 @@
 #pragma once
 
-#include <algorithm>  // max_element()
+#include <algorithm>  // max_element(), copy(), fill()
 #include <vector>
 
 #include "hart_exceptions.hpp"
@@ -35,7 +35,7 @@ public:
         m_frames (std::move (other.m_frames)),
         m_channelPointers (std::move (other.m_channelPointers))
     {
-        other.clear();
+        other.erase();
     }
 
     ~AudioBuffer() = default;
@@ -67,7 +67,7 @@ public:
         m_numFrames = other.m_numFrames;
         m_frames = std::move (other.m_frames);
         m_channelPointers = std::move (other.m_channelPointers);
-        other.clear();
+        other.erase();
 
         return *this;
     }
@@ -123,7 +123,7 @@ public:
         updateChannelPointers();
     }
 
-    void clear()
+    void erase()
     {
         m_numFrames = 0;
         m_frames.clear();
@@ -174,7 +174,52 @@ public:
         return peakSampleAcrossAllChannels;
     }
 
-    // TODO: Implement resize() and copyFrom() to avoid repeated memory re-allocations caused by spamming appendFrom()
+    // TODO: Implement resize() to avoid repeated memory re-allocations caused by spamming appendFrom()
+
+    /// @brief Copies audio from another buffer
+    /// @param destChannel Channel within this buffer to copy the frames to
+    /// @param destStartFrame Start frame within this buffer's channel
+    /// @param source Source buffer to read from
+    /// @param sourceChannel Channel within the source buffer to read from
+    /// @param sourceStartFrame Offset within the source buffer's channel to start reading frames from
+    /// @param numFrames Number of frames to copy
+    void copyFrom (size_t destChannel, size_t destStartFrame, const AudioBuffer& source, size_t sourceChannel, size_t sourceStartFrame, size_t numFrames)
+    {
+        if (destChannel >= m_numChannels || sourceChannel >= source.m_numChannels)
+            HART_THROW_OR_RETURN_VOID (hart::IndexError, "Invalid channel");
+
+        if (destStartFrame + numFrames > m_numFrames || sourceStartFrame + numFrames > source.m_numFrames)
+            HART_THROW_OR_RETURN_VOID (hart::IndexError, "Invalid frame range");
+
+        std::copy (
+            source.m_channelPointers[sourceChannel] + sourceStartFrame,
+            source.m_channelPointers[sourceChannel] + sourceStartFrame + numFrames,
+            m_channelPointers[destChannel] + destStartFrame
+            );
+    }
+
+    /// @brief Clears the entire buffer
+    /// @details Sets all frames in all channels to zeros
+    void clear()
+    {
+        std::fill (m_frames.begin(), m_frames.end(), (SampleType) 0);
+    }
+
+    /// @brief Clears a specific section of a given channel
+    /// @details Overwrites a selected section of the channel with zeros
+    /// @param channel Cnannel in which to clear a frame range
+    /// @param startFrame Start of the frame range to clear (inclusive)
+    /// @param numFrames Amount of frames to clear
+    void clear (size_t channel, size_t startFrame, size_t numFrames)
+    {
+        if (channel >= m_numChannels)
+            HART_THROW_OR_RETURN_VOID (hart::IndexError, "Invalid channel");
+
+        if (startFrame + numFrames > m_numFrames)
+            HART_THROW_OR_RETURN_VOID (hart::IndexError, "Invalid frame range");
+
+        std::fill (m_channelPointers[channel], m_channelPointers[channel] + numFrames, (SampleType) 0);
+    }
 
 private:
     const size_t m_numChannels = 0;
