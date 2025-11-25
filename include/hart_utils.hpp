@@ -32,6 +32,13 @@ constexpr double twoPi = 2.0 * pi;
 /// @brief pi / 2
 constexpr double halfPi = pi / 2.0;
 
+/// @brief Helper values for channel indices
+enum Channel
+{
+    left = 0,
+    right = 1
+};
+
 /// @brief `std::clamp()` replacement for C++11
 template <typename NumericType>
 NumericType clamp (const NumericType& value, const NumericType& low, const NumericType& high)

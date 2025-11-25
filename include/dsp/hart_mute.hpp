@@ -20,13 +20,6 @@ private:
     static constexpr size_t m_maxChannels = 64;
 
 public:
-    /// @brief Helper values for channel indices
-    enum Channel
-    {
-        left = 0,
-        right = 1
-    };
-
     /// @brief Creates a Mute object that mutes all channels
     Mute():
         m_channelsToMute (~std::bitset<m_maxChannels>{})
@@ -42,7 +35,7 @@ public:
 
     /// @brief Creates a Mute object from channels to mute (0-based)
     /// @param channels List of channels to mute
-    /// @see hart::DSP::Mute::Channel
+    /// @see hart::Channel
     Mute (std::initializer_list<size_t> channelsToMute)
     {
         for (size_t channel : channelsToMute)

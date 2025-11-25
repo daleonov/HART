@@ -1,6 +1,7 @@
 #include "hart.hpp"
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
+using hart::Channel;
 
 HART_TEST ("GainDb - GainDb Values")
 {
@@ -126,24 +127,28 @@ HART_TEST ("Mute")
         .expectTrue (EqualsTo (SineWave()))
         .process();
 
-    processAudioWith (Mute ({Mute::Channel::left}))
+    processAudioWith (Mute ({Channel::left}))
         .withLabel ("Mute left channel")
         .withInputSignal (SineWave())
         .inStereo()
         .expectFalse (EqualsTo (Silence()))
         .expectFalse (EqualsTo (SineWave()))
-        .expectFalse (EqualsTo (SineWave() >> Mute ({Mute::Channel::right})))
+        .expectFalse (EqualsTo (SineWave() >> Mute ({Channel::right})))
         .expectTrue (PeaksAt (0_dB))
+        .expectTrue (EqualsTo (Silence()).forChannel (Channel::left))
+        .expectTrue (EqualsTo (SineWave()).forChannel (Channel::right))
         .process();
 
-    processAudioWith (Mute ({Mute::Channel::right}))
+    processAudioWith (Mute ({Channel::right}))
         .withLabel ("Mute right channel")
         .withInputSignal (SineWave())
         .inStereo()
         .expectFalse (EqualsTo (Silence()))
         .expectFalse (EqualsTo (SineWave()))
-        .expectFalse (EqualsTo (SineWave() >> Mute ({Mute::Channel::left})))
+        .expectFalse (EqualsTo (SineWave() >> Mute ({Channel::left})))
         .expectTrue (PeaksAt (0_dB))
+        .expectTrue (EqualsTo (SineWave()).forChannel (Channel::left))
+        .expectTrue (EqualsTo (Silence()).forChannel (Channel::right))
         .process();
 
     processAudioWith (Mute (~std::bitset<64>{}.set (0).set (2)))
@@ -153,5 +158,7 @@ HART_TEST ("Mute")
         .withOutputChannels (5)
         .expectFalse (EqualsTo (Silence()))
         .expectTrue (PeaksAt (0_dB))
+        .expectTrue (EqualsTo (SineWave()).forChannels ({0, 2}))
+        .expectTrue (EqualsTo (Silence()).forChannels ({1, 3, 4}))
         .process();
 }

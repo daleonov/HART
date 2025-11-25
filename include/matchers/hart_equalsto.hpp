@@ -20,7 +20,7 @@ namespace hart
 /// @ingroup Matchers
 template<typename SampleType>
 class EqualsTo:
-    public Matcher<SampleType>
+    public Matcher<SampleType, EqualsTo<SampleType>>
 {
 public:
     /// @brief Creates a matcher for a specific signal
@@ -42,16 +42,48 @@ public:
     }
 
     EqualsTo (EqualsTo&& other) noexcept:
+        Matcher<SampleType, EqualsTo<SampleType>> (std::move (other)),
         m_referenceSignal (std::move (other.m_referenceSignal)),
         m_toleranceLinear (other.m_toleranceLinear)
     {
     }
 
     EqualsTo (const EqualsTo& other):
+        Matcher<SampleType, EqualsTo<SampleType>> (other),
         m_referenceSignal (other.m_referenceSignal != nullptr ? other.m_referenceSignal->copy() : nullptr),
         m_toleranceLinear (other.m_toleranceLinear)
     {
     }
+
+    EqualsTo& operator= (const EqualsTo& other)
+    {
+        if (this == &other)
+            return *this;
+
+        Matcher<SampleType, EqualsTo<SampleType>>::operator= (other);
+
+        m_referenceSignal = other.m_referenceSignal != nullptr ? other.m_referenceSignal->copy() : nullptr;
+        m_toleranceLinear = other.m_toleranceLinear;
+
+        return *this;
+    }
+
+    EqualsTo& operator= (EqualsTo&& other) noexcept
+    {
+        if (this == &other)
+            return *this;
+
+        // Move base first
+        Matcher<SampleType, EqualsTo<SampleType>>::operator=(std::move(other));
+
+        // Then move our members
+        m_referenceSignal = std::move(other.m_referenceSignal);
+        m_toleranceLinear = other.m_toleranceLinear;
+
+        return *this;
+    }
+
+    ~EqualsTo() override = default;
 
     void prepare (double sampleRateHz, size_t numChannels, size_t maxBlockSizeFrames) override
     {
@@ -65,6 +97,9 @@ public:
 
         for (size_t channel = 0; channel < referenceAudio.getNumChannels(); ++channel)
         {
+            if (! this->appliesToChannel (channel))
+                continue;
+
             for (size_t frame = 0; frame < referenceAudio.getNumFrames(); ++frame)
             {
                 if (notEqual (observedAudio[channel][frame], referenceAudio[channel][frame]))
@@ -112,8 +147,6 @@ public:
         stream << "EqualsTo (" << *m_referenceSignal
             << linPrecision << ", " << m_toleranceLinear << ')';
     }
-
-    HART_MATCHER_DEFINE_COPY_AND_MOVE (EqualsTo);
 
 private:
     std::unique_ptr<Signal<SampleType>> m_referenceSignal;

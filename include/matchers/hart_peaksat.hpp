@@ -20,7 +20,7 @@ namespace hart
 /// @ingroup Matchers
 template<typename SampleType>
 class PeaksAt:
-    public Matcher<SampleType>
+    public Matcher<SampleType, PeaksAt<SampleType>>
 {
 public:
     /// @brief Creates a matcher for a specific peak level
@@ -43,6 +43,9 @@ public:
 
         for (size_t channel = 0; channel < observedAudio.getNumChannels(); ++channel)
         {
+            if (! this->appliesToChannel (channel))
+                continue;
+
             for (size_t frame = 0; frame < observedAudio.getNumFrames(); ++frame)
             {
                 const SampleType currentPeakLinear = std::abs (observedAudio[channel][frame]);
@@ -92,8 +95,6 @@ public:
             << dbPrecision << m_targetDb << "_dB, "
             << linPrecision << m_toleranceLinear << ')';
     }
-
-    HART_MATCHER_DEFINE_COPY_AND_MOVE (PeaksAt);
 
 private:
     const SampleType m_targetDb;
