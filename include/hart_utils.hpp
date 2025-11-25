@@ -121,7 +121,7 @@ inline static bool isAbsolutePath (const std::string& path)
 }
 
 /// @brief Converts path to absolute, if it's relative
-/// @deials Relative paths are resolved based on a provided `--data-root-path` CLI argument 
+/// @details Relative paths are resolved based on a provided `--data-root-path` CLI argument 
 inline static std::string toAbsolutePath (const std::string& path)
 {
     if (isAbsolutePath(path))
@@ -147,8 +147,9 @@ std::unique_ptr<ObjectType> make_unique (Args&&... args)
 
 /// @brief Defines a basic string representation of your class
 /// @details If your class takes ctor arguments, it's strongly encouraged to make a proper
-/// implementation of represent(), so that you get more detailed test failure reports.
-/// See @ref DSP::represent(), @ref Macthers::represent(), @ref Signal::represent() for the description.
+/// implementation of `represent()`, so that you get more detailed test failure reports.
+/// See @ref hart::DSP::represent(), @ref hart::Macthers::represent(),
+/// @ref hart::Signal::represent() for the description.
 #define HART_DEFINE_GENERIC_REPRESENT(ClassName) \
     virtual void represent(std::ostream& stream) const override \
     { \

@@ -34,7 +34,7 @@ public:
     }
 
     /// @brief Creates a Mute object from channels to mute (0-based)
-    /// @param channels List of channels to mute
+    /// @param channelsToMute List of channels to mute
     /// @see hart::Channel
     Mute (std::initializer_list<size_t> channelsToMute)
     {

@@ -1442,7 +1442,7 @@ HTML_EXTRA_FILES       = docs/doxygen/doxygen-awesome/doxygen-awesome-fragment-c
                          docs/doxygen/doxygen-awesome/doxygen-awesome-paragraph-link.js \
                          docs/doxygen/doxygen-awesome/doxygen-awesome-interactive-toc.js \
                          docs/doxygen/doxygen-awesome/doxygen-awesome-tabs.js \
-                         docs/assets
+                         docs/assets/Clipper.svg
 
 # The HTML_COLORSTYLE tag can be used to specify if the generated HTML output
 # should be rendered with a dark or light theme.

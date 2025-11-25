@@ -111,7 +111,7 @@ If your effect doesn't have copy/move semantics, you can still pass it wrapped i
 processAudioWith (std::make_unique<MyDSPWrapper>())
 ```
 
-So if your object is not trivially movable or copyable, you can still use HART for testing it with. @ref AudioTestBuilder::process() will spit out your DSP instance as a smart pointer after processing, so you can re-use it multiple times, if you do not want to instantiate a new one every time.
+So if your object is not trivially movable or copyable, you can still use HART for testing it with. @ref hart::AudioTestBuilder::process() will spit out your DSP instance as a smart pointer after processing, so you can re-use it multiple times, if you do not want to instantiate a new one every time.
 
 ## Defining input signal [2]
 
@@ -184,7 +184,7 @@ For channel configurations, you can use some handy aliases:
  * `withMonoInput()`
  * `withMonoOutput()`
 
-You can skip any parameters that don't care about (keeping them at their default values), and only set the specific ones. For more details, check @ref AudioTestBuilder methods.
+You can skip any parameters that don't care about (keeping them at their default values), and only set the specific ones. For more details, check @ref hart::AudioTestBuilder methods.
 
 # Logging the audio
 
@@ -198,9 +198,9 @@ processAudioWith (MyDSPWrapper())
     .process();
 ```
 
-By default, they will save the audio only when any of the checks fail, but you can tell them to save audio regardless of the result via the second argument - handy for generating data for regression tests. See @ref AudioTestBuilder::saveInputTo(), @ref AudioTestBuilder::saveOutputTo() and @ref hart::Save. Supported formats are PCM at 16, 24 and 32 bits and float at 32 bit. Default is PCM24. You can use absolute or relative paths. For relative paths, set the `--data-root-path` CLI parameter to wherever you want HART to save them.
+By default, they will save the audio only when any of the checks fail, but you can tell them to save audio regardless of the result via the second argument - handy for generating data for regression tests. See @ref hart::AudioTestBuilder::saveInputTo(), @ref hart::AudioTestBuilder::saveOutputTo() and @ref hart::Save. Supported formats are PCM at 16, 24 and 32 bits and float at 32 bit. Default is PCM24. You can use absolute or relative paths. For relative paths, set the `--data-root-path` CLI parameter to wherever you want HART to save them.
 
-You can also log your audio as plots of your input and output waveform with @ref AudioTestBuilder::savePlotTo():
+You can also log your audio as plots of your input and output waveform with @ref hart::AudioTestBuilder::savePlotTo():
 
 ```cpp
 processAudioWith (HardClip (-6_dB))
@@ -226,7 +226,7 @@ processAudioWith (MyDSPWrapper())
     .process();
 ```
 
-Done! See @ref Signals::WavFile for the details. You might also want to put the @ref HART_REQUIRES_DATA_PATH_ARG macro at the beginning of test cases that use relative path - it will remind you to pass the respective CLI argument of you forgot to do so.
+Done! See @ref hart::WavFile for the details. You might also want to put the @ref HART_REQUIRES_DATA_PATH_ARG macro at the beginning of test cases that use relative path - it will remind you to pass the respective CLI argument of you forgot to do so.
 
 # Generating test signals
 

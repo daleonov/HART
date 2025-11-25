@@ -18,7 +18,7 @@ namespace hart
 /// @brief Polymorphic base for all matchers
 /// @warning This class exists only for type erasure and polymorphism.
 /// Do NOT inherit custom matchers from this class directly.
-/// Inherit from @ref `Matcher` instead.
+/// Inherit from @ref hart::Matcher instead.
 /// @ingroup Matchers
 template<typename SampleType>
 class MatcherBase
@@ -40,11 +40,11 @@ public:
 /// You can inherit from this class to create a new matcher
 /// (note the <a href="https://en.cppreference.com/w/cpp/language/crtp.html">CRTP</a>
 /// in the template args here, it's important!):
-/// ```cpp
+/// @code{.cpp}
 /// template<typename SampleType>
 /// class MyCustomMatcher: public Matcher<SampleType, MyCustomMatcher<SampleType>>
 /// { /* ... */ };
-/// ```
+/// @endcode
 /// @tparam SampleType Type of data in the buffers to be checked, typically `float` or `double`.
 /// @tparam Derived Subclass for CRTP
 /// @ingroup Matchers
@@ -133,7 +133,7 @@ public:
     /// @brief Makes this matcher check only specific channels, and ignore the rest
     /// @details If not set, the matcher applies to all channels by default.
     /// If you call this method multiple times, only the last one will be applied.
-    /// To select only one channel, consider using @ref `Macther::forChannel()` instead.
+    /// To select only one channel, consider using @ref Macther::forChannel() instead.
     /// @param channelsToMatch List of channels this matcher should apply to,
     /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` for left and right channels only.
     /// @see `hart::Channel`
@@ -155,7 +155,7 @@ public:
     /// @brief Makes this matcher check only one specific channel, and ignore the rest
     /// @details If not set, the matcher applies to all channels by default.
     /// If you call this method multiple times, only the last one will be applied.
-    /// To select multiple channels, use @ref `Matcher::forChannels()` instead.
+    /// To select multiple channels, use @ref Matcher::forChannels() instead.
     /// @param channelToMatch Channel this matcher should apply to (zero-based),
     /// e.g. `0` or `Channel::left` for left channel.
     /// @note If not set, the matcher applies to all channels by default
@@ -173,7 +173,7 @@ public:
 
     /// @brief Makes this matcher check all channels
     /// @details This is the default setting anyway, so this method is only
-    /// for cases when you need to override previous @ref `forChannel()`
+    /// for cases when you need to override previous @ref forChannel()
     /// or @ref `forChannels()` calls.
     Derived& forAllChannels()
     {
@@ -183,8 +183,8 @@ public:
 
 protected:
     /// @brief Indicates whether this matcher should check a specific channel
-    /// @details You might want to use it in the @ref `match()` callback.
-    /// See @ref `forChannels()`, @ref `forChannel()`, @ref `forAllChannels()`.
+    /// @details You might want to use it in the @ref match() callback.
+    /// See @ref forChannels(), @ref forChannel(), @ref forAllChannels().
     bool appliesToChannel (size_t channel)
     {
         return m_channelsToMatch.test (channel);
