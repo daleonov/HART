@@ -477,7 +477,7 @@ public:
 				}
 			} else { // start
 				raw(" ", round(x), " ", round(y));
-				lastDrawn = {x, y};
+				lastDrawn = Point2D {x, y};
 				pointState = PointState::singlePoint;
 			}
 			outOfBoundsMask = mask;
@@ -489,7 +489,7 @@ public:
 				pointState = PointState::outOfBounds;
 			}
 		}
-		prevPoint = {x, y};
+		prevPoint = Point2D {x, y};
 	}
 	
 	char cmapStr[10] = "";
@@ -1270,7 +1270,7 @@ public:
 			TextLabel::layout(style);
 		}
 	public:
-		LineLabel(Axis &axisX, Axis &axisY, Point2D at, std::string name, double degrees, double distance, PlotStyle::Counter &styleIndex) : TextLabel({0, 0}, 0, name), axisX(axisX), axisY(axisY), at(at), name(name), degrees(degrees), distance(distance), styleIndex(styleIndex) {}
+		LineLabel(Axis &axisX, Axis &axisY, Point2D at, std::string name, double degrees, double distance, PlotStyle::Counter &styleIndex) : TextLabel(Point2D{0, 0}, 0, name), axisX(axisX), axisY(axisY), at(at), name(name), degrees(degrees), distance(distance), styleIndex(styleIndex) {}
 		
 		void writeLabel(SvgWriter &svg, const PlotStyle &style) override {
 			if (drawLineTo.x != drawLineFrom.x || drawLineTo.y != drawLineFrom.y) {
@@ -1641,7 +1641,7 @@ public:
 			auto &entry = entries[i];
 			double labelX = topLeft.x + style.textPadding*2 + exampleLineWidth;
 			double labelY = location.top + style.textPadding + (i + 0.5)*style.labelSize*style.lineHeight;
-			auto *label = new TextLabel({labelX, labelY}, 1, entry.name, "svg-plot-label svg-plot-l" + std::to_string(i), false, false);
+			auto *label = new TextLabel(Point2D{labelX, labelY}, 1, entry.name, "svg-plot-label svg-plot-l" + std::to_string(i), false, false);
 			this->addLayoutChild(label);
 		}
 		SvgFileDrawable::layout(style);
@@ -1831,14 +1831,14 @@ public:
 			for (auto &t : x->tickList) {
 				double screenX = x->map(t.value);
 				if (t.name.size() && screenX >= xMin && screenX <= xMax) {
-					auto *label = new TextLabel({screenX, screenY}, 0, t.name, "svg-plot-value", false, true);
+					auto *label = new TextLabel(Point2D{screenX, screenY}, 0, t.name, "svg-plot-value", false, true);
 					this->addLayoutChild(label);
 				}
 			}
 			if (x->label().size()) {
 				double labelY = screenY + alignment*((style.labelSize + hasValues*style.valueSize)*0.5 + style.textPadding);
 				double midX = (x->drawMax() + x->drawMin())*0.5;
-				auto *label = new TextLabel({midX, labelY}, 0, x->label(), "svg-plot-label " + style.textClass(x->styleIndex), false, true);
+				auto *label = new TextLabel(Point2D{midX, labelY}, 0, x->label(), "svg-plot-label " + style.textClass(x->styleIndex), false, true);
 				this->addLayoutChild(label);
 			}
 		}
@@ -1850,7 +1850,7 @@ public:
 			for (auto &t : y->tickList) {
 				double screenY = y->map(t.value);
 				if (t.name.size() && screenY >= yMin && screenY <= yMax) {
-					auto *label = new TextLabel({screenX, screenY}, alignment, t.name, "svg-plot-value", false, true);
+					auto *label = new TextLabel(Point2D{screenX, screenY}, alignment, t.name, "svg-plot-value", false, true);
 					this->addLayoutChild(label);
 
 					double &longestLabel = y->flipped ? longestLabelRight : longestLabelLeft;
@@ -1865,7 +1865,7 @@ public:
 				double longestLabel = y->flipped ? longestLabelRight : longestLabelLeft;
 				double labelX = screenX + alignment*(style.textPadding*1.5 + longestLabel*style.valueSize);
 				double midY = (y->drawMax() + y->drawMin())*0.5;
-				auto *label = new TextLabel({labelX, midY}, 0, y->label(), "svg-plot-label " + style.textClass(y->styleIndex), true, true);
+				auto *label = new TextLabel(Point2D{labelX, midY}, 0, y->label(), "svg-plot-label " + style.textClass(y->styleIndex), true, true);
 				this->addLayoutChild(label);
 			}
 		}
@@ -1892,7 +1892,7 @@ public:
 			} else if (ry > 1) {
 				textY = dataInset.top + (dataOutset.top - dataInset.top)*(ry - 1);
 			}
-			auto *label = new TextLabel({textX, textY}, textAlignment, plotTitle, "svg-plot-title", false, 2);
+			auto *label = new TextLabel(Point2D{textX, textY}, textAlignment, plotTitle, "svg-plot-title", false, 2);
 			this->addLayoutChild(label);
 		}
 
