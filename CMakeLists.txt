@@ -30,4 +30,10 @@ if(HART_BUILD_TESTS)
         tests/test_sine_sweep.cpp
     )
     target_link_libraries(HART_Tests PRIVATE HART)
+
+    enable_testing()
+    add_test(
+        NAME HART_Tests
+        COMMAND HART_Tests "--data-root-path" "${CMAKE_SOURCE_DIR}/tests/data/"
+    )
 endif()  # HART_BUILD_TESTS
