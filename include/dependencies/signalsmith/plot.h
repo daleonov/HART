@@ -307,6 +307,8 @@ struct Bounds {
 };
 
 struct Point2D {
+	Point2D() {}
+	Point2D (double x_, double y_) : x (x_), y (y_) {}
 	double x = 0.0, y = 0.0;
 };
 
@@ -477,7 +479,7 @@ public:
 				}
 			} else { // start
 				raw(" ", round(x), " ", round(y));
-				lastDrawn = Point2D {x, y};
+				lastDrawn = Point2D{x, y};
 				pointState = PointState::singlePoint;
 			}
 			outOfBoundsMask = mask;
@@ -489,7 +491,7 @@ public:
 				pointState = PointState::outOfBounds;
 			}
 		}
-		prevPoint = Point2D {x, y};
+		prevPoint = Point2D{x, y};
 	}
 	
 	char cmapStr[10] = "";
@@ -1054,7 +1056,7 @@ class Line2D : public SvgDrawable {
 	Axis &axisX, &axisY;
 	struct LinePoint : public Point2D {
 		bool isMove;
-		LinePoint(double x, double y, bool isMove) : Point2D({x, y}), isMove(isMove) {}
+		LinePoint(double x, double y, bool isMove) : Point2D{x, y}, isMove(isMove) {}
 	};
 	std::vector<LinePoint> points;
 	struct Marker {
@@ -1076,7 +1078,7 @@ class Line2D : public SvgDrawable {
 	};
 	double framesLoopTime = 0;
 	std::vector<Frame> frames;
-	Point2D latest{0, 0};
+	Point2D latest {0, 0};
 	bool nextIsMove = true;
 	
 	template<class WriteValue>
@@ -1985,7 +1987,7 @@ class Grid : public Cell {
 	struct Item {
 		int column, row;
 		std::unique_ptr<Grid> cell;
-		Point2D transpose = {0, 0};
+		Point2D transpose{0, 0};
 		Item(int column, int row) : column(column), row(row), cell(new Grid()) {}
 	};
 	std::vector<Item> items;

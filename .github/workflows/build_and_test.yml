@@ -61,4 +61,4 @@ jobs:
     - name: Test
       shell: bash
       working-directory: build
-      run: ctest --output-on-failure -V
+      run: ctest -C ${{ matrix.build_type }} --output-on-failure -V
