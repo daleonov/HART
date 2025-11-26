@@ -1319,7 +1319,7 @@ public:
 
 	void toFrame(double time, bool clear=true) override {
 		SvgDrawable::toFrame(time, clear);
-		frames.push_back({time, points, markers, dots});
+		frames.push_back(Frame{time, points, markers, dots});
 		if (clear) {
 			points.clear();
 			markers.clear();
