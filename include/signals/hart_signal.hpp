@@ -152,7 +152,7 @@ public:
     /// @brief Adds a DSP effect to the end of signal's DSP chain by copying it
     /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
     /// @param dsp A DSP effect instance
-    Signal& followedBy (const DSP<SampleType>& dsp)
+    Signal& followedBy (const DSPBase<SampleType>& dsp)
     {
         dspChain.emplace_back (dsp.copy());
         return *this;
@@ -161,7 +161,7 @@ public:
     /// @brief Adds a DSP effect to the end of signal's DSP chain by transfering a smart pointer
     /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
     /// @param dsp A DSP effect instance
-    Signal& followedBy (std::unique_ptr<DSP<SampleType>> dsp)
+    Signal& followedBy (std::unique_ptr<DSPBase<SampleType>> dsp)
     {
         dspChain.emplace_back (std::move (dsp));
         return *this;
@@ -176,16 +176,14 @@ public:
         typename DerivedDSP,
         typename = typename std::enable_if<
             std::is_base_of<
-                DSP<SampleType>,
+                DSPBase<SampleType>,
                 typename std::decay<DerivedDSP>::type
                 >::value
             >::type
         >
     Signal& followedBy (DerivedDSP&& dsp)
     {
-        dspChain.emplace_back (
-            hart::make_unique<typename std::decay<DerivedDSP>::type> (std::forward<DerivedDSP> (dsp))
-        );
+        dspChain.emplace_back (dsp.move());
         return *this;
     }
 
@@ -268,7 +266,7 @@ protected:
 
 private:
     size_t m_numChannels = 1;
-    std::vector<std::unique_ptr<DSP<SampleType>>> dspChain;
+    std::vector<std::unique_ptr<DSPBase<SampleType>>> dspChain;
 };
 
 /// @brief Prints readable text representation of the Signal object into the I/O stream
@@ -285,7 +283,7 @@ std::ostream& operator<< (std::ostream& stream, const Signal<SampleType>& signal
 /// @relates Signal
 /// @ingroup Signals
 template<typename SampleType,
-         typename DerivedDSP, typename std::enable_if<std::is_base_of<DSP<SampleType>, typename std::decay<DerivedDSP>::type>::value>::type>
+         typename DerivedDSP, typename std::enable_if<std::is_base_of<DSPBase<SampleType>, typename std::decay<DerivedDSP>::type>::value>::type>
 Signal<SampleType>& operator>> (Signal<SampleType>& signal, DerivedDSP&& dsp)
 {
     return signal.followedBy (std::move (dsp));
@@ -295,7 +293,7 @@ Signal<SampleType>& operator>> (Signal<SampleType>& signal, DerivedDSP&& dsp)
 /// @relates Signal
 /// @ingroup Signals
 template<typename SampleType>
-Signal<SampleType>& operator>> (Signal<SampleType>& signal, const DSP<SampleType>& dsp)
+Signal<SampleType>& operator>> (Signal<SampleType>& signal, const DSPBase<SampleType>& dsp)
 {
     return signal.followedBy (dsp);
 }
@@ -304,26 +302,52 @@ Signal<SampleType>& operator>> (Signal<SampleType>& signal, const DSP<SampleType
 /// @relates Signal
 /// @ingroup Signals
 template<typename SampleType>
-Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, const DSP<SampleType>& dsp)
+Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, const DSPBase<SampleType>& dsp)
 {
     return std::move (signal.followedBy (dsp));
 }
 
 /// @brief Adds a DSP effect to the end of signal's DSP chain by transfering it
+/// @details This is for smart pointers to abstract DSP type
 /// @relates Signal
 /// @ingroup Signals
 template<typename SampleType>
-Signal<SampleType>& operator>> (Signal<SampleType>& signal, std::unique_ptr<DSP<SampleType>> dsp)
+Signal<SampleType>& operator>> (Signal<SampleType>& signal, std::unique_ptr<DSPBase<SampleType>>&& dsp)
 {
     signal.followedBy (std::move (dsp));
     return signal;
 }
 
 /// @brief Adds a DSP effect to the end of signal's DSP chain by transfering it
+/// @details This is for smart pointers to abstract DSP type
 /// @relates Signal
 /// @ingroup Signals
 template<typename SampleType>
-Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, std::unique_ptr<DSP<SampleType>> dsp)
+Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, std::unique_ptr<DSPBase<SampleType>>&& dsp)
+{
+    signal.followedBy (std::move (dsp));
+    return std::move (signal);
+}
+
+/// @brief Adds a DSP effect to the end of signal's DSP chain by transfering it
+/// @details This is for smart pointers to actual (derived) DSP type
+/// @relates Signal
+/// @ingroup Signals
+template<typename SampleType, typename DerivedDSP,
+         typename = std::enable_if_t<std::is_base_of_v<DSPBase<SampleType>, DerivedDSP>>>
+Signal<SampleType>& operator>>(Signal<SampleType>& signal, std::unique_ptr<DerivedDSP>&& dsp)
+{
+    signal.followedBy (std::move (dsp));
+    return signal;
+}
+
+/// @brief Adds a DSP effect to the end of signal's DSP chain by transfering it
+/// @details This is for smart pointers to actual (derived) DSP type
+/// @relates Signal
+/// @ingroup Signals
+template<typename SampleType, typename DerivedDSP,
+         typename = std::enable_if_t<std::is_base_of_v<DSPBase<SampleType>, DerivedDSP>>>
+Signal<SampleType>&& operator>>(Signal<SampleType>&& signal, std::unique_ptr<DerivedDSP>&& dsp)
 {
     signal.followedBy (std::move (dsp));
     return std::move (signal);

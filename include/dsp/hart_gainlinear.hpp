@@ -15,7 +15,7 @@ namespace hart
 /// @ingroup DSP
 template <typename SampleType>
 class GainLinear:
-    public hart::DSP<SampleType>
+    public hart::DSP<SampleType, GainLinear<SampleType>>
 {
 public:
     enum Params
@@ -105,8 +105,6 @@ public:
     {
         return id == Params::gainLinear;
     }
-
-    HART_DSP_DEFINE_COPY_AND_MOVE (GainLinear);
 
 private:
     double m_initialGainLinear;

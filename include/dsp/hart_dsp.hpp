@@ -21,16 +21,13 @@ namespace hart
 ///          Values: Sequence of automation envelope values for this Param ID, one value per frame
 using EnvelopeBuffers = std::unordered_map<int, std::vector<double>>;
 
-/// @brief Base for DSP effects
-/// @details This class is used both for adapting your DSP classes that you wish to test,
-/// and for using in DSP chains of @ref Signals, so you can use stock effects like @ref GainDb
-/// as tested processors, and you can use your tested DSP subclasses in Signals' DSP chains with
-/// other effects. You can even chain multiple of your own DSP classes together this way.
-/// All the callbacks of this class are guaranteed to be called from the same thread.
-/// @tparam SampleType Type of values that will be processed, typically ```float``` or ```double```
+/// @brief Polymorphic base for all DSP
+/// @warning This class exists only for type erasure and polymorphism.
+/// Do NOT inherit custom DSP from this class directly.
+/// Inherit from @ref hart::DSP instead.
 /// @ingroup DSP
 template <typename SampleType>
-class DSP
+class DSPBase
 {
 public:
     /// @brief Prepare for processing
@@ -116,27 +113,20 @@ public:
     virtual bool supportsSampleRate (double /* sampleRateHz */) const { return true; }
 
     /// @brief Returns a smart pointer with a copy of this object
-    /// @details Just put one of those two macros into your class body, and your @ref copy() and @ref move() are sorted:
-    ///  - @ref HART_DSP_DEFINE_COPY_AND_MOVE() for movable and copyable classes
-    ///  - @ref HART_DSP_FORBID_COPY_AND_MOVE for non-movable and non-copyable classes
-    ///
-    /// Read their description, and choose one that fits your class.
-    /// You can, of course, make your own implementation, but you're not supposed to, unless you're doing something obscure.
-    virtual std::unique_ptr<DSP<SampleType>> copy() const = 0;
+    virtual std::unique_ptr<DSPBase<SampleType>> copy() const = 0;
 
     /// @brief Returns a smart pointer with a moved instance of this object
-    /// @details Just pick a macro to define it - see description for @ref copy() for details
-    virtual std::unique_ptr<DSP<SampleType>> move() = 0;
+    virtual std::unique_ptr<DSPBase<SampleType>> move() = 0;
 
     /// @brief Destructor
-    virtual ~DSP() = default;
+    virtual ~DSPBase() = default;
 
     /// @brief Default constructor
-    DSP() = default;
+    DSPBase() = default;
 
     /// @brief Copies from another DSP effect instance
     /// @details Attached automation envelopes are deep-copied
-    DSP (const DSP& other)
+    DSPBase (const DSPBase& other)
     {
         for (auto& pair : other.m_envelopes)
             m_envelopes.emplace (pair.first, pair.second->copy());
@@ -144,14 +134,14 @@ public:
 
     /// @brief Move constructor
     /// @details Attached automation envelopes are moved as well
-    DSP (DSP&& other) noexcept
+    DSPBase (DSPBase&& other) noexcept
         : m_envelopes (std::move (other.m_envelopes))
     {
     }
 
     /// @brief Copies from another DSP effect instance
     /// @details Attached automation envelopes are deep-copied
-    DSP& operator= (const DSP& other)
+    DSPBase& operator= (const DSPBase& other)
     {
         if (this == &other)
             return *this;
@@ -164,45 +154,11 @@ public:
 
     /// @brief Move assignment
     /// @details Attached automation envelopes are moved as well
-    DSP& operator= (DSP&& other) noexcept
+    DSPBase& operator= (DSPBase&& other) noexcept
     {
         if (this != &other)
             m_envelopes = std::move (other.m_envelopes);
 
-        return *this;
-    }
-
-    /// @brief Adds envelope to a specific parameter by moving it
-    /// @details Guaranteed to be called strictly after the @ref supportsEnvelopeFor() callback,
-    /// and only if it has returned ```true``` for this specific ```paramId```.
-    /// Can be chained together like ```myEffect.withEnvelope (someId, someEnvelope).withEnvelope (otherId, otherEnvelope)```.
-    /// If called multiple times for the same paramId, only last envelope for this ID will be used, all previous ones will be descarded.
-    /// @param paramId Some ID that your subclass understands
-    /// @param envelope Envelope to be attached
-    /// @return Reference to itself for chaining
-    DSP& withEnvelope (int paramId, Envelope&& envelope)
-    {
-        if (! supportsEnvelopeFor(paramId))
-            HART_THROW_OR_RETURN (hart::UnsupportedError, std::string ("DSP doesn't support envelopes for param ID: ") + std::to_string (paramId), *this);
-
-        m_envelopes.emplace (paramId, hart::make_unique<Envelope> (std::move (envelope)));
-        return *this;
-    }
-
-    /// @brief Adds envelope to a specific parameter by copying it
-    /// @details Guaranteed to be called strictly after the @ref supportsEnvelopeFor() callback,
-    /// and only if it has returned ```true``` for this specific ```paramId```.
-    /// Can be chained together like ```myEffect.withEnvelope (someId, someEnvelope).withEnvelope (otherId, otherEnvelope)```.
-    /// If called multiple times for the same paramId, only last envelope for this ID will be used, all previous ones will be descarded.
-    /// @param paramId Some ID that your subclass understands
-    /// @param envelope Envelope to be attached
-    /// @return Reference to itself for chaining
-    DSP& withEnvelope (int paramId, const Envelope& envelope)
-    {
-        if (! supportsEnvelopeFor(paramId))
-            HART_THROW_OR_RETURN (hart::UnsupportedError, std::string ("DSP doesn't support envelopes for param ID: ") + std::to_string (paramId), *this);
-
-        m_envelopes.emplace (paramId, envelope.copy());
         return *this;
     }
 
@@ -280,8 +236,10 @@ public:
     /// @private
     using SampleTypePublicAlias = SampleType;
 
-private:
+protected:
     std::unordered_map<int, std::unique_ptr<Envelope>> m_envelopes;
+
+private:
     EnvelopeBuffers m_envelopeBuffers;
 
     /// @brief Gets sample-accurate automation envelope values for a specific parameter
@@ -308,17 +266,90 @@ private:
     }
 };
 
+/// @brief Base for DSP effects
+/// @details This class is used both for adapting your DSP classes that you wish to test,
+/// and for using in DSP chains of @ref Signals, so you can use stock effects like @ref GainDb
+/// as tested processors, and you can use your tested DSP subclasses in Signals' DSP chains with
+/// other effects. You can even chain multiple of your own DSP classes together this way.
+/// All the callbacks of this class are guaranteed to be called from the same thread.
+/// To make your custom DSP wrapper, inherit from it like so
+/// (note the <a href="https://en.cppreference.com/w/cpp/language/crtp.html">CRTP</a>
+/// in the template args here, it's important!):
+/// @code{.cpp}
+/// template<typename SampleType>
+/// class MyCustomDSP: public DSP<SampleType, MyCustomDSP<SampleType>>
+/// {
+///     // ...
+/// };
+/// @endcode
+/// @tparam SampleType Type of values that will be processed, typically ```float``` or ```double```
+/// @tparam Derived Subclass for CRTP
+/// @ingroup DSP
+template<typename SampleType, typename Derived>
+class DSP:
+    public DSPBase<SampleType>
+{
+public:
+
+    /// @brief Adds envelope to a specific parameter by moving it
+    /// @details Guaranteed to be called strictly after the @ref supportsEnvelopeFor() callback,
+    /// and only if it has returned ```true``` for this specific ```paramId```.
+    /// Can be chained together like ```myEffect.withEnvelope (someId, someEnvelope).withEnvelope (otherId, otherEnvelope)```.
+    /// If called multiple times for the same paramId, only last envelope for this ID will be used, all previous ones will be descarded.
+    /// @param paramId Some ID that your subclass understands
+    /// @param envelope Envelope to be attached
+    /// @return Reference to itself for chaining
+    DSP& withEnvelope (int paramId, Envelope&& envelope)
+    {
+        if (! supportsEnvelopeFor(paramId))
+            HART_THROW_OR_RETURN (hart::UnsupportedError, std::string ("DSP doesn't support envelopes for param ID: ") + std::to_string (paramId), *this);
+
+        m_envelopes.emplace (paramId, hart::make_unique<Envelope> (std::move (envelope)));
+        return *this;
+    }
+
+    /// @brief Adds envelope to a specific parameter by copying it
+    /// @details Guaranteed to be called strictly after the @ref supportsEnvelopeFor() callback,
+    /// and only if it has returned ```true``` for this specific ```paramId```.
+    /// Can be chained together like ```myEffect.withEnvelope (someId, someEnvelope).withEnvelope (otherId, otherEnvelope)```.
+    /// If called multiple times for the same paramId, only last envelope for this ID will be used, all previous ones will be descarded.
+    /// @param paramId Some ID that your subclass understands
+    /// @param envelope Envelope to be attached
+    /// @return Reference to itself for chaining
+    DSP& withEnvelope (int paramId, const Envelope& envelope)
+    {
+        if (! supportsEnvelopeFor(paramId))
+            HART_THROW_OR_RETURN (hart::UnsupportedError, std::string ("DSP doesn't support envelopes for param ID: ") + std::to_string (paramId), *this);
+
+        m_envelopes.emplace (paramId, envelope.copy());
+        return *this;
+    }
+
+    /// @brief Returns a smart pointer with a copy of this object
+    virtual std::unique_ptr<DSPBase<SampleType>> copy() const override
+    {
+        return hart::make_unique<Derived> (static_cast<const Derived&> (*this));
+    }
+
+    /// @brief Returns a smart pointer with a moved instance of this object
+    virtual std::unique_ptr<DSPBase<SampleType>> move() override
+    {
+        return hart::make_unique<Derived> (std::move(static_cast<Derived&> (*this)));
+    }
+};
+
 /// @brief Prints readable text representation of the DSP object into the I/O stream
 /// @relates DSP
 /// @ingroup DSP
 template <typename SampleType>
-inline std::ostream& operator<< (std::ostream& stream, const DSP<SampleType>& dsp)
+inline std::ostream& operator<< (std::ostream& stream, const DSPBase<SampleType>& dsp)
 {
     // TODO: Represent with the envelopes
     dsp.represent (stream);
     return stream;
 }
 
+/*
 /// @brief Defines @ref hart::DSP::copy() and @ref hart::DSP::move() methods
 /// @details Put this into your class body's ```public``` section if either is true:
 ///  - Your class is trivially copyable and movable
@@ -363,7 +394,7 @@ inline std::ostream& operator<< (std::ostream& stream, const DSP<SampleType>& ds
         static_assert(false, "This DSP cannot be moved"); \
         return nullptr; \
     }
-
+*/
 }  // namespace hart
 
 /// @private

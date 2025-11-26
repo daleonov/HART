@@ -10,7 +10,7 @@ To do it, make a subclass of of DSP and put your class inside of it. You'll have
 
 ```cpp
 class MyDSPWrapper :
-    public hart::DSP<float>
+    public hart::DSP<float, MyDSPWrapper<float>>  // Note the CRTP in the template - it's important!
 {
 public:
     // Optional, but encouraged to do - for setValue()
@@ -43,9 +43,8 @@ public:
     bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels);
     virtual bool supportsSampleRate (double sampleRateHz) const;
 
-    // Or HART_DSP_FORBID_COPY_AND_MOVE if your class not copyable/movable
-    HART_DSP_DEFINE_COPY_AND_MOVE (MyDSPWrapper);
-
+    // Optional, if your class not copyable/movable:
+    // HART_DSP_FORBID_COPY_AND_MOVE
 private:
     MyActualEffectClass& m_effect;
 };

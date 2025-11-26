@@ -15,7 +15,7 @@ namespace hart
 /// @ingroup DSP
 template <typename SampleType>
 class HardClip:
-    public hart::DSP<SampleType>
+    public hart::DSP<SampleType, HardClip<SampleType>>
 {
 public:
     enum Params
@@ -82,8 +82,6 @@ public:
     {
         return false;
     }
-
-    HART_DSP_DEFINE_COPY_AND_MOVE (HardClip);
 
 private:
     double m_initialThresholdDb;

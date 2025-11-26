@@ -45,7 +45,7 @@ public:
     AudioTestBuilder (DSPType&& dsp,
         typename std::enable_if<
             std::is_lvalue_reference<DSPType&&>::value &&
-            std::is_base_of<DSP<SampleType>, typename std::decay<DSPType>::type>::value
+            std::is_base_of<DSPBase<SampleType>, typename std::decay<DSPType>::type>::value
         >::type* = 0)
     : m_processor (dsp.copy())
     {
@@ -58,7 +58,7 @@ public:
     AudioTestBuilder (DSPType&& dsp,
         typename std::enable_if<
             ! std::is_lvalue_reference<DSPType&&>::value &&
-            std::is_base_of<DSP<SampleType>, typename std::decay<DSPType>::type>::value
+            std::is_base_of<DSPBase<SampleType>, typename std::decay<DSPType>::type>::value
         >::type* = 0)
     : m_processor (std::forward<DSPType> (dsp).move())
     {
@@ -68,7 +68,7 @@ public:
     /// @details Use this if your DSP does not support copying or moving. It will be owned by this host,
     /// and then returned by @ref process(), so you can re-use it.
     /// @param dsp A smart pointer to your DSP instance
-    AudioTestBuilder (std::unique_ptr<DSP<SampleType>> dsp)
+    AudioTestBuilder (std::unique_ptr<DSPBase<SampleType>> dsp)
     : m_processor (std::move (dsp))
     {
     }
@@ -277,7 +277,7 @@ public:
 
     /// @brief Perfoems the test
     /// @details Call this after setting all the test parameters
-    std::unique_ptr<DSP<SampleType>> process()
+    std::unique_ptr<DSPBase<SampleType>> process()
     {
         m_durationFrames = (size_t) std::round (m_sampleRateHz * m_durationSeconds);
 
@@ -371,7 +371,7 @@ private:
         bool shouldPass;
     };
 
-    std::unique_ptr<DSP<SampleType>> m_processor;
+    std::unique_ptr<DSPBase<SampleType>> m_processor;
     std::unique_ptr<Signal<SampleType>> m_inputSignal;
     double m_sampleRateHz = (double) 44100;
     size_t m_blockSizeFrames = 1024;
@@ -525,7 +525,7 @@ template <typename DSPType>
 AudioTestBuilder<typename DSPType::SampleTypePublicAlias> processAudioWith (std::unique_ptr<DSPType>&& dsp)
 {
     using SampleType = typename DSPType::SampleTypePublicAlias;
-    return AudioTestBuilder<SampleType> (std::unique_ptr<DSP<SampleType>> (dsp.release()));
+    return AudioTestBuilder<SampleType> (std::unique_ptr<DSPBase<SampleType>> (dsp.release()));
 }
 
 namespace aliases_float

@@ -14,7 +14,8 @@ namespace hart
 /// @details Applies zero to specified channels
 /// @ingroup DSP
 template <typename SampleType>
-class Mute : public hart::DSP<SampleType>
+class Mute:
+    public hart::DSP<SampleType, Mute<SampleType>>
 {
 private:
     static constexpr size_t m_maxChannels = 64;
@@ -90,8 +91,6 @@ public:
     {
         return false;
     }
-
-    HART_DSP_DEFINE_COPY_AND_MOVE (Mute);
 
 private:
     std::bitset<m_maxChannels> m_channelsToMute;

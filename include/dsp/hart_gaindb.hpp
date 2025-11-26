@@ -16,7 +16,7 @@ namespace hart
 /// @ingroup DSP
 template <typename SampleType>
 class GainDb:
-    public hart::DSP<SampleType>
+    public hart::DSP<SampleType, GainDb<SampleType>>
 {
 public:
     enum Params
@@ -116,8 +116,6 @@ public:
     {
         return id == Params::gainDb;
     }
-
-    HART_DSP_DEFINE_COPY_AND_MOVE (GainDb);
 
 private:
     double m_initialGainDb;
