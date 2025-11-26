@@ -16,7 +16,8 @@ namespace hart {
 /// to 2x ```durationSeconds``` of this signal.
 /// @ingroup Signals
 template<typename SampleType>
-class SineSweep : public Signal<SampleType>
+class SineSweep:
+    public Signal<SampleType, SineSweep<SampleType>>
 {
 public:
     /// @brief Determines what to do after frequency sweep is done
@@ -192,8 +193,6 @@ public:
             << (m_type == SweepType::linear ? ", SweepType::linear" : "SweepType::log")
             << (m_loop == Loop::yes ? ", Loop::yes)" : ", Loop::no)");
     }
-
-    HART_SIGNAL_DEFINE_COPY_AND_MOVE (SineSweep);
 
 private:
     const double m_durationSeconds;

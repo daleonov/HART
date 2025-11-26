@@ -15,7 +15,8 @@ namespace hart
 /// @details Outputs a signal uniformly distrubuted between -1.0 and +1.0, thus peaking below 0dB
 /// @ingroup Signals
 template<typename SampleType>
-class WhiteNoise : public Signal<SampleType>
+class WhiteNoise:
+    public Signal<SampleType, WhiteNoise<SampleType>>
 {
 public:
 
@@ -54,8 +55,6 @@ public:
     {
         stream << "WhiteNoise (" << m_randomSeed << ")";
     }
-
-    HART_SIGNAL_DEFINE_COPY_AND_MOVE (WhiteNoise);
 
 private:
     const uint_fast32_t m_randomSeed;

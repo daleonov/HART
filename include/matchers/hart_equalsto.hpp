@@ -23,22 +23,17 @@ class EqualsTo:
     public Matcher<SampleType, EqualsTo<SampleType>>
 {
 public:
+    // TODO: Implement move and transfer for signals here
     /// @brief Creates a matcher for a specific signal
     /// details The reference signal can be something simple like a @ref SineWave, or more
     /// complex signal with DSP effects chain and automation envelopes.
     /// @note Tip: To compare audio to a pre-recorded wav file, you can use @ref WavFile.
     /// @param referenceSignal Signal to compare the incoming audio against
     /// @param toleranceLinear Absolute tolerance for comparing frames, in linear domain (not decibels)
-    template <typename SignalType>
-    EqualsTo (const SignalType& referenceSignal, double toleranceLinear = (SampleType) 1e-5):
-        m_referenceSignal (referenceSignal.copy()),
+    EqualsTo (const SignalBase<SampleType>& referenceSignal, double toleranceLinear = (SampleType) 1e-5):
+        m_referenceSignal (std::move (referenceSignal.copy())),
         m_toleranceLinear ((SampleType) toleranceLinear)
     {
-        using DecayedType = typename std::decay<SignalType>::type;
-        static_assert (
-            std::is_base_of<Signal<SampleType>, DecayedType>::value,
-            "SignalType must be a hart::Signal subclass"
-            );
     }
 
     EqualsTo (EqualsTo&& other) noexcept:
@@ -149,7 +144,7 @@ public:
     }
 
 private:
-    std::unique_ptr<Signal<SampleType>> m_referenceSignal;
+    std::unique_ptr<SignalBase<SampleType>> m_referenceSignal;
     const SampleType m_toleranceLinear;
 
     size_t m_failedFrame = 0;

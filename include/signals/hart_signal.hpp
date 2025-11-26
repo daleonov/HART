@@ -17,18 +17,15 @@
 
 namespace hart {
 
-/// @brief Base class for signals
-/// @ingroup Signals
-/// @tparam SampleType Type of values that will be generated, typically ```float``` or ```double```
 template<typename SampleType>
-class Signal
+class SignalBase
 {
 public:
     /// @brief Default constructor
-    Signal() = default;
+    SignalBase() = default;
 
     /// @brief Copies other signal
-    Signal (const Signal& other):
+    SignalBase (const SignalBase& other):
         m_numChannels(other.m_numChannels)
     {
         if (other.dspChain.size() == 0)
@@ -41,7 +38,7 @@ public:
     }
 
     /// @brief Moves from other signal
-    Signal (Signal&& other) noexcept:
+    SignalBase (SignalBase&& other) noexcept:
         m_numChannels (other.m_numChannels),
         dspChain (std::move (other.dspChain))
     {
@@ -49,10 +46,10 @@ public:
     }
 
     /// @brief Destructor
-    virtual ~Signal() = default;
+    virtual ~SignalBase() = default;
 
     /// @brief Copies from other signal
-    Signal& operator= (const Signal& other)
+    SignalBase& operator= (const SignalBase& other)
     {
         if (this == &other)
             return *this;
@@ -70,7 +67,7 @@ public:
     }
 
     /// @brief Moves from other signal
-    Signal& operator= (Signal&& other) noexcept
+    SignalBase& operator= (SignalBase&& other) noexcept
     {
         if (this == &other)
             return *this;
@@ -133,11 +130,11 @@ public:
     ///
     /// Read their description, and choose one that fits your class.
     /// You can, of course, make your own implementation, but you're not supposed to, unless you're doing something obscure.
-    virtual std::unique_ptr<Signal<SampleType>> copy() const = 0;
+    virtual std::unique_ptr<SignalBase<SampleType>> copy() const = 0;
 
     /// @brief Returns a smart pointer with a moved instance of this object
     /// @details Just pick a macro to define it - see description for @ref copy() for details
-    virtual std::unique_ptr<Signal<SampleType>> move() = 0;
+    virtual std::unique_ptr<SignalBase<SampleType>> move() = 0;
 
     /// @brief Makes a text representation of this Signal for test failure outputs.
     /// @details It is strongly encouraged to follow python's
@@ -148,44 +145,6 @@ public:
     /// Use @ref HART_DEFINE_GENERIC_REPRESENT() to get a basic implementation for this method.
     /// @param[out] stream Output stream to write to
     virtual void represent (std::ostream& stream) const = 0;
-
-    /// @brief Adds a DSP effect to the end of signal's DSP chain by copying it
-    /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
-    /// @param dsp A DSP effect instance
-    Signal& followedBy (const DSPBase<SampleType>& dsp)
-    {
-        dspChain.emplace_back (dsp.copy());
-        return *this;
-    }
-
-    /// @brief Adds a DSP effect to the end of signal's DSP chain by transfering a smart pointer
-    /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
-    /// @param dsp A DSP effect instance
-    Signal& followedBy (std::unique_ptr<DSPBase<SampleType>> dsp)
-    {
-        dspChain.emplace_back (std::move (dsp));
-        return *this;
-    }
-
-    // TODO: Add check if rvalue
-    /// @brief Adds a DSP effect to the end of signal's DSP chain by moving it
-    /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
-    /// @param dsp A DSP effect instance
-
-    template <
-        typename DerivedDSP,
-        typename = typename std::enable_if<
-            std::is_base_of<
-                DSPBase<SampleType>,
-                typename std::decay<DerivedDSP>::type
-                >::value
-            >::type
-        >
-    Signal& followedBy (DerivedDSP&& dsp)
-    {
-        dspChain.emplace_back (dsp.move());
-        return *this;
-    }
 
     /// @brief Prepares the signal and all attached effects in the DSP chain for rendering
     /// @details This method is intended to be called by Signal hosts like AudioTestBuilder or Matcher.
@@ -264,16 +223,72 @@ protected:
         return m_numChannels;
     }
 
-private:
     size_t m_numChannels = 1;
     std::vector<std::unique_ptr<DSPBase<SampleType>>> dspChain;
+};
+
+/// @brief Base class for signals
+/// @ingroup Signals
+/// @tparam SampleType Type of values that will be generated, typically ```float``` or ```double```
+/// @tparam Derived Subclass for CRTP
+template<typename SampleType, typename Derived>
+class Signal:
+    public SignalBase<SampleType>
+{
+public:
+    /// @brief Adds a DSP effect to the end of signal's DSP chain by copying it
+    /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
+    /// @param dsp A DSP effect instance
+    Derived& followedBy (const DSPBase<SampleType>& dsp)
+    {
+        this->dspChain.emplace_back (dsp.copy());
+        return static_cast<Derived&> (*this);
+    }
+
+    /// @brief Adds a DSP effect to the end of signal's DSP chain by transfering a smart pointer
+    /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
+    /// @param dsp A DSP effect instance
+    Signal& followedBy (std::unique_ptr<DSPBase<SampleType>> dsp)
+    {
+        this->dspChain.emplace_back (std::move (dsp));
+        return static_cast<Derived&> (*this);
+    }
+
+    // TODO: Add check if rvalue
+    /// @brief Adds a DSP effect to the end of signal's DSP chain by moving it
+    /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
+    /// @param dsp A DSP effect instance
+    template <
+        typename DerivedDSP,
+        typename = typename std::enable_if<
+            std::is_base_of<
+                DSPBase<SampleType>,
+                typename std::decay<DerivedDSP>::type
+                >::value
+            >::type
+        >
+    Signal& followedBy (DerivedDSP&& dsp)
+    {
+        this->dspChain.emplace_back (dsp.move());
+        return static_cast<Derived&> (*this);
+    }
+
+    std::unique_ptr<SignalBase<SampleType>> copy() const override
+    {
+        return hart::make_unique<Derived> (static_cast<const Derived&> (*this));
+    }
+
+    std::unique_ptr<SignalBase<SampleType>> move() override
+    {
+        return hart::make_unique<Derived> (std::move (static_cast<const Derived&> (*this)));
+    }
 };
 
 /// @brief Prints readable text representation of the Signal object into the I/O stream
 /// @relates Signal
 /// @ingroup Signals
 template<typename SampleType>
-std::ostream& operator<< (std::ostream& stream, const Signal<SampleType>& signal)
+std::ostream& operator<< (std::ostream& stream, const SignalBase<SampleType>& signal)
 {
     signal.representWithDSPChain (stream);
     return stream;
@@ -282,9 +297,11 @@ std::ostream& operator<< (std::ostream& stream, const Signal<SampleType>& signal
 /// @brief Adds a DSP effect to the end of signal's DSP chain by moving it
 /// @relates Signal
 /// @ingroup Signals
-template<typename SampleType,
-         typename DerivedDSP, typename std::enable_if<std::is_base_of<DSPBase<SampleType>, typename std::decay<DerivedDSP>::type>::value>::type>
-Signal<SampleType>& operator>> (Signal<SampleType>& signal, DerivedDSP&& dsp)
+template<
+    typename SampleType,
+    typename DerivedSignal,
+    typename DerivedDSP, typename std::enable_if<std::is_base_of<DSPBase<SampleType>, typename std::decay<DerivedDSP>::type>::value>::type>
+Signal<SampleType, DerivedSignal>& operator>> (Signal<SampleType, DerivedSignal>& signal, DerivedDSP&& dsp)
 {
     return signal.followedBy (std::move (dsp));
 }
@@ -292,8 +309,8 @@ Signal<SampleType>& operator>> (Signal<SampleType>& signal, DerivedDSP&& dsp)
 /// @brief Adds a DSP effect to the end of signal's DSP chain by copying it
 /// @relates Signal
 /// @ingroup Signals
-template<typename SampleType>
-Signal<SampleType>& operator>> (Signal<SampleType>& signal, const DSPBase<SampleType>& dsp)
+template<typename SampleType, typename DerivedSignal>
+Signal<SampleType, DerivedSignal>& operator>> (Signal<SampleType, DerivedSignal>& signal, const DSPBase<SampleType>& dsp)
 {
     return signal.followedBy (dsp);
 }
@@ -301,8 +318,8 @@ Signal<SampleType>& operator>> (Signal<SampleType>& signal, const DSPBase<Sample
 /// @brief Adds a DSP effect to the end of signal's DSP chain by copying it
 /// @relates Signal
 /// @ingroup Signals
-template<typename SampleType>
-Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, const DSPBase<SampleType>& dsp)
+template<typename SampleType, typename DerivedSignal>
+Signal<SampleType, DerivedSignal>&& operator>> (Signal<SampleType, DerivedSignal>&& signal, const DSPBase<SampleType>& dsp)
 {
     return std::move (signal.followedBy (dsp));
 }
@@ -311,8 +328,8 @@ Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, const DSPBase<Samp
 /// @details This is for smart pointers to abstract DSP type
 /// @relates Signal
 /// @ingroup Signals
-template<typename SampleType>
-Signal<SampleType>& operator>> (Signal<SampleType>& signal, std::unique_ptr<DSPBase<SampleType>>&& dsp)
+template<typename SampleType, typename DerivedSignal>
+Signal<SampleType, DerivedSignal>& operator>> (Signal<SampleType, DerivedSignal>& signal, std::unique_ptr<DSPBase<SampleType>>&& dsp)
 {
     signal.followedBy (std::move (dsp));
     return signal;
@@ -322,8 +339,8 @@ Signal<SampleType>& operator>> (Signal<SampleType>& signal, std::unique_ptr<DSPB
 /// @details This is for smart pointers to abstract DSP type
 /// @relates Signal
 /// @ingroup Signals
-template<typename SampleType>
-Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, std::unique_ptr<DSPBase<SampleType>>&& dsp)
+template<typename SampleType, typename DerivedSignal>
+Signal<SampleType, DerivedSignal>&& operator>> (Signal<SampleType, DerivedSignal>&& signal, std::unique_ptr<DSPBase<SampleType>>&& dsp)
 {
     signal.followedBy (std::move (dsp));
     return std::move (signal);
@@ -333,9 +350,11 @@ Signal<SampleType>&& operator>> (Signal<SampleType>&& signal, std::unique_ptr<DS
 /// @details This is for smart pointers to actual (derived) DSP type
 /// @relates Signal
 /// @ingroup Signals
-template<typename SampleType, typename DerivedDSP,
-         typename = std::enable_if_t<std::is_base_of_v<DSPBase<SampleType>, DerivedDSP>>>
-Signal<SampleType>& operator>>(Signal<SampleType>& signal, std::unique_ptr<DerivedDSP>&& dsp)
+template<
+    typename SampleType,
+    typename DerivedSignal,
+    typename DerivedDSP, typename = std::enable_if_t<std::is_base_of_v<DSPBase<SampleType>, DerivedDSP>>>
+Signal<SampleType, DerivedSignal>& operator>>(Signal<SampleType, DerivedSignal>& signal, std::unique_ptr<DerivedDSP>&& dsp)
 {
     signal.followedBy (std::move (dsp));
     return signal;
@@ -345,35 +364,17 @@ Signal<SampleType>& operator>>(Signal<SampleType>& signal, std::unique_ptr<Deriv
 /// @details This is for smart pointers to actual (derived) DSP type
 /// @relates Signal
 /// @ingroup Signals
-template<typename SampleType, typename DerivedDSP,
-         typename = std::enable_if_t<std::is_base_of_v<DSPBase<SampleType>, DerivedDSP>>>
-Signal<SampleType>&& operator>>(Signal<SampleType>&& signal, std::unique_ptr<DerivedDSP>&& dsp)
+template<
+    typename SampleType,
+    typename DerivedSignal,
+    typename DerivedDSP, typename = std::enable_if_t<std::is_base_of_v<DSPBase<SampleType>, DerivedDSP>>>
+Signal<SampleType, DerivedSignal>&& operator>>(Signal<SampleType, DerivedSignal>&& signal, std::unique_ptr<DerivedDSP>&& dsp)
 {
     signal.followedBy (std::move (dsp));
     return std::move (signal);
 }
 
 }  // namespace hart
-
-/// @brief Defines @ref hart::Signal::copy() and @ref hart::Signal::move() methods
-/// @details Put this into your class body's ```public``` section if either is true:
-///  - Your class is trivially copyable and movable
-///  - You have your Rule Of Five methods explicitly defined in this class
-/// (see <a href="https://en.cppreference.com/w/cpp/language/rule_of_three.html" target="_blank">Rule Of Three/Five/Zero</a>)
-///
-/// If neither of those is true, or you're unsure, use @ref HART_SIGNAL_FORBID_COPY_AND_MOVE instead
-///
-/// Despite returning a smart pointer to an abstract Signal class, those two methods must construct
-/// an object of a specific class, hence the mandatory boilerplate methods - sorry!
-/// @param ClassName Name of your class
-/// @ingroup Signals
-#define HART_SIGNAL_DEFINE_COPY_AND_MOVE(ClassName) \
-    std::unique_ptr<Signal<SampleType>> copy() const override { \
-        return hart::make_unique<ClassName> (*this); \
-    } \
-    std::unique_ptr<Signal<SampleType>> move() override { \
-        return hart::make_unique<ClassName> (std::move (*this)); \
-    }
 
 /// @brief Forbids @ref hart::Signal::copy() and @ref hart::Signal::move() methods
 /// @details Put this into your class body's ```public``` section if either is true:

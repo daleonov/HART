@@ -23,7 +23,7 @@ namespace hart
 /// @ingroup Signals
 template<typename SampleType>
 class WavFile:
-    public Signal<SampleType>
+    public Signal<SampleType, WavFile<SampleType>>
 {
 public:
     enum class Loop
@@ -132,8 +132,6 @@ public:
     {
         stream << "WavFile (\"" << m_filePath << (m_loop == Loop::yes ? "\", Loop::yes)" : "\", Loop::no)");
     }
-
-    HART_SIGNAL_DEFINE_COPY_AND_MOVE (WavFile);
 
 private:
     const std::string m_filePath;

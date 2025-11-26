@@ -13,7 +13,7 @@ namespace hart
 /// @ingroup Signals
 template<typename SampleType>
 class Silence:
-    public Signal<SampleType>
+    public Signal<SampleType, Silence<SampleType>>
 {
 public:
     bool supportsNumChannels (size_t /* numChannels */) const override { return true; };
@@ -32,7 +32,6 @@ public:
     void reset() override {}
 
     HART_DEFINE_GENERIC_REPRESENT (Silence);
-    HART_SIGNAL_DEFINE_COPY_AND_MOVE (Silence);
 };
 
 HART_SIGNAL_DECLARE_ALIASES_FOR (Silence)

@@ -123,7 +123,7 @@ public:
 
     /// @brief Sets the input signal for the test
     /// @param signal Input signal, see @ref Signals
-    AudioTestBuilder& withInputSignal (const Signal<SampleType>& signal)
+    AudioTestBuilder& withInputSignal (const SignalBase<SampleType>& signal)
     {
         // TODO: Implement moving/transfering a signal instance as well
         m_inputSignal = std::move (signal.copy());
@@ -372,7 +372,7 @@ private:
     };
 
     std::unique_ptr<DSPBase<SampleType>> m_processor;
-    std::unique_ptr<Signal<SampleType>> m_inputSignal;
+    std::unique_ptr<SignalBase<SampleType>> m_inputSignal;
     double m_sampleRateHz = (double) 44100;
     size_t m_blockSizeFrames = 1024;
     size_t m_numInputChannels = 1;

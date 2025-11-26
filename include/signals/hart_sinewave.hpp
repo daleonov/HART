@@ -16,7 +16,7 @@ namespace hart
 /// @ingroup Signals
 template<typename SampleType>
 class SineWave:
-    public Signal<SampleType>
+    public Signal<SampleType, SineWave<SampleType>>
 {
 public:
     SineWave (double frequencyHz = (SampleType) 1000, double phaseRadians = (SampleType) 0):
@@ -64,8 +64,6 @@ public:
             << hzPrecision << m_frequencyHz << "_Hz, "
             << radPrecision << m_initialPhaseRadians << "_rad)";
     }
-
-    HART_SIGNAL_DEFINE_COPY_AND_MOVE (SineWave);
 
 private:
     const double m_frequencyHz;
