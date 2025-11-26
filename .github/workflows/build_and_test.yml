@@ -15,24 +15,35 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Ubuntu GCC
+          - name: Ubuntu AMD64 GCC
             os: ubuntu-latest
-            cc: gcc-13
             cxx: g++-13
             build_type: Debug
             generator: "Unix Makefiles"
             cpp_compatibility_test: ON
 
-          - name: Windows MSVC
+          - name: Ubuntu ARM64 GCC
+            os: ubuntu-24.04-arm
+            cxx: g++-13
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_compatibility_test: OFF
+
+          - name: Ubuntu AMD64 Clang
+            os: ubuntu-latest
+            cxx: clang++-18
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_compatibility_test: ON
+
+          - name: Windows AMD64 MSVC
             os: windows-latest
             build_type: Release
             generator: "Visual Studio 17 2022"
             cpp_compatibility_test: ON
 
-          - name: macOS Clang
+          - name: macOS ARM64 Apple-Clang
             os: macos-latest
-            cc: clang
-            cxx: clang++
             build_type: Debug
             generator: "Unix Makefiles"
             cpp_compatibility_test: OFF
@@ -44,19 +55,20 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Install Linux compilers
+    - name: Install and set up Linux compilers
       if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install -y gcc-13 g++-13
-
-    - name: Set up compilers
-      if: runner.os != 'Windows'
       run: |
-        echo "CC=${{ matrix.cc }}"  >> $GITHUB_ENV
+        sudo apt-get update
+        sudo apt-get install -y ${{ matrix.cxx }}
         echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
 
     - name: Configure CMake
       run: >
-        cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DHART_BUILD_TESTS=ON -DHART_CHECK_CPP_STANDARDS_COMPATIBILITY=${{ matrix.cpp_compatibility_test }} -G "${{ matrix.generator }}"
+        cmake -B build
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DHART_BUILD_TESTS=ON
+        -DHART_CHECK_CPP_STANDARDS_COMPATIBILITY=${{ matrix.cpp_compatibility_test }}
+        -G "${{ matrix.generator }}"
 
     - name: Build
       run: cmake --build build --config ${{ matrix.build_type }} --parallel
