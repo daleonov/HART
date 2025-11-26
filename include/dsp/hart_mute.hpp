@@ -54,7 +54,7 @@ public:
             HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "Unsupported channel configuration");
     }
 
-    void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const EnvelopeBuffers& /*envelopeBuffers*/) override
+    void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const EnvelopeBuffers& /*envelopeBuffers*/, ChannelFlags channelsToProcess) override
     {
         if (input.getNumChannels() != output.getNumChannels())
             HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "Channel number mismatch");

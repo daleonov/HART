@@ -60,21 +60,42 @@ HART_TEST ("GainDb - Channel Layouts")
         .process();
 
     processAudioWith (GainDb())
-        .withLabel ("Mono in, stereo out")
+        .withLabel ("5 channels in, 5 channels out")
         .withInputSignal (SineWave())
-        .withMonoInput()
-        .withStereoOutput()
-        .withValue (GainDb::gainDb, -3_dB)
-        .expectTrue (PeaksAt (-3_dB))
-        .process();
-
-    processAudioWith (GainDb())
-        .withLabel ("Mono in, many channels out")
-        .withInputSignal (SineWave())
-        .withMonoInput()
+        .withInputChannels (5)
         .withOutputChannels (5)
         .withValue (GainDb::gainDb, -3_dB)
         .expectTrue (PeaksAt (-3_dB))
+        .process();
+}
+
+HART_TEST ("GainDb - Specific Channels")
+{
+    processAudioWith (GainDb (-3_dB).atChannel (Channel::left))
+        .withLabel ("Left Only")
+        .withInputSignal (SineWave())
+        .inStereo()
+        .expectFalse (PeaksAt (-3_dB))
+        .expectTrue (PeaksAt (0_dB))
+        .expectTrue (PeaksAt (-3_dB).forChannel (Channel::left))
+        .expectTrue (PeaksAt (0_dB).forChannel (Channel::right))
+        .process();
+
+    processAudioWith (GainDb (-3_dB).atChannels ({0, 3, 4}))
+        .withLabel ("Active on 3 out of 5 channels")
+        .withInputSignal (SineWave())
+        .withInputChannels (5)
+        .withOutputChannels (5)
+        .expectFalse (PeaksAt (-3_dB))
+        .expectTrue (PeaksAt (0_dB))
+        .expectTrue (PeaksAt (-3_dB).forChannels ({0, 3, 4}))
+        .expectTrue (PeaksAt (0_dB).forChannels ({1, 2}))
+        .expectTrue (PeaksAt (0_dB).forChannels ({0, 1, 2}))  // Channel 0 peaks at -3dB, but collectively they peak at 0dB
+        .expectTrue (PeaksAt (-3_dB).forChannel (0))
+        .expectTrue (PeaksAt (0_dB).forChannel (1))
+        .expectTrue (PeaksAt (0_dB).forChannel (2))
+        .expectTrue (PeaksAt (-3_dB).forChannel (3))
+        .expectTrue (PeaksAt (-3_dB).forChannel (4))
         .process();
 }
 

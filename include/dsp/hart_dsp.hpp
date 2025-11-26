@@ -7,6 +7,7 @@
 #include <unordered_map>
 
 #include "hart_audio_buffer.hpp"
+#include "hart_channel_flags.hpp"
 #include "envelopes/hart_envelope.hpp"
 #include "hart_utils.hpp"  // make_unique()
 
@@ -61,7 +62,8 @@ public:
     /// @param input Input audio block
     /// @param output Output audio block
     /// @param envelopeBuffers Envelope values for this block, see @ref EnvelopeBuffers
-    virtual void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const EnvelopeBuffers& envelopeBuffers) = 0;
+    /// @param channelsToProcess Channels that need processing. Process channels that are marked `true`, bypass ones marked `false`.
+    virtual void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const EnvelopeBuffers& envelopeBuffers, ChannelFlags channelsToProcess) = 0;
 
     /// @brief Resets to initial state
     /// @details Ideally should be implemented in a way that audio produced after resetting is identical to audio produced after instantiation
@@ -126,7 +128,8 @@ public:
 
     /// @brief Copies from another DSP effect instance
     /// @details Attached automation envelopes are deep-copied
-    DSPBase (const DSPBase& other)
+    DSPBase (const DSPBase& other):
+        m_channelsToProcess (other.m_channelsToProcess)
     {
         for (auto& pair : other.m_envelopes)
             m_envelopes.emplace (pair.first, pair.second->copy());
@@ -134,8 +137,9 @@ public:
 
     /// @brief Move constructor
     /// @details Attached automation envelopes are moved as well
-    DSPBase (DSPBase&& other) noexcept
-        : m_envelopes (std::move (other.m_envelopes))
+    DSPBase (DSPBase&& other) noexcept:
+        m_envelopes (std::move (other.m_envelopes)),
+        m_channelsToProcess (other.m_channelsToProcess)
     {
     }
 
@@ -149,6 +153,7 @@ public:
         for (auto& pair : other.m_envelopes)
             m_envelopes.emplace (pair.first, pair.second->copy());
 
+        m_channelsToProcess = other.m_channelsToProcess;
         return *this;
     }
 
@@ -159,6 +164,7 @@ public:
         if (this != &other)
             m_envelopes = std::move (other.m_envelopes);
 
+        m_channelsToProcess = other.m_channelsToProcess;
         return *this;
     }
 
@@ -203,7 +209,17 @@ public:
                 envelopeBuffer.resize (maxBlockSizeFrames);
         }
 
+        m_channelsToProcess.resize (numInputChannels);
         prepare (sampleRateHz, numInputChannels, numOutputChannels, maxBlockSizeFrames);
+    }
+
+    /// @brief Returns a structure indicating which channels should be processed by this DSP
+    /// @details See @ref forChannels(), @ref forChannel(), @ref forAllChannels()
+    /// @return Set of flags for each channel, see @ref hart::ChannelFlags.
+    /// `true` for channels that need processing, `false` for channels that need bypassing.
+    ChannelFlags getChannelsToProcess()
+    {
+        return m_channelsToProcess;
     }
 
     /// @brief Renders all the automation envelopes and processes the audio
@@ -229,7 +245,7 @@ public:
             getValues (paramId, envelopeBuffer.size(), envelopeBuffer);
         }
         
-        process (input, output, m_envelopeBuffers);
+        process (input, output, m_envelopeBuffers, m_channelsToProcess);
     }
 
     /// @brief Helper for template resolution
@@ -238,6 +254,7 @@ public:
 
 protected:
     std::unordered_map<int, std::unique_ptr<Envelope>> m_envelopes;
+    ChannelFlags m_channelsToProcess {true};
 
 private:
     EnvelopeBuffers m_envelopeBuffers;
@@ -299,13 +316,13 @@ public:
     /// @param paramId Some ID that your subclass understands
     /// @param envelope Envelope to be attached
     /// @return Reference to itself for chaining
-    DSP& withEnvelope (int paramId, Envelope&& envelope)
+    Derived& withEnvelope (int paramId, Envelope&& envelope)
     {
         if (! supportsEnvelopeFor(paramId))
             HART_THROW_OR_RETURN (hart::UnsupportedError, std::string ("DSP doesn't support envelopes for param ID: ") + std::to_string (paramId), *this);
 
         m_envelopes.emplace (paramId, hart::make_unique<Envelope> (std::move (envelope)));
-        return *this;
+        return static_cast<Derived&> (*this);
     }
 
     /// @brief Adds envelope to a specific parameter by copying it
@@ -316,13 +333,13 @@ public:
     /// @param paramId Some ID that your subclass understands
     /// @param envelope Envelope to be attached
     /// @return Reference to itself for chaining
-    DSP& withEnvelope (int paramId, const Envelope& envelope)
+    Derived& withEnvelope (int paramId, const Envelope& envelope)
     {
         if (! supportsEnvelopeFor(paramId))
             HART_THROW_OR_RETURN (hart::UnsupportedError, std::string ("DSP doesn't support envelopes for param ID: ") + std::to_string (paramId), *this);
 
         m_envelopes.emplace (paramId, envelope.copy());
-        return *this;
+        return static_cast<Derived&> (*this);
     }
 
     /// @brief Returns a smart pointer with a copy of this object
@@ -335,6 +352,57 @@ public:
     virtual std::unique_ptr<DSPBase<SampleType>> move() override
     {
         return hart::make_unique<Derived> (std::move(static_cast<Derived&> (*this)));
+    }
+
+    /// @brief Makes this matcher check only specific channels, and ignore the rest
+    /// @details If not set, the matcher applies to all channels by default.
+    /// If you call this method multiple times, only the last one will be applied.
+    /// To select only one channel, consider using @ref Macther::forChannel() instead.
+    /// @param channelsToMatch List of channels this matcher should apply to,
+    /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` for left and right channels only.
+    /// @see `hart::Channel`
+    Derived& atChannels (std::initializer_list<size_t> channelsToProcess)
+    {
+        m_channelsToProcess.setAllTo (false);
+
+        for (size_t channel : channelsToProcess)
+        {
+            if (channel >= m_channelsToProcess.size())
+                HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
+
+            m_channelsToProcess[channel]  = true;
+        }
+
+        return static_cast<Derived&> (*this);
+    }
+
+    /// @brief Makes this matcher check only one specific channel, and ignore the rest
+    /// @details If not set, the matcher applies to all channels by default.
+    /// If you call this method multiple times, only the last one will be applied.
+    /// To select multiple channels, use @ref Matcher::forChannels() instead.
+    /// @param channelToMatch Channel this matcher should apply to (zero-based),
+    /// e.g. `0` or `Channel::left` for left channel.
+    /// @note If not set, the matcher applies to all channels by default
+    /// @see `hart::Channel`
+    Derived& atChannel (size_t channelToProcess)
+    {
+        if (channelToProcess >= m_channelsToProcess.size())
+            HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
+
+        m_channelsToProcess.setAllTo (false);
+        m_channelsToProcess[channelToProcess] = true;
+
+        return static_cast<Derived&> (*this);
+    }
+
+    /// @brief Makes this matcher check all channels
+    /// @details This is the default setting anyway, so this method is only
+    /// for cases when you need to override previous @ref forChannel()
+    /// or @ref `forChannels()` calls.
+    Derived& atAllChannels()
+    {
+        m_channelsToProcess.setAllTo (true);
+        return static_cast<Derived&> (*this);
     }
 };
 

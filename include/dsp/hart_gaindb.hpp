@@ -37,7 +37,7 @@ public:
         m_gainEnvelopeValuesLinear.resize (this->hasEnvelopeFor (Params::gainDb) ? maxBlockSizeFrames : 0);
     }
 
-    void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const EnvelopeBuffers& envelopeBuffers) override
+    void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const EnvelopeBuffers& envelopeBuffers, ChannelFlags channelsToProcess) override
     {
         const size_t numInputChannels = input.getNumChannels();
         const size_t numOutputChannels = output.getNumChannels();
@@ -47,7 +47,6 @@ public:
             HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "Unsupported channel configuration");
 
         const bool hasGainEnvelope = ! envelopeBuffers.empty() && contains (envelopeBuffers, (int) Params::gainDb);
-        const bool multiplexerMode = numInputChannels != numOutputChannels;
 
         if (hasGainEnvelope)
         {
@@ -57,19 +56,12 @@ public:
             for (size_t i = 0; i < m_gainEnvelopeValuesLinear.size(); ++i)
                 m_gainEnvelopeValuesLinear[i] = decibelsToRatio (gainEnvelopeValuesDb[i]);
 
-            if (multiplexerMode)
-                processEnvelopedGainAsMultiplexer (input, output);
-            else
-                processEnvelopedGainAsMultiChannel (input, output);
-
+            processEnvelopedGain (input, output, channelsToProcess);
             return;
         }
 
         // No gain envelope
-        if (multiplexerMode)
-            processConstantGainAsMultiplexer (input, output);
-        else
-            processConstantGainAsMultiChannel (input, output);
+        processConstantGain (input, output, channelsToProcess);
     }
 
     void reset() override {}
@@ -93,16 +85,10 @@ public:
     }
 
     /// @brief Checks if the DSP supports given i/o configuration
-    /// @details Supports either 1-to-n or n-to-n configurations 
+    /// @details Supports only n-to-n configurations 
     virtual bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const override
     {
-        if (numInputChannels == numOutputChannels)
-            return true;
-
-        if (numInputChannels == 1)
-            return true;
-
-        return false;
+        return numInputChannels == numOutputChannels;
     }
 
     virtual void represent (std::ostream& stream) const override
@@ -122,32 +108,39 @@ private:
     double m_gainLinear;
     std::vector<double> m_gainEnvelopeValuesLinear;
 
-    void processConstantGainAsMultiChannel (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
+    void processConstantGain (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, ChannelFlags channelsToProcess)
     {
         for (size_t channel = 0; channel < input.getNumChannels(); ++channel)
-            for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
-                output[channel][frame] = input[channel][frame] * (SampleType) m_gainLinear;
+        {
+            if (channelsToProcess[channel] == true)
+            {
+                for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
+                    output[channel][frame] = input[channel][frame] * (SampleType) m_gainLinear;
+            }
+            else
+            {
+                for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
+                    output[channel][frame] = input[channel][frame];
+            }
+        }
     }
 
-    void processConstantGainAsMultiplexer (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
-    {
-        for (size_t channel = 0; channel < output.getNumChannels(); ++channel)
-            for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
-                output[channel][frame] = input[0][frame] * (SampleType) m_gainLinear;
-    }
-
-    void processEnvelopedGainAsMultiChannel (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
+    void processEnvelopedGain (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, ChannelFlags channelsToProcess)
     {
         for (size_t channel = 0; channel < input.getNumChannels(); ++channel)
-            for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
-                output[channel][frame] = input[channel][frame] * (SampleType) m_gainEnvelopeValuesLinear[frame];
-    }
+        {
+            if (channelsToProcess[channel] == true)
+            {
+                for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
+                    output[channel][frame] = input[channel][frame] * (SampleType) m_gainEnvelopeValuesLinear[frame];
+            }
+            else
+            {
+                for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
+                    output[channel][frame] = input[channel][frame];
+            }
 
-    void processEnvelopedGainAsMultiplexer (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
-    {
-        for (size_t channel = 0; channel < output.getNumChannels(); ++channel)
-            for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
-                output[channel][frame] = input[0][frame] * (SampleType) m_gainEnvelopeValuesLinear[frame];
+        }
     }
 };
 
