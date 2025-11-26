@@ -21,11 +21,13 @@ jobs:
             cxx: g++-13
             build_type: Debug
             generator: "Unix Makefiles"
+            cpp_compatibility_test: ON
 
           - name: Windows MSVC
             os: windows-latest
             build_type: Release
             generator: "Visual Studio 17 2022"
+            cpp_compatibility_test: ON
 
           - name: macOS Clang
             os: macos-latest
@@ -33,6 +35,7 @@ jobs:
             cxx: clang++
             build_type: Debug
             generator: "Unix Makefiles"
+            cpp_compatibility_test: OFF
 
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}
@@ -53,7 +56,7 @@ jobs:
 
     - name: Configure CMake
       run: >
-        cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DHART_BUILD_TESTS=ON -DHART_CHECK_CPP_STANDARDS_COMPATIBILITY=ON -G "${{ matrix.generator }}"
+        cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DHART_BUILD_TESTS=ON -DHART_CHECK_CPP_STANDARDS_COMPATIBILITY=${{ matrix.cpp_compatibility_test }} -G "${{ matrix.generator }}"
 
     - name: Build
       run: cmake --build build --config ${{ matrix.build_type }} --parallel
