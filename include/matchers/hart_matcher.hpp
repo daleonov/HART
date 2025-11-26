@@ -80,8 +80,8 @@ public:
     /// @param[out] stream Output stream to write to
     virtual void represent (std::ostream&) const = 0;
 
-    virtual std::unique_ptr<MatcherBase> copy() const = 0;
-    virtual std::unique_ptr<MatcherBase> move() = 0;
+    virtual std::unique_ptr<MatcherBase<SampleType>> copy() const = 0;
+    virtual std::unique_ptr<MatcherBase<SampleType>> move() = 0;
 };
 
 /// @brief Base for audio matchers
@@ -92,7 +92,9 @@ public:
 /// @code{.cpp}
 /// template<typename SampleType>
 /// class MyCustomMatcher: public Matcher<SampleType, MyCustomMatcher<SampleType>>
-/// { /* ... */ };
+/// {
+///     // ...
+/// };
 /// @endcode
 /// @tparam SampleType Type of data in the buffers to be checked, typically `float` or `double`.
 /// @tparam Derived Subclass for CRTP
