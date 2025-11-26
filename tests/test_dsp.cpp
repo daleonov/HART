@@ -130,6 +130,67 @@ HART_TEST ("HardClip - Threshold Values")
         .process();
 }
 
+HART_TEST ("GainLinear - Specific Channels")
+{
+    constexpr double gainLinear = 0.1;
+    const double expectedPeakDb = hart::ratioToDecibels (gainLinear);
+
+    processAudioWith (GainLinear (gainLinear).atChannel (Channel::right))
+        .withLabel ("Right Only")
+        .withInputSignal (SineWave())
+        .inStereo()
+        .expectFalse (PeaksAt (expectedPeakDb))
+        .expectTrue (PeaksAt (0_dB))
+        .expectTrue (PeaksAt (expectedPeakDb).forChannel (Channel::right))
+        .expectTrue (PeaksAt (0_dB).forChannel (Channel::left))
+        .process();
+
+    processAudioWith (GainLinear (gainLinear).atChannels ({0, 3}))
+        .withLabel ("Active on 2 out of 5 channels")
+        .withInputSignal (SineWave())
+        .withInputChannels (5)
+        .withOutputChannels (5)
+        .expectFalse (PeaksAt (expectedPeakDb))
+        .expectTrue (PeaksAt (0_dB))
+        .expectTrue (PeaksAt (expectedPeakDb).forChannels ({0, 3}))
+        .expectTrue (PeaksAt (0_dB).forChannels ({1, 2, 4}))
+        .expectTrue (PeaksAt (expectedPeakDb).forChannel (0))
+        .expectTrue (PeaksAt (0_dB).forChannel (1))
+        .expectTrue (PeaksAt (0_dB).forChannel (2))
+        .expectTrue (PeaksAt (expectedPeakDb).forChannel (3))
+        .expectTrue (PeaksAt (0_dB).forChannel (4))
+        .process();
+}
+
+HART_TEST ("HardClip - Specific Channels")
+{
+    processAudioWith (HardClip (-3_dB).atChannel (Channel::right))
+        .withLabel ("Right Only")
+        .withInputSignal (SineWave())
+        .inStereo()
+        .expectFalse (PeaksAt (-3_dB))
+        .expectTrue (PeaksAt (0_dB))
+        .expectTrue (PeaksAt (-3_dB).forChannel (Channel::right))
+        .expectTrue (PeaksAt (0_dB).forChannel (Channel::left))
+        .process();
+
+    processAudioWith (HardClip (-3_dB).atChannels ({0, 2, 3}))
+        .withLabel ("Active on 3 out of 5 channels")
+        .withInputSignal (SineWave())
+        .withInputChannels (5)
+        .withOutputChannels (5)
+        .expectFalse (PeaksAt (-3_dB))
+        .expectTrue (PeaksAt (0_dB))
+        .expectTrue (PeaksAt (-3_dB).forChannels ({0, 2, 3}))
+        .expectTrue (PeaksAt (0_dB).forChannels ({1, 4}))
+        .expectTrue (PeaksAt (-3_dB).forChannel (0))
+        .expectTrue (PeaksAt (0_dB).forChannel (1))
+        .expectTrue (PeaksAt (-3_dB).forChannel (2))
+        .expectTrue (PeaksAt (-3_dB).forChannel (3))
+        .expectTrue (PeaksAt (0_dB).forChannel (4))
+        .process();
+}
+
 HART_TEST ("Mute")
 {
     processAudioWith (Mute())
@@ -140,7 +201,7 @@ HART_TEST ("Mute")
         .expectTrue (EqualsTo (Silence()))
         .process();
 
-    processAudioWith (Mute({}))
+    processAudioWith (Mute().atChannels ({}))
         .withLabel ("Mute nothing")
         .withInputSignal (SineWave())
         .withInputChannels (5)
@@ -148,31 +209,31 @@ HART_TEST ("Mute")
         .expectTrue (EqualsTo (SineWave()))
         .process();
 
-    processAudioWith (Mute ({Channel::left}))
+    processAudioWith (Mute().atChannel (Channel::left))
         .withLabel ("Mute left channel")
         .withInputSignal (SineWave())
         .inStereo()
         .expectFalse (EqualsTo (Silence()))
         .expectFalse (EqualsTo (SineWave()))
-        .expectFalse (EqualsTo (SineWave() >> Mute ({Channel::right})))
+        .expectFalse (EqualsTo (SineWave() >> Mute().atChannel (Channel::right)))
         .expectTrue (PeaksAt (0_dB))
         .expectTrue (EqualsTo (Silence()).forChannel (Channel::left))
         .expectTrue (EqualsTo (SineWave()).forChannel (Channel::right))
         .process();
 
-    processAudioWith (Mute ({Channel::right}))
+    processAudioWith (Mute().atChannel (Channel::right))
         .withLabel ("Mute right channel")
         .withInputSignal (SineWave())
         .inStereo()
         .expectFalse (EqualsTo (Silence()))
         .expectFalse (EqualsTo (SineWave()))
-        .expectFalse (EqualsTo (SineWave() >> Mute ({Channel::left})))
+        .expectFalse (EqualsTo (SineWave() >> Mute().atChannel (Channel::left)))
         .expectTrue (PeaksAt (0_dB))
         .expectTrue (EqualsTo (SineWave()).forChannel (Channel::left))
         .expectTrue (EqualsTo (Silence()).forChannel (Channel::right))
         .process();
 
-    processAudioWith (Mute (~std::bitset<64>{}.set (0).set (2)))
+    processAudioWith (Mute().atAllChannelsExcept ({0, 2}))
         .withLabel ("Mute everything except channels 0 and 2")
         .withInputSignal (SineWave())
         .withInputChannels (5)

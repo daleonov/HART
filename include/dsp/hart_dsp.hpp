@@ -354,11 +354,11 @@ public:
         return hart::make_unique<Derived> (std::move(static_cast<Derived&> (*this)));
     }
 
-    /// @brief Makes this matcher check only specific channels, and ignore the rest
-    /// @details If not set, the matcher applies to all channels by default.
+    /// @brief Makes this DSP process only specific channels, and ignore the rest
+    /// @details If not set, the DSP applies to all channels by default.
     /// If you call this method multiple times, only the last one will be applied.
-    /// To select only one channel, consider using @ref Macther::forChannel() instead.
-    /// @param channelsToMatch List of channels this matcher should apply to,
+    /// To select only one channel, consider using @ref DSP::forChannel() instead.
+    /// @param channelsToProcess List of channels this DSP should apply to,
     /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` for left and right channels only.
     /// @see `hart::Channel`
     Derived& atChannels (std::initializer_list<size_t> channelsToProcess)
@@ -376,13 +376,14 @@ public:
         return static_cast<Derived&> (*this);
     }
 
-    /// @brief Makes this matcher check only one specific channel, and ignore the rest
-    /// @details If not set, the matcher applies to all channels by default.
+    /// @brief Makes this DSP process only specific channels, and bypass the rest
+    /// @details If not set, the DSP applies to all channels by default.
     /// If you call this method multiple times, only the last one will be applied.
-    /// To select multiple channels, use @ref Matcher::forChannels() instead.
-    /// @param channelToMatch Channel this matcher should apply to (zero-based),
+    /// To select multiple channels, use @ref DSP::forChannels() or
+    /// @ref atAllChannelsExcept() instead.
+    /// @param channelToProcess Channel this DSP should apply to (zero-based),
     /// e.g. `0` or `Channel::left` for left channel.
-    /// @note If not set, the matcher applies to all channels by default
+    /// @note If not set, the DSP applies to all channels by default
     /// @see `hart::Channel`
     Derived& atChannel (size_t channelToProcess)
     {
@@ -395,13 +396,35 @@ public:
         return static_cast<Derived&> (*this);
     }
 
-    /// @brief Makes this matcher check all channels
+    /// @brief Makes this DSP apply toall channels
     /// @details This is the default setting anyway, so this method is only
-    /// for cases when you need to override previous @ref forChannel()
-    /// or @ref `forChannels()` calls.
+    /// for cases when you need to override previous @ref forChannel(),
+    /// @ref forChannels() or @ref atAllChannelsExcept() calls.
     Derived& atAllChannels()
     {
         m_channelsToProcess.setAllTo (true);
+        return static_cast<Derived&> (*this);
+    }
+
+    /// @brief Makes this DSP process only specific channels, and bypass the rest
+    /// @details If not set, DSP applies to all channels by default.
+    /// If you call this method multiple times, only the last one will be applied.
+    /// @param channelsToSkip List of channels this DSP should NOT apply to,
+    /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` to bypass left and right
+    /// channels, and process the rest
+    /// @see `hart::Channel`
+    Derived& atAllChannelsExcept (std::initializer_list<size_t> channelsToSkip)
+    {
+        m_channelsToProcess.setAllTo (true);
+
+        for (size_t channel : channelsToSkip)
+        {
+            if (channel >= m_channelsToProcess.size())
+                HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
+
+            m_channelsToProcess[channel] = false;
+        }
+
         return static_cast<Derived&> (*this);
     }
 };

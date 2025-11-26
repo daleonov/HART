@@ -43,8 +43,18 @@ public:
             HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "Unsupported channel configuration");
 
         for (size_t channel = 0; channel < numChannels; ++channel)
-            for (size_t frame = 0; frame < numFrames; ++frame)
-                output[channel][frame] = std::min (std::max (input[channel][frame], (SampleType) -m_thresholdLinear), (SampleType) m_thresholdLinear);
+        {
+            if (channelsToProcess[channel] == true)
+            {
+                for (size_t frame = 0; frame < numFrames; ++frame)
+                    output[channel][frame] = std::min (std::max (input[channel][frame], (SampleType) -m_thresholdLinear), (SampleType) m_thresholdLinear);
+            }
+            else
+            {
+                for (size_t frame = 0; frame < numFrames; ++frame)
+                    output[channel][frame] = input[channel][frame];
+            }
+        }
     }
 
     void reset() override {}
