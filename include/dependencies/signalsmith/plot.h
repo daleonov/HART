@@ -147,7 +147,7 @@ public:
 			.svg-plot-bg {
 				fill: #FFF;
 				stroke: none;
-    			}
+				}
 			.svg-plot-axis {
 				stroke: none;
 				fill: #FFFFFFD9;
@@ -307,9 +307,7 @@ struct Bounds {
 };
 
 struct Point2D {
-	Point2D() {}
-	Point2D (double x_, double y_) : x (x_), y (y_) {}
-	double x = 0.0, y = 0.0;
+	double x, y;
 };
 
 /// Internal helper class for slightly more semantic code when writing SVGs
@@ -1071,7 +1069,7 @@ class Line2D : public SvgDrawable {
 	};
 	std::vector<Dot> dots;
 	struct Frame {
-		double time = 0.0;
+		double time;
 		std::vector<LinePoint> points;
 		std::vector<Marker> markers;
 		std::vector<Dot> dots;
@@ -1310,7 +1308,7 @@ public:
 				closestError = std::abs(points[i].x - xIsh);
 			}
 		}
-        LinePoint latest = points[closest];
+		LinePoint latest = points[closest];
 		return label(latest.x, latest.y, name, degrees, distance);
 	}
 	
@@ -1319,7 +1317,7 @@ public:
 
 	void toFrame(double time, bool clear=true) override {
 		SvgDrawable::toFrame(time, clear);
-		frames.push_back(Frame{time, points, markers, dots});
+		frames.push_back({time, points, markers, dots});
 		if (clear) {
 			points.clear();
 			markers.clear();
@@ -1729,7 +1727,7 @@ public:
 
 class Plot2D : public SvgFileDrawable {
 	std::string plotTitle;
-	double titleRx = 0.0, titleRy = 0.0;
+	double titleRx, titleRy;
 	std::vector<std::unique_ptr<Axis>> xAxes, yAxes;
 	Bounds size;
 public:
