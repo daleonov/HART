@@ -318,10 +318,10 @@ public:
     /// @return Reference to itself for chaining
     Derived& withEnvelope (int paramId, Envelope&& envelope)
     {
-        if (! supportsEnvelopeFor(paramId))
+        if (! this->supportsEnvelopeFor (paramId))
             HART_THROW_OR_RETURN (hart::UnsupportedError, std::string ("DSP doesn't support envelopes for param ID: ") + std::to_string (paramId), *this);
 
-        m_envelopes.emplace (paramId, hart::make_unique<Envelope> (std::move (envelope)));
+        this->m_envelopes.emplace (paramId, hart::make_unique<Envelope> (std::move (envelope)));
         return static_cast<Derived&> (*this);
     }
 
@@ -335,10 +335,10 @@ public:
     /// @return Reference to itself for chaining
     Derived& withEnvelope (int paramId, const Envelope& envelope)
     {
-        if (! supportsEnvelopeFor(paramId))
+        if (! this->supportsEnvelopeFor(paramId))
             HART_THROW_OR_RETURN (hart::UnsupportedError, std::string ("DSP doesn't support envelopes for param ID: ") + std::to_string (paramId), *this);
 
-        m_envelopes.emplace (paramId, envelope.copy());
+        this->m_envelopes.emplace (paramId, envelope.copy());
         return static_cast<Derived&> (*this);
     }
 
@@ -363,14 +363,14 @@ public:
     /// @see `hart::Channel`
     Derived& atChannels (std::initializer_list<size_t> channelsToProcess)
     {
-        m_channelsToProcess.setAllTo (false);
+        this->m_channelsToProcess.setAllTo (false);
 
         for (size_t channel : channelsToProcess)
         {
-            if (channel >= m_channelsToProcess.size())
+            if (channel >= this->m_channelsToProcess.size())
                 HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
 
-            m_channelsToProcess[channel] = true;
+            this->m_channelsToProcess[channel] = true;
         }
 
         return static_cast<Derived&> (*this);
@@ -387,11 +387,11 @@ public:
     /// @see `hart::Channel`
     Derived& atChannel (size_t channelToProcess)
     {
-        if (channelToProcess >= m_channelsToProcess.size())
+        if (channelToProcess >= this->m_channelsToProcess.size())
             HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
 
-        m_channelsToProcess.setAllTo (false);
-        m_channelsToProcess[channelToProcess] = true;
+        this->m_channelsToProcess.setAllTo (false);
+        this->m_channelsToProcess[channelToProcess] = true;
 
         return static_cast<Derived&> (*this);
     }
@@ -402,7 +402,7 @@ public:
     /// @ref atChannels() or @ref atAllChannelsExcept() calls.
     Derived& atAllChannels()
     {
-        m_channelsToProcess.setAllTo (true);
+        this->m_channelsToProcess.setAllTo (true);
         return static_cast<Derived&> (*this);
     }
 
@@ -415,14 +415,14 @@ public:
     /// @see `hart::Channel`
     Derived& atAllChannelsExcept (std::initializer_list<size_t> channelsToSkip)
     {
-        m_channelsToProcess.setAllTo (true);
+        this->m_channelsToProcess.setAllTo (true);
 
         for (size_t channel : channelsToSkip)
         {
-            if (channel >= m_channelsToProcess.size())
+            if (channel >= this->m_channelsToProcess.size())
                 HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
 
-            m_channelsToProcess[channel] = false;
+            this->m_channelsToProcess[channel] = false;
         }
 
         return static_cast<Derived&> (*this);
