@@ -85,7 +85,7 @@ public:
         MatcherFailureDetails details;
         details.frame = m_failedFrame;
         details.channel = m_failedChannel;
-        details.description = std::move (stream.str());
+        details.description = stream.str();
         return details;
     }
 
