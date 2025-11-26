@@ -53,12 +53,11 @@ jobs:
 
     - name: Configure CMake
       run: >
-        cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DHART_BUILD_TESTS=ON -G "${{ matrix.generator }}"
+        cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DHART_BUILD_TESTS=ON -DHART_CHECK_CPP_STANDARDS_COMPATIBILITY=ON -G "${{ matrix.generator }}"
 
     - name: Build
       run: cmake --build build --config ${{ matrix.build_type }} --parallel
 
     - name: Test
-      shell: bash
       working-directory: build
       run: ctest -C ${{ matrix.build_type }} --output-on-failure -V
