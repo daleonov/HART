@@ -116,7 +116,7 @@ public:
     /// @return This object, moved and wrapped in a smart pointer
     virtual std::unique_ptr<MatcherBase<SampleType>> move() override
     {
-        return hart::make_unique<Derived> (std::move(static_cast<Derived&> (*this)));
+        return hart::make_unique<Derived> (std::move (static_cast<Derived&> (*this)));
     }
 
     /// @brief Makes this matcher check only specific channels, and ignore the rest

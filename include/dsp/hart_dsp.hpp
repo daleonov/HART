@@ -351,7 +351,7 @@ public:
     /// @brief Returns a smart pointer with a moved instance of this object
     virtual std::unique_ptr<DSPBase<SampleType>> move() override
     {
-        return hart::make_unique<Derived> (std::move(static_cast<Derived&> (*this)));
+        return hart::make_unique<Derived> (std::move (static_cast<Derived&> (*this)));
     }
 
     /// @brief Makes this DSP process only specific channels, and ignore the rest
