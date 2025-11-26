@@ -214,7 +214,7 @@ public:
     }
 
     /// @brief Returns a structure indicating which channels should be processed by this DSP
-    /// @details See @ref forChannels(), @ref forChannel(), @ref forAllChannels()
+    /// @details See @ref atChannels(), @ref atChannel(), @ref atAllChannels()
     /// @return Set of flags for each channel, see @ref hart::ChannelFlags.
     /// `true` for channels that need processing, `false` for channels that need bypassing.
     ChannelFlags getChannelsToProcess()
@@ -357,7 +357,7 @@ public:
     /// @brief Makes this DSP process only specific channels, and ignore the rest
     /// @details If not set, the DSP applies to all channels by default.
     /// If you call this method multiple times, only the last one will be applied.
-    /// To select only one channel, consider using @ref DSP::forChannel() instead.
+    /// To select only one channel, consider using @ref DSP::atChannel() instead.
     /// @param channelsToProcess List of channels this DSP should apply to,
     /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` for left and right channels only.
     /// @see `hart::Channel`
@@ -370,7 +370,7 @@ public:
             if (channel >= m_channelsToProcess.size())
                 HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
 
-            m_channelsToProcess[channel]  = true;
+            m_channelsToProcess[channel] = true;
         }
 
         return static_cast<Derived&> (*this);
@@ -379,7 +379,7 @@ public:
     /// @brief Makes this DSP process only specific channels, and bypass the rest
     /// @details If not set, the DSP applies to all channels by default.
     /// If you call this method multiple times, only the last one will be applied.
-    /// To select multiple channels, use @ref DSP::forChannels() or
+    /// To select multiple channels, use @ref DSP::atChannels() or
     /// @ref atAllChannelsExcept() instead.
     /// @param channelToProcess Channel this DSP should apply to (zero-based),
     /// e.g. `0` or `Channel::left` for left channel.
@@ -398,8 +398,8 @@ public:
 
     /// @brief Makes this DSP apply toall channels
     /// @details This is the default setting anyway, so this method is only
-    /// for cases when you need to override previous @ref forChannel(),
-    /// @ref forChannels() or @ref atAllChannelsExcept() calls.
+    /// for cases when you need to override previous @ref atChannel(),
+    /// @ref atChannels() or @ref atAllChannelsExcept() calls.
     Derived& atAllChannels()
     {
         m_channelsToProcess.setAllTo (true);

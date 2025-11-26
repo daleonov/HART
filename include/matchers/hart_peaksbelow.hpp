@@ -14,7 +14,7 @@ namespace hart
 /// @brief Checks whether the audio peaks below specific level
 /// @details This matcher will calculate peak value on a block-by-block basis.
 /// It checks where all selected channels peak collectively, not for each individual channel.
-/// To do more strict per channel checks, use multiple matchers with @ref forChannel(), so that
+/// To do more strict per channel checks, use multiple matchers with @ref atChannel(), so that
 /// each matcher only targets one specific channel. 
 /// @note Tip: To check if the audio peaks @em above some level, just flip your assertion, e.g.
 /// @code expectFalse (PeaksBelow (-3_Db)) @endcode or @code assertFalse (PeaksBelow (-3_Db)) @endcode

@@ -16,7 +16,7 @@ namespace hart
 /// @details This matcher will calculate peak value of a full audio signal (not a per-block peaks)
 /// and compare against a value provided during instantiation with a provided tolerance.
 /// It checks where all selected channels peak collectively, not for each individual channel.
-/// To do more strict per channel checks, use multiple matchers with @ref forChannel(), so that
+/// To do more strict per channel checks, use multiple matchers with @ref atChannel(), so that
 /// each matcher only targets one specific channel. 
 /// @attention It checks the sample peaks, not the inter-sample peaks (a popular metric in audio
 /// mastering community). Fon inter-sample peak checking, you can make your own custom Matcher.

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <bitset>
 #include <memory>
 #include <string>
 
 #include "hart_audio_buffer.hpp"
+#include "hart_channel_flags.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_matcher_failure_details.hpp"
 #include "hart_utils.hpp"  // make_unique()
@@ -103,9 +103,6 @@ template<typename SampleType, typename Derived>
 class Matcher:
     public MatcherBase<SampleType>
 {
-private:
-    static constexpr size_t m_maxChannels = 64;
-    std::bitset<m_maxChannels> m_channelsToMatch = ~std::bitset<m_maxChannels>();
 
 public:
     /// @brief Returns a smart pointer with a copy of this object
@@ -125,20 +122,20 @@ public:
     /// @brief Makes this matcher check only specific channels, and ignore the rest
     /// @details If not set, the matcher applies to all channels by default.
     /// If you call this method multiple times, only the last one will be applied.
-    /// To select only one channel, consider using @ref Macther::forChannel() instead.
+    /// To select only one channel, consider using @ref Macther::atChannel() instead.
     /// @param channelsToMatch List of channels this matcher should apply to,
     /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` for left and right channels only.
     /// @see `hart::Channel`
-    Derived& forChannels (std::initializer_list<size_t> channelsToMatch)
+    Derived& atChannels (std::initializer_list<size_t> channelsToMatch)
     {
-        m_channelsToMatch.reset();
+        m_channelsToMatch.setAllTo (false);
 
         for (size_t channel : channelsToMatch)
         {
             if (channel >= m_channelsToMatch.size())
                 HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
 
-            m_channelsToMatch.set (channel);
+            m_channelsToMatch[channel] = true;
         }
 
         return static_cast<Derived&> (*this);
@@ -147,39 +144,63 @@ public:
     /// @brief Makes this matcher check only one specific channel, and ignore the rest
     /// @details If not set, the matcher applies to all channels by default.
     /// If you call this method multiple times, only the last one will be applied.
-    /// To select multiple channels, use @ref Matcher::forChannels() instead.
+    /// To select multiple channels, use @ref Matcher::atChannels() instead.
     /// @param channelToMatch Channel this matcher should apply to (zero-based),
     /// e.g. `0` or `Channel::left` for left channel.
     /// @note If not set, the matcher applies to all channels by default
     /// @see `hart::Channel`
-    Derived& forChannel (size_t channelToMatch)
+    Derived& atChannel (size_t channelToMatch)
     {
         if (channelToMatch >= m_channelsToMatch.size())
             HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
 
-        m_channelsToMatch.reset();
-        m_channelsToMatch.set (channelToMatch);
+        m_channelsToMatch.setAllTo (false);
+        m_channelsToMatch[channelToMatch] = true;
 
         return static_cast<Derived&> (*this);
     }
 
     /// @brief Makes this matcher check all channels
     /// @details This is the default setting anyway, so this method is only
-    /// for cases when you need to override previous @ref forChannel()
-    /// or @ref `forChannels()` calls.
-    Derived& forAllChannels()
+    /// for cases when you need to override previous @ref atChannel(),
+    /// @ref `atChannels()` or @ref atAllChannelsExcept() calls.
+    Derived& atAllChannels()
     {
-        m_channelsToMatch.set();
+        m_channelsToMatch.setAllTo (true);
+        return static_cast<Derived&> (*this);
+    }
+
+    /// @brief Makes this matcher check only specific channels, and ignore the rest
+    /// @details If not set, matcher checks to all channels by default.
+    /// If you call this method multiple times, only the last one will be applied.
+    /// @param channelsToSkip List of channels this matcher should NOT check,
+    /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` to ship left and right
+    /// channels, and match the rest
+    /// @see `hart::Channel`
+    Derived& atAllChannelsExcept (std::initializer_list<size_t> channelsToSkip)
+    {
+        m_channelsToMatch.setAllTo (true);
+
+        for (size_t channel : channelsToSkip)
+        {
+            if (channel >= m_channelsToMatch.size())
+                HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
+
+            m_channelsToMatch[channel] = false;
+        }
+
         return static_cast<Derived&> (*this);
     }
 
 protected:
+    ChannelFlags m_channelsToMatch {true};
+
     /// @brief Indicates whether this matcher should check a specific channel
     /// @details You might want to use it in the @ref match() callback.
-    /// See @ref forChannels(), @ref forChannel(), @ref forAllChannels().
+    /// See @ref atChannels(), @ref atChannel(), @ref atAllChannels(), @ref atAllChannelsExcept().
     bool appliesToChannel (size_t channel)
     {
-        return m_channelsToMatch.test (channel);
+        return m_channelsToMatch[channel];
     }
 };
 
