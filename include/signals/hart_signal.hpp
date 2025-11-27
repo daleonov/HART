@@ -353,7 +353,7 @@ Signal<SampleType, DerivedSignal>&& operator>> (Signal<SampleType, DerivedSignal
 template<
     typename SampleType,
     typename DerivedSignal,
-    typename DerivedDSP, typename = std::enable_if_t<std::is_base_of_v<DSPBase<SampleType>, DerivedDSP>>>
+    typename DerivedDSP, typename = std::enable_if<std::is_base_of<DSPBase<SampleType>, DerivedDSP>::value>::type>
 Signal<SampleType, DerivedSignal>& operator>>(Signal<SampleType, DerivedSignal>& signal, std::unique_ptr<DerivedDSP>&& dsp)
 {
     signal.followedBy (std::move (dsp));
@@ -367,7 +367,7 @@ Signal<SampleType, DerivedSignal>& operator>>(Signal<SampleType, DerivedSignal>&
 template<
     typename SampleType,
     typename DerivedSignal,
-    typename DerivedDSP, typename = std::enable_if_t<std::is_base_of_v<DSPBase<SampleType>, DerivedDSP>>>
+    typename DerivedDSP, typename = std::enable_if<std::is_base_of<DSPBase<SampleType>, DerivedDSP>::value>::type>
 Signal<SampleType, DerivedSignal>&& operator>>(Signal<SampleType, DerivedSignal>&& signal, std::unique_ptr<DerivedDSP>&& dsp)
 {
     signal.followedBy (std::move (dsp));
