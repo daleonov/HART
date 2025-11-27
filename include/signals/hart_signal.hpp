@@ -331,7 +331,7 @@ public:
     Derived operator-() const
     {
         auto newSignal = static_cast<const Derived&> (*this);
-        newSignal.dspChain.emplace_back (std::make_unique<GainLinear<SampleType>> (SampleType (-1)));
+        newSignal.dspChain.emplace_back (hart::make_unique<GainLinear<SampleType>> (SampleType (-1)));
         return newSignal;
     }
 
