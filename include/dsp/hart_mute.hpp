@@ -11,7 +11,7 @@ namespace hart
 {
 
 /// @brief Mutes selected channels in the signal
-/// @details Fills all specified channels to zeros.\
+/// @details Fills all specified channels to zeros.
 /// By default, mutes all the channels, unless specific channels are set.
 /// @ingroup DSP
 template <typename SampleType>
