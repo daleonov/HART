@@ -23,6 +23,18 @@ public:
     /// @brief Destructor
     ~MixedSignal() = default;
 
+    // TODO: Move and smart pointer transfer
+    /// @brief Creates a MixedSignals from two existing signals
+    /// @details For internal use by "+" and "-" operators,
+    /// so you probably don't want to call it directly.
+    /// @param signalA Signal to add to the mix
+    /// @param signalB Another signal to add to the mix
+    MixedSignal (const SignalBase<SampleType>& signalA, const SignalBase<SampleType>& signalB)
+    {
+        m_signals.push_back (signalA.copy());
+        m_signals.push_back (signalB.copy());
+    }
+
     /// @brief Copies other MixedSignal
     MixedSignal (const MixedSignal& other):
         Signal<SampleType, MixedSignal<SampleType>> (other)
@@ -69,17 +81,6 @@ public:
         m_signals = std::move (other.m_signals);
 
         return *this;
-    }
-
-    // TODO: Move and smart pointer transfer
-
-    /// @brief Adds a signal to a mix
-    /// @details For internal use by "+" and "-" operators,
-    /// @param signal Signal to add to the mix
-    /// so you probably don't want to call it directly.
-    void add (const SignalBase<SampleType>& signal)
-    {
-        m_signals.push_back (signal.copy());
     }
 
     void prepare (double sampleRateHz, size_t numOutputChannels, size_t maxBlockSizeFrames) override
@@ -148,10 +149,10 @@ MixedSignal<SampleType> operator+ (
     const Signal<SampleType, DerivedSignalTypeRHS>& rhs
     )
 {
-    MixedSignal<SampleType> mix;
-    mix.add (static_cast<const DerivedSignalTypeLHS&> (lhs));
-    mix.add (static_cast<const DerivedSignalTypeRHS&> (rhs));
-    return mix;
+    return MixedSignal<SampleType> (
+        static_cast<const DerivedSignalTypeLHS&> (lhs),
+        static_cast<const DerivedSignalTypeRHS&> (rhs)
+        );
 }
 
 /// @brief Subtracts one signal from another, resulting in a new mixed signal
@@ -163,10 +164,10 @@ MixedSignal<SampleType> operator- (
     const Signal<SampleType, DerivedSignalTypeRHS>& rhs
     )
 {
-    MixedSignal<SampleType> mix;
-    mix.add (static_cast<const DerivedSignalTypeLHS&> (lhs));
-    mix.add (-static_cast<const DerivedSignalTypeRHS&> (rhs));
-    return mix;
+    return MixedSignal<SampleType> (
+        static_cast<const DerivedSignalTypeLHS&> (lhs),
+        -static_cast<const DerivedSignalTypeRHS&> (rhs)
+        );
 }
 
 }  // namespace hart
