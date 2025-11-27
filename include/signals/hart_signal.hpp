@@ -129,6 +129,7 @@ public:
     /// @note Note that this method does not have to be real-time safe, as all rendering always happens offline.
     /// Also note that, unlike real-time audio applications, this method is called on the same thread as all others like @ref prepare().
     /// @param output Output audio block
+    /// @warning Output audio buffer is not guaranteed to be pre-filled with zeros, it may contain junk data.
     virtual void renderNextBlock (AudioBuffer<SampleType>& output) = 0;
 
     /// @brief Resets the Signal to initial state

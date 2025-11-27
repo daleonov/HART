@@ -114,3 +114,53 @@ HART_TEST ("Signal - Unary Flip")
         .expectTrue (EqualsTo (SineWave() >> GainLinear (-1.0) >> HardClip (-3_dB)))
         .process();
 }
+
+HART_TEST ("Signal - Mixing Signals")
+{
+    processAudioWith (GainDb())
+        .withLabel ("Adding two identical signals")
+        .withInputSignal (SineWave() + SineWave())
+        .expectFalse (EqualsTo (SineWave()))
+        .expectTrue (EqualsTo (SineWave() >> GainLinear (2.0)))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Subtracting two identical signals")
+        .withInputSignal (SineWave() - SineWave())
+        .expectTrue (PeaksAt (-oo_dB))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Adding two out of phase signals")
+        .withInputSignal (SineWave (440_Hz) + SineWave (440_Hz, hart::pi))
+        .expectTrue (PeaksAt (-oo_dB))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Subtracting two out of phase signals")
+        .withInputSignal (SineWave (440_Hz) - SineWave (440_Hz, hart::pi))
+        .expectTrue (EqualsTo (SineWave (440_Hz) >> GainLinear (2.0)))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Order doesn't matter")
+        .withInputSignal (SineWave (440_Hz) + SineWave (100_Hz))
+        .expectFalse (EqualsTo (SineWave (440_Hz)))
+        .expectFalse (EqualsTo (SineWave (100_Hz)))
+        .expectTrue (EqualsTo (SineWave (100_Hz) + SineWave (440_Hz)))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Adding a bunch of identical signals")
+        .withInputSignal (SineWave() + SineWave() + SineWave() + SineWave() + SineWave())
+        .expectFalse (EqualsTo (SineWave()))
+        .expectTrue (EqualsTo (SineWave() >> GainLinear (5.0)))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Preserving signal chains")
+        .withInputSignal ((SineWave() >> GainLinear (1.23)) + (SineWave() >> GainLinear (4.56) >> GainLinear (3.21)))
+        .expectFalse (EqualsTo (SineWave()))
+        .expectTrue (EqualsTo (SineWave() >> GainLinear (1.23 + 4.56 * 3.21)))
+        .process();
+}

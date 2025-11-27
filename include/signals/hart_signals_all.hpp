@@ -1,5 +1,6 @@
 #pragma once
 
+#include "signals/hart_mixed_signal.hpp"
 #include "signals/hart_signal.hpp"
 #include "signals/hart_silence.hpp"
 #include "signals/hart_sine_sweep.hpp"
