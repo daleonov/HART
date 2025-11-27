@@ -75,4 +75,11 @@ HART_TEST ("Signal - Fast Forward via skipTo()")
         .withInputSignal (SineSweep (200_ms).withLoop (SineSweep::Loop::no).skipTo (201_ms))
         .expectTrue (PeaksAt (-oo_dB))
         .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Skiping multiple times")
+        .withInputSignal (SineWave().skipTo (121_ms).skipTo (29.1_ms))
+        .expectTrue (EqualsTo (SineWave().skipTo (90_ms).skipTo (35_ms).skipTo (25.1_ms), toleranceLinear))
+        .expectFalse (EqualsTo (SineWave(), toleranceLinear))
+        .process();
 }

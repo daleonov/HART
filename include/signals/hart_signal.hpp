@@ -313,12 +313,17 @@ public:
         return hart::make_unique<Derived> (std::move (static_cast<const Derived&> (*this)));
     }
 
+    /// @brief Skips the signal to a specific timestamp
+    /// @details Fast-forwards the signal, with all attaches DSP effects and their automation
+    /// envelopes. Calling it multiple times on one instance will stack the skip times.
+    /// @note Keep in mind that the skip is accurate within one audio frame tolerance
+    /// @param startTimestampSeconds How much time to skip from the start of the signal
     Derived& skipTo (double startTimestampSeconds)
     {
         if (startTimestampSeconds < 0)
             HART_THROW_OR_RETURN (hart::ValueError, "Can't skip to a negative timestamp", static_cast<Derived&> (*this));
 
-        this->m_startTimestampSeconds = startTimestampSeconds;
+        this->m_startTimestampSeconds += startTimestampSeconds;
         return static_cast<Derived&> (*this);
     }
 };
