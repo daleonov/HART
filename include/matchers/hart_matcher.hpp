@@ -87,6 +87,10 @@ public:
     /// @brief Returns a smart pointer with a moved instance of this object
     /// @return This object, moved and wrapped in a smart pointer
     virtual std::unique_ptr<MatcherBase<SampleType>> move() = 0;
+
+    /// @brief Makes a text representation of this Matcher with optional "atChannels" appendix
+    /// @details For internal use by hosts, don't override it in custom matchers.
+    virtual void representWithActiveChannels (std::ostream& stream) const = 0;
 };
 
 /// @brief Base for audio matchers
@@ -197,6 +201,18 @@ public:
         return static_cast<Derived&> (*this);
     }
 
+    void representWithActiveChannels (std::ostream& stream) const override
+    {
+        this->represent (stream);
+
+        if (m_channelsToMatch.allTrue())
+            return;
+
+        stream << ".atChannels (";
+        m_channelsToMatch.representAsInitializerList (stream);
+        stream << ')';
+    }
+
 protected:
     // TODO: Resize m_channelsToMatch() in host's version of prepare() method
     ChannelFlags m_channelsToMatch {true};
@@ -216,7 +232,7 @@ protected:
 template <typename SampleType>
 inline std::ostream& operator<< (std::ostream& stream, const MatcherBase<SampleType>& matcher)
 {
-    matcher.represent (stream);
+    matcher.representWithActiveChannels (stream);
     return stream;
 }
 

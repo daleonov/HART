@@ -1,6 +1,8 @@
 #pragma once
 
 #include <bitset>
+#include <vector>
+
 #include "hart_exceptions.hpp"
 
 namespace hart
@@ -98,6 +100,28 @@ public:
                 return true;
 
         return false;
+    }
+
+    /// @brief Makes text representation of itself as a initializer list of active channels
+    /// @param[out] stream Output stream to write to
+    void representAsInitializerList (std::ostream& stream) const
+    {
+        stream << '{';
+        bool notFirst = false;
+
+        for (size_t i = 0; i < m_maxChannels; ++i)
+        {
+            if (m_flags.test (i) == false)
+                continue;
+
+            if (notFirst)
+                stream << ", ";
+
+            stream << i;
+            notFirst = true;
+        }
+
+        stream << '}';
     }
 
 private:
