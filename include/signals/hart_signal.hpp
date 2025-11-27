@@ -326,6 +326,20 @@ public:
         this->m_startTimestampSeconds += startTimestampSeconds;
         return static_cast<Derived&> (*this);
     }
+
+    /// @brief Returns a copy of this signal, but with flipped phase
+    Derived operator-() const
+    {
+        auto newSignal = static_cast<const Derived&> (*this);
+        newSignal.dspChain.emplace_back (std::make_unique<GainLinear<SampleType>> (SampleType (-1)));
+        return newSignal;
+    }
+
+    /// @brief Returns a copy of this signal, but with flipped phase
+    Derived operator~() const
+    {
+        return -(*this);
+    }
 };
 
 /// @brief Prints readable text representation of the Signal object into the I/O stream

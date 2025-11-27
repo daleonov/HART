@@ -83,3 +83,34 @@ HART_TEST ("Signal - Fast Forward via skipTo()")
         .expectFalse (EqualsTo (SineWave(), toleranceLinear))
         .process();
 }
+
+HART_TEST ("Signal - Unary Flip")
+{
+    processAudioWith (GainDb())
+        .withLabel ("Unary minus")
+        .withInputSignal (-SineWave (440_Hz))
+        .expectFalse (EqualsTo (SineWave (440_Hz)))
+        .expectTrue (EqualsTo (SineWave (440_Hz, hart::pi)))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Unary tilda")
+        .withInputSignal (~SineWave (5_kHz))
+        .expectFalse (EqualsTo (SineWave (5_kHz)))
+        .expectTrue (EqualsTo (SineWave (5_kHz, hart::pi)))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Minus vs tilda")
+        .withInputSignal (~SineWave (60_Hz))
+        .expectFalse (EqualsTo (SineWave (60_Hz)))
+        .expectTrue (EqualsTo (-SineWave (60_Hz)))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Signal with DSP chain")
+        .withInputSignal (-SineWave() >> HardClip (-3_dB))
+        .expectFalse (EqualsTo (SineWave() >> HardClip (-3_dB)))
+        .expectTrue (EqualsTo (SineWave() >> GainLinear (-1.0) >> HardClip (-3_dB)))
+        .process();
+}
