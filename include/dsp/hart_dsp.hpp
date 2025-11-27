@@ -73,14 +73,14 @@ public:
     /// @param paramId Some ID that your subclass understands;
     /// use of enums is encouraged for readability
     /// @param value Value of the param in an appropriate unit;
-    /// use of SI units is enocuraged (i.e. s instead of ms. Hz instead of kHz) to make better use of unit literals (see @ref Units)
+    /// use of SI units is encouraged (i.e. s instead of ms. Hz instead of kHz) to make better use of unit literals (see @ref Units)
     /// @warning This method is only called to set a fixed value before processing, and is not called to do automation (via @ref hart::Envelope)
     /// If you want your class to support automation for a specific parameter, override @ref supportsEnvelopeFor(), and then
     /// use @c envelopeBuffers provided in @ref process() callback.
     virtual void setValue (int paramId, double value) = 0;
 
-    /// @brief Retreives DSP value
-    /// @details Among other things, it can be used to retreive various readings like Gain Reduction measurements from your effect for further inspection
+    /// @brief Retrieves DSP value
+    /// @details Among other things, it can be used to retrieve various readings like Gain Reduction measurements from your effect for further inspection
     /// @param paramId Some ID that your subclass understands
     /// @return The value of requested parameter in a unit that your subclass understands
     /// @note This method is only intended for parameters that don't have an automation envelope attached to this specific instance.
@@ -89,7 +89,7 @@ public:
 
     /// @brief Tells the runner (host) whether this effect supports a specific i/o configuration.
     /// @details It is guaranteed that the effect will not receive unsupported number of channels in @ref process().
-    /// However, it is not always to handle gracefully channel layout being unsupported, so in some circumstances
+    /// However, it is not always possible to handle gracefully channel layout being unsupported, so in some circumstances
     /// it can cause an exception or a test failure. This method is guaranteed to be called at least once before @ref prepare()
     virtual bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const = 0;
 
@@ -342,6 +342,8 @@ public:
         return static_cast<Derived&> (*this);
     }
 
+    // TODO: withEnvelope() that takes a unique_ptr to the envelope
+
     /// @brief Returns a smart pointer with a copy of this object
     virtual std::unique_ptr<DSPBase<SampleType>> copy() const override
     {
@@ -396,7 +398,7 @@ public:
         return static_cast<Derived&> (*this);
     }
 
-    /// @brief Makes this DSP apply toall channels
+    /// @brief Makes this DSP apply to all channels
     /// @details This is the default setting anyway, so this method is only
     /// for cases when you need to override previous @ref atChannel(),
     /// @ref atChannels() or @ref atAllChannelsExcept() calls.
@@ -440,27 +442,6 @@ inline std::ostream& operator<< (std::ostream& stream, const DSPBase<SampleType>
     return stream;
 }
 
-/*
-/// @brief Defines @ref hart::DSP::copy() and @ref hart::DSP::move() methods
-/// @details Put this into your class body's ```public``` section if either is true:
-///  - Your class is trivially copyable and movable
-///  - You have your Rule Of Five methods explicitly defined in this class
-/// (see <a href="https://en.cppreference.com/w/cpp/language/rule_of_three.html" target="_blank">Rule Of Three/Five/Zero</a>)
-///
-/// If neither of those is true, or you're unsure, use @ref HART_DSP_FORBID_COPY_AND_MOVE instead
-///
-/// Despite returning a smart pointer to an abstract DSP class, those two methods must construct
-/// an object of a specific class, hence the mandatory boilerplate methods - sorry!
-/// @param ClassName Name of your class
-/// @ingroup DSP
-#define HART_DSP_DEFINE_COPY_AND_MOVE(ClassName) \
-    std::unique_ptr<DSP<SampleType>> copy() const override { \
-        return hart::make_unique<ClassName> (*this); \
-    } \
-    std::unique_ptr<DSP<SampleType>> move() override { \
-        return hart::make_unique<ClassName> (std::move (*this)); \
-    }
-
 /// @brief Forbids @ref hart::DSP::copy() and @ref hart::DSP::move() methods
 /// @details Put this into your class body's ```public``` section if either is true:
 ///  - Your class is not trivially copyable and movable
@@ -485,7 +466,7 @@ inline std::ostream& operator<< (std::ostream& stream, const DSPBase<SampleType>
         static_assert(false, "This DSP cannot be moved"); \
         return nullptr; \
     }
-*/
+
 }  // namespace hart
 
 /// @private

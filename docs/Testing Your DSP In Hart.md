@@ -4,9 +4,9 @@
 
 # Wrapping your algorithm
 
-In order to get HART to play audio through your DSP algorithm, you need to wrap in into a DSP class. @ref DSP @ref hart::DSP
+In order to get HART to play audio through your DSP algorithm, you need to wrap it into a DSP class. @ref DSP @ref hart::DSP
 
-To do it, make a subclass of of DSP and put your class inside of it. You'll have to implement a few methods for it. A minimal setup can look like this:
+To do it, make a subclass of @ref hart::DSP and put your class inside of it. You'll have to implement a few methods for it. A minimal setup can look like this:
 
 ```cpp
 class MyDSPWrapper :
@@ -83,7 +83,7 @@ HART_TEST ("My first HART Test")
 }
 ```
 
-Nod build and run it! You can also use \ref HART_TEST_WITH_TAGS if you want to use tags, like in [Catch2](https://github.com/catchorg/Catch2)! Now let's do something simple:
+Now build and run it! You can also use \ref HART_TEST_WITH_TAGS if you want to use tags, like in [Catch2](https://github.com/catchorg/Catch2)! Now let's do something simple:
 
 ```cpp
 #include "hart.hpp"
@@ -126,7 +126,7 @@ You can also do something more fance with the parameters - think automation curv
 
 ## Checking the audio produced by your effect [4]
 
-This is what this framefork is for, after all. PeaksAt is something called "matcher" (totally stole this term from Catch2). If receives audio from your effect's output and checks it. This one, as the name implies, checks if the signal peaks at 3dB. By the way, you get a bunch of handy constants and literalls for better readability, like `_dB` or `_kHz` - you're welcome to use them.
+This is what this framework is for, after all. PeaksAt is something called "matcher" (totally stole this term from Catch2). If receives audio from your effect's output and checks it. This one, as the name implies, checks if the signal peaks at 3dB. By the way, you get a bunch of handy constants and literalls for better readability, like `_dB` or `_kHz` - you're welcome to use them.
 
 Other matchers can, for example, compare your output with some other signal or a wav file. And they're passed in as objects - it means you make your own and use them, just like the stock ones. So, if you need, say, check LUFS values, inter-sample peaks, or check something fancy in frequency domain, just subclass a Matcher, and pass it to the test runner.
 
@@ -136,7 +136,7 @@ You can do two levels of assertions: "expect" and "assert". Like in other test f
     * `assertTrue()`
     * `assertFalse()`
 
-You can have as many assertions/expectations as you want in a single test - just keep chaining them together. They will be checked in that order, whenever possible. Hovewer, some matchers need to wait for the full signal to be generated (like `PeaksAt`), while others can work on block-by-block basis (like `EqualsTo`), so the order is not guaranteed.
+You can have as many assertions/expectations as you want in a single test - just keep chaining them together. They will be checked in that order, whenever possible. However, some matchers need to wait for the full signal to be generated (like `PeaksAt`), while others can work on block-by-block basis (like `EqualsTo`), so the order is not guaranteed.
 
 You also have `HART_ASSERT_TRUE()` and `HART_EXPECT_TRUE()` for trivial non-audio checks, in case you need them. But you shoudn't use HART for testing everything - use it for audio tests, and stick with Google Test (gtest) or Catch2 for everything else.
 
@@ -243,7 +243,7 @@ processAudioWith (MyDSPWrapper())
 
 ```
 
-At first we have a sine wave at 3.5 kHz, with starting phase at &pi;/2 radians. By the way, all the previous one were jusr created with default frequency, which is 1 kHz. It always outputs the signal at 0 dB sample peak level, and, like most other signals, you cannot set its level in constructor - to do so, you just throw a gain effect after it. Which is exactly what is happening here. `GainDb` is one of the DSP effects built into HART framework. By the way, it's also a `hart::DSP` subclass just like MyDSPWrapper we've just defined, so you can use them interchangeably! Anf after that, it gets clipped at -3 dB, turning it into a somewhat square-ish shape.
+At first we have a sine wave at 3.5 kHz, with starting phase at &pi;/2 radians. By the way, all the previous one were just created with default frequency, which is 1 kHz. It always outputs the signal at 0 dB sample peak level, and, like most other signals, you cannot set its level in constructor - to do so, you just throw a gain effect after it. Which is exactly what is happening here. `GainDb` is one of the DSP effects built into HART framework. By the way, it's also a `hart::DSP` subclass just like MyDSPWrapper we've just defined, so you can use them interchangeably! And after that, it gets clipped at -3 dB, turning it into a somewhat square-ish shape.
 
 If you're curious what's going on behind the fancy syntax: hart::Signal objects can store a sequence of DSP effects inside of them. When `process()` is called, the y initialize the whole chain, generate audio, and play it through their DSP
 chain, at whatever sample rate, block size et cetera you're set your audio test to. Signal is the host here, it owns, runs and manages those effect instances. Effects can not be attached to each other - they need some Signal source to own them. And Signal can be a lot of things, like a WavFile, for instance. The order of the effects is guaranteed to be preserved: whatever gets added first, receives the audio first.
@@ -264,13 +264,13 @@ processAudioWith (GainDb (0_dB))
     .process();
 ```
 
-Althouth [1] is, of course, a prefferred approach, and it gives you an easier interface to set up your effect's values. But you have multiple DSP algorithms to test, you can easily chain them together in any order, taking some inspiration form example [2].
+Although [1] is, of course, a preferred approach, and it gives you an easier interface to set up your effect's values. But you have multiple DSP algorithms to test, you can easily chain them together in any order, taking some inspiration form example [2].
 
 And you can also make your own little utility DSP classes to shape the signals - at this point, you already know how to subclass hart::DSP.
 
 # Parameter automation envelopes
 
-But wait, there's more! Remember when we set sine gave's level to 2.5 dB in the previuos chapter? It was a fixed value. We can change in time. Let's say, we want the gain to start at -3 dB, but then after 10 ms jump to -10 dB, stay there for 50 ms, and then slowly crawl to -1 dB in an s-curved manner for 100 ms.
+But wait, there's more! Remember when we set sine gave's level to 2.5 dB in the previous chapter? It was a fixed value. We can change in time. Let's say, we want the gain to start at -3 dB, but then after 10 ms jump to -10 dB, stay there for 50 ms, and then slowly crawl to -1 dB in an s-curved manner for 100 ms.
 
 Here's how you do it. To express this curve, you can do something like this:
 
@@ -282,7 +282,7 @@ const auto myGainEnvelope = SegmentedEnvelope (decibelsToRatio (-3_dB))
     .rampTo (decibelsToRatio (-1_dB), 100_ms, SegmentedEnvelope::Shape::sCurve);
 ```
 
-Notice how it's not attached to any DSP unit or host yet, it's just a lightweight object that stores some data about what ho some value should change in time. It doesn't even have to know anything about the effect, signal, or your audio test set up like sample rate or channel number. It supports a few different shapes of ramp transitions, like linear, exponential or s-curve.
+Notice how it's not attached to any DSP unit or host yet, it's just a lightweight object that stores some data about what how some value should change in time. It doesn't even have to know anything about the effect, signal, or your audio test set up like sample rate or channel number. It supports a few different shapes of ramp transitions, like linear, exponential or s-curve.
 
 And now, you can attach it to your (or any other) effect:
 
@@ -296,7 +296,7 @@ const myEffect1 = MyDSPWrapper().withEnvelope (MyDSPWrapper::someParamID, myGain
 
 Now pause and try to apply it as Gain for a SineWave. Note: if you're doing slow gain ramps and want a specific curve, you might want to use GainLinear effect instead of GainDB. Applying a linear curve to a value in decibels is awkward, so you won't get a proper linear curve with GainDb. But if you don't care about it, you can just use either of those.
 
-Now, if you want to feed the envelopes into your own processor, you probably need to know how to support them properly. First, the host of this DSP will figure out the value rendering part, you won't have to worry about it. In each `process()` callback you'll get a container with envelope curves together with your audio buffers. It's a hash map - key is your parameter's id, and value is a container with pre-rendered values for this parameter, same length as audio buffers. Did I mention it's a sample accurate autometion? It's a sample accurate automation! So you can fetch it an use it like so:
+Now, if you want to feed the envelopes into your own processor, you probably need to know how to support them properly. First, the host of this DSP will figure out the value rendering part, you won't have to worry about it. In each `process()` callback you'll get a container with envelope curves together with your audio buffers. It's a hash map - key is your parameter's id, and value is a container with pre-rendered values for this parameter, same length as audio buffers. Did I mention it's a sample accurate automation? It's a sample accurate automation! So you can fetch it an use it like so:
 
 ```cpp
 void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const EnvelopeBuffers& envelopeBuffers) override
@@ -329,7 +329,7 @@ void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& out
 
 ```
 
-If there's no envelope attached to your DSP, `envelopeBuffers` will have no record of, so you can check it like in [1]. You can treat it like a block-accurate automation and grab just one value (first one like in [2], or mean, max or whatever), like it's typically done in most audio plugins. Or you can use it properly like in [3], potentially having a different param value for every frame (sample) of audio. Obviously, if you're merely imlementing `process()` for testing your effect, you must mirror what your underlying effect already does.
+If there's no envelope attached to your DSP, `envelopeBuffers` will have no record of, so you can check it like in [1]. You can treat it like a block-accurate automation and grab just one value (first one like in [2], or mean, max or whatever), like it's typically done in most audio plugins. Or you can use it properly like in [3], potentially having a different param value for every frame (sample) of audio. Obviously, if you're merely implementing `process()` for testing your effect, you must mirror what your underlying effect already does.
 
 There's also a `supportsEnvelopeFor()` callback that will get triggered by the host, you can return false for the parameter ids that you don't want to support envelopes for, and you won't get `envelopeBuffers` for those.
 
@@ -339,7 +339,7 @@ It's also possible to use @ref hart::Signal and an envelope parameter. For examp
 
 # Generating audio for regression and acceptance tests
 
-Obviuosly, if you want to compare your effect's output to pre-recorded wav's, you need those wav files first. You can do it with just regular test cases, of course, but HART has special ones just for this. Use @ref HART_GENERATE() or @ref HART_GENERATE_WITH_TAGS() instead of usual tests. Under the hood, they're pretty much the same as regular test cases, but will help to keep "test" and "generate" tasks separate, of you choose to do them in the same target (project).
+Obviously, if you want to compare your effect's output to pre-recorded wav's, you need those wav files first. You can do it with just regular test cases, of course, but HART has special ones just for this. Use @ref HART_GENERATE() or @ref HART_GENERATE_WITH_TAGS() instead of usual tests. Under the hood, they're pretty much the same as regular test cases, but will help to keep "test" and "generate" tasks separate, of you choose to do them in the same target (project).
 
 To run tasks defined with those macros run your HART test binary with a `--run-generators` (or `-g`) flag. It will skip all tests and run the generators. Without this flag, it will run only tests, and skip the generators.
 

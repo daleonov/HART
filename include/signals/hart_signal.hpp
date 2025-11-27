@@ -18,6 +18,11 @@
 
 namespace hart {
 
+/// @brief Polymorphic base for all signals
+/// @warning This class exists only for type erasure and polymorphism.
+/// Do NOT inherit custom signals from this class directly.
+/// Inherit from @ref hart::Signal instead.
+/// @ingroup Signals
 template<typename SampleType>
 class SignalBase
 {
@@ -86,7 +91,7 @@ public:
         return *this;
     }
 
-    /// @brief Tells the host whether this Signal is capable of generating audio for a certain amount of cchannels
+    /// @brief Tells the host whether this Signal is capable of generating audio for a certain amount of channels
     /// @details It is guaranteed that the signal will not receive unsupported number of channels in @ref renderNextBlock().
     /// This method is guaranteed to be called at least once before @ref prepare()
     /// @note This method should only care about the Signal itself, and not the attached effects in DSP chain - they'll be queried separately
@@ -131,16 +136,9 @@ public:
     virtual void reset() = 0;
 
     /// @brief Returns a smart pointer with a copy of this object
-    /// @details Just put one of those two macros into your class body, and your @ref copy() and @ref move() are sorted:
-    ///  - @ref HART_SIGNAL_DEFINE_COPY_AND_MOVE() for movable and copyable classes
-    ///  - @ref HART_SIGNAL_FORBID_COPY_AND_MOVE for non-movable and non-copyable classes
-    ///
-    /// Read their description, and choose one that fits your class.
-    /// You can, of course, make your own implementation, but you're not supposed to, unless you're doing something obscure.
     virtual std::unique_ptr<SignalBase<SampleType>> copy() const = 0;
 
     /// @brief Returns a smart pointer with a moved instance of this object
-    /// @details Just pick a macro to define it - see description for @ref copy() for details
     virtual std::unique_ptr<SignalBase<SampleType>> move() = 0;
 
     /// @brief Makes a text representation of this Signal for test failure outputs.
@@ -163,8 +161,6 @@ public:
     {
         prepare (sampleRateHz, numOutputChannels, maxBlockSizeFrames);
         const size_t numInputChannels = numOutputChannels;
-
-        // TODO: Check if all the effects in the chain support those settings first
 
         for (auto& dsp : dspChain)
         {
@@ -267,7 +263,7 @@ class Signal:
 {
 public:
     /// @brief Adds a DSP effect to the end of signal's DSP chain by copying it
-    /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
+    /// @note If your DSP object does not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
     /// @param dsp A DSP effect instance
     Derived& followedBy (const DSPBase<SampleType>& dsp)
     {
@@ -276,7 +272,7 @@ public:
     }
 
     /// @brief Adds a DSP effect to the end of signal's DSP chain by transfering a smart pointer
-    /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
+    /// @note If your DSP object does not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
     /// @param dsp A DSP effect instance
     Signal& followedBy (std::unique_ptr<DSPBase<SampleType>> dsp)
     {
@@ -285,8 +281,9 @@ public:
     }
 
     // TODO: Add check if rvalue
+    // TODO: Check if if this template ever gets picked
     /// @brief Adds a DSP effect to the end of signal's DSP chain by moving it
-    /// @note For DSP object that do not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
+    /// @note If your DSP object does not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
     /// @param dsp A DSP effect instance
     template <
         typename DerivedDSP,
@@ -302,6 +299,9 @@ public:
         this->dspChain.emplace_back (dsp.move());
         return static_cast<Derived&> (*this);
     }
+
+
+    // TODO: Add followedBy() for smart pointer to DSO
 
     std::unique_ptr<SignalBase<SampleType>> copy() const override
     {
@@ -337,6 +337,8 @@ std::ostream& operator<< (std::ostream& stream, const SignalBase<SampleType>& si
     signal.representWithDSPChain (stream);
     return stream;
 }
+
+// TODO: Drop some of the >> overloads - too many of those!
 
 /// @brief Adds a DSP effect to the end of signal's DSP chain by moving it
 /// @relates Signal

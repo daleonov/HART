@@ -34,7 +34,7 @@ public:
     /// @param sampleRateHz sample rate at which the audio should be interpreted
     /// @param numChannels Number of audio channels
     /// @param maxBlockSizeFrames Maximum block size in frames (samples)
-    virtual void prepare (double, size_t, size_t) = 0;
+    virtual void prepare (double sampleRateHz, size_t numChannels, size_t maxBlockSizeFrames) = 0;
 
     /// @brief Tells the host if the piece of audio satisfies Matcher's condition or not
     /// @details It is guaranteed to be called only after prepare(), or not be called at all.
@@ -43,11 +43,11 @@ public:
     /// audio to check. Otherwise, it may still get a full piece of audio, or get data on a block-by-block basis.
     /// @param observedAudio A piece of audio to check
     /// @returns true if the audio satisfies the Matcher's condition, false otherwise
-    virtual bool match (const AudioBuffer<SampleType>&) = 0;
+    virtual bool match (const AudioBuffer<SampleType>& observedAudio) = 0;
 
-    /// @brief Tells the host is if can operate on a block-by-block basis
+    /// @brief Tells the host if it can operate on a block-by-block basis
     /// @details Some types of conditions absolutely require having a full piece of audio
-    /// to produce an appropriate responce. For example, @ref hart::PeaksAt matcher.
+    /// to produce an appropriate response. For example, @ref hart::PeaksAt matcher.
     /// Those types of matchers will return false on this callback.
     /// Matcher is guaranteed to receive a full piece of audio if this callback has
     /// returned \c false. Otherwise, it may receive audio either block-by-block
@@ -70,7 +70,7 @@ public:
     /// @see MatcherFailureDetails
     virtual MatcherFailureDetails getFailureDetails() const = 0;
 
-    /// @brief Makes a text representation of this Macther for test failure outputs.
+    /// @brief Makes a text representation of this Matcher for test failure outputs.
     /// @details It is strongly encouraged to follow python's
     /// <a href="https://docs.python.org/3/reference/datamodel.html#object.__repr__" target="_blank">repr()</a>
     /// conventions for returned text - basically, put something like "MyClass(value1, value2)" (with no quotes)
@@ -78,9 +78,14 @@ public:
     /// Also, use built-in stream manipulators like @ref hart::dbPrecision wherever applicable.
     /// Use @ref HART_DEFINE_GENERIC_REPRESENT() to get a basic implementation for this method.
     /// @param[out] stream Output stream to write to
-    virtual void represent (std::ostream&) const = 0;
+    virtual void represent (std::ostream& stream) const = 0;
 
+    /// @brief Returns a smart pointer with a copy of this object
+    /// @return Copy of this object wrapped in a smart pointer
     virtual std::unique_ptr<MatcherBase<SampleType>> copy() const = 0;
+
+    /// @brief Returns a smart pointer with a moved instance of this object
+    /// @return This object, moved and wrapped in a smart pointer
     virtual std::unique_ptr<MatcherBase<SampleType>> move() = 0;
 };
 
@@ -122,7 +127,7 @@ public:
     /// @brief Makes this matcher check only specific channels, and ignore the rest
     /// @details If not set, the matcher applies to all channels by default.
     /// If you call this method multiple times, only the last one will be applied.
-    /// To select only one channel, consider using @ref Macther::atChannel() instead.
+    /// To select only one channel, consider using @ref Matcher::atChannel() instead.
     /// @param channelsToMatch List of channels this matcher should apply to,
     /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` for left and right channels only.
     /// @see `hart::Channel`
@@ -171,10 +176,10 @@ public:
     }
 
     /// @brief Makes this matcher check only specific channels, and ignore the rest
-    /// @details If not set, matcher checks to all channels by default.
+    /// @details If not set, matcher checks all channels by default.
     /// If you call this method multiple times, only the last one will be applied.
     /// @param channelsToSkip List of channels this matcher should NOT check,
-    /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` to ship left and right
+    /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` to skip left and right
     /// channels, and match the rest
     /// @see `hart::Channel`
     Derived& atAllChannelsExcept (std::initializer_list<size_t> channelsToSkip)
@@ -193,6 +198,7 @@ public:
     }
 
 protected:
+    // TODO: Resize m_channelsToMatch() in host's version of prepare() method
     ChannelFlags m_channelsToMatch {true};
 
     /// @brief Indicates whether this matcher should check a specific channel
