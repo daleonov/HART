@@ -1,0 +1,78 @@
+#include "hart.hpp"
+
+HART_DECLARE_ALIASES_FOR_FLOAT;
+
+HART_TEST ("Signal - Fast Forward via skipTo()")
+{
+    // 1. Actual polarity flip, or GainLinear(-1.0) lands on a perfect phase.
+    // 2. Setting starting phase in SineWave ctor lands on a somewhat accurate phase, but not perfect due to FP error and pi being pi.
+    // 3. Changing phase via nudging in time domain - pretty meh phase, since we only have 1 frame resolution and FP error.
+    // ...So the tolerance is pretty loose here.
+    constexpr double toleranceLinear = 1.0e-2;
+
+    processAudioWith (GainDb())
+        .withLabel ("Skip zero seconds")
+        .withInputSignal (SineWave().skipTo (0_s))
+        .expectTrue (EqualsTo (SineWave(), toleranceLinear))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Skip arbitrary small amount")
+        .withInputSignal (SineWave().skipTo (123_ms))
+        .expectFalse (EqualsTo (SineWave(), toleranceLinear))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Skip arbitrary significant amount")
+        .withInputSignal (SineWave().skipTo (1.23456_s))
+        .expectFalse (EqualsTo (SineWave(), toleranceLinear))
+        .process();
+
+    processAudioWith (GainDb())
+        .withSampleRate (44100_Hz)
+        .withLabel ("Skip exactly one cycle at 44.1kHz")
+        .withInputSignal (SineWave (60_Hz).skipTo (1.0 / 60_Hz))
+        .expectTrue (EqualsTo (SineWave (60_Hz), toleranceLinear))
+        .process();
+
+    processAudioWith (GainDb())
+        .withSampleRate (48000_Hz)
+        .withLabel ("Skip exactly one cycle at 48kHz")
+        .withInputSignal (SineWave (440_Hz).skipTo (1.0 / 440_Hz))
+        .expectTrue (EqualsTo (SineWave (440_Hz), toleranceLinear))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Skip exactly four cycles")
+        .withInputSignal (SineWave (100_Hz).skipTo (4.0 / 100_Hz))
+        .expectTrue (EqualsTo (SineWave (100_Hz), toleranceLinear))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Skip a hundred full cycles")
+        .withInputSignal (SineWave (123_Hz).skipTo (100.0 / 123_Hz))
+        .expectTrue (EqualsTo (SineWave (123_Hz), toleranceLinear))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Skip exactly half a cycle")
+        .withInputSignal (SineWave (60_Hz).skipTo (0.5 / 60_Hz))
+        .expectFalse (EqualsTo (SineWave (60_Hz), toleranceLinear))
+        .expectTrue (EqualsTo (SineWave (60_Hz) >> GainLinear (-1.0), toleranceLinear))
+        .expectTrue (EqualsTo (SineWave (60_Hz, hart::pi), toleranceLinear))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Skip exactly half a cycle in reference signal")
+        .withInputSignal (SineWave (440_Hz, hart::pi))
+        .expectFalse (EqualsTo (SineWave (440_Hz), toleranceLinear))
+        .expectTrue (EqualsTo (SineWave (440_Hz).skipTo (0.5 / 440_Hz), toleranceLinear))
+        .expectTrue (EqualsTo (SineWave (440_Hz) >> GainLinear (-1.0), toleranceLinear))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Skip to the end of signal")
+        .withInputSignal (SineSweep (200_ms).withLoop (SineSweep::Loop::no).skipTo (201_ms))
+        .expectTrue (PeaksAt (-oo_dB))
+        .process();
+}

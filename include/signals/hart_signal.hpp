@@ -11,6 +11,7 @@
 #include "hart_audio_buffer.hpp"
 #include "dsp/hart_dsp.hpp"
 #include "hart_exceptions.hpp"
+#include "hart_utils.hpp"  // floatsNotEqual(), roundToSizeT()
 
 /// @defgroup Signals Signals
 /// @brief Generate signals
@@ -26,7 +27,8 @@ public:
 
     /// @brief Copies other signal
     SignalBase (const SignalBase& other):
-        m_numChannels(other.m_numChannels)
+        m_numChannels(other.m_numChannels),
+        m_startTimestampSeconds (other.m_startTimestampSeconds)
     {
         if (other.dspChain.size() == 0)
             return;
@@ -40,9 +42,11 @@ public:
     /// @brief Moves from other signal
     SignalBase (SignalBase&& other) noexcept:
         m_numChannels (other.m_numChannels),
+        m_startTimestampSeconds (other.m_startTimestampSeconds),
         dspChain (std::move (other.dspChain))
     {
         other.m_numChannels = 0;
+        other.m_startTimestampSeconds = 0.0;
     }
 
     /// @brief Destructor
@@ -55,6 +59,7 @@ public:
             return *this;
 
         m_numChannels = other.m_numChannels;
+        m_startTimestampSeconds = other.m_startTimestampSeconds;
         dspChain.clear();
 
         if (other.dspChain.size() == 0)
@@ -74,7 +79,9 @@ public:
 
         m_numChannels = other.m_numChannels;
         dspChain = std::move (other.dspChain);
+        m_startTimestampSeconds = other.m_startTimestampSeconds;
         other.m_numChannels = 0;
+        other.m_startTimestampSeconds = 0.0;
 
         return *this;
     }
@@ -169,6 +176,10 @@ public:
 
             dsp->prepareWithEnvelopes (sampleRateHz, numInputChannels, numOutputChannels, maxBlockSizeFrames);
         }
+
+        // Perform optional fast-forward set by DSP::skipTo()
+        if (floatsNotEqual (m_startTimestampSeconds, 0.0))
+            performSkipTo (sampleRateHz, numOutputChannels, maxBlockSizeFrames);
     }
 
     /// @brief Renders next block audio for the signal and all the effects in the DSP chain
@@ -224,7 +235,26 @@ protected:
     }
 
     size_t m_numChannels = 1;
+    double m_startTimestampSeconds = 0.0;
     std::vector<std::unique_ptr<DSPBase<SampleType>>> dspChain;
+
+private:
+    void performSkipTo (double sampleRateHz, size_t numOutputChannels, size_t maxBlockSizeFrames)
+    {
+        hassert (m_startTimestampSeconds > 0.0);
+
+        size_t fastForwardFramesLeft = roundToSizeT (m_startTimestampSeconds * sampleRateHz);
+
+        while (fastForwardFramesLeft != 0)
+        {
+            const size_t blockSizeFrames = fastForwardFramesLeft >= maxBlockSizeFrames ? maxBlockSizeFrames : fastForwardFramesLeft;
+            AudioBuffer<SampleType> dummyAudioBlock (numOutputChannels, blockSizeFrames);
+            renderNextBlockWithDSPChain (dummyAudioBlock);
+            fastForwardFramesLeft -= blockSizeFrames;
+        }
+
+        m_startTimestampSeconds = 0.0;
+    }
 };
 
 /// @brief Base class for signals
@@ -281,6 +311,15 @@ public:
     std::unique_ptr<SignalBase<SampleType>> move() override
     {
         return hart::make_unique<Derived> (std::move (static_cast<const Derived&> (*this)));
+    }
+
+    Derived& skipTo (double startTimestampSeconds)
+    {
+        if (startTimestampSeconds < 0)
+            HART_THROW_OR_RETURN (hart::ValueError, "Can't skip to a negative timestamp", static_cast<Derived&> (*this));
+
+        this->m_startTimestampSeconds = startTimestampSeconds;
+        return static_cast<Derived&> (*this);
     }
 };
 

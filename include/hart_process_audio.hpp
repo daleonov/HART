@@ -287,14 +287,12 @@ public:
         for (auto& check : perBlockChecks)
         {
             check.matcher->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
-            check.matcher->reset();
             check.shouldSkip = false;
         }
 
         for (auto& check : fullSignalChecks)
         {
             check.matcher->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
-            check.matcher->reset();
             check.shouldSkip = false;
         }
 
