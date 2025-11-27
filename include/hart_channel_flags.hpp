@@ -109,7 +109,7 @@ public:
         stream << '{';
         bool notFirst = false;
 
-        for (size_t i = 0; i < m_maxChannels; ++i)
+        for (size_t i = 0; i < m_numChannels; ++i)
         {
             if (m_flags.test (i) == false)
                 continue;

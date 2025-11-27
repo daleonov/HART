@@ -201,6 +201,7 @@ public:
         return static_cast<Derived&> (*this);
     }
 
+    // TODO: Move to MatcherBase together with m_channelsToMatch to make it non-virtual?
     void representWithActiveChannels (std::ostream& stream) const override
     {
         this->represent (stream);

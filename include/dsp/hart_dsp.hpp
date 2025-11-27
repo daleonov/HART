@@ -248,6 +248,20 @@ public:
         process (input, output, m_envelopeBuffers, m_channelsToProcess);
     }
 
+    /// @brief Makes a text representation of this DSP with optional "atChannels" appendix
+    /// @details For internal use by hosts
+    void representWithActiveChannels (std::ostream& stream) const
+    {
+        this->represent (stream);
+
+        if (m_channelsToProcess.allTrue())
+            return;
+
+        stream << ".atChannels (";
+        m_channelsToProcess.representAsInitializerList (stream);
+        stream << ')';
+    }
+
     /// @brief Helper for template resolution
     /// @private
     using SampleTypePublicAlias = SampleType;
@@ -438,7 +452,7 @@ template <typename SampleType>
 inline std::ostream& operator<< (std::ostream& stream, const DSPBase<SampleType>& dsp)
 {
     // TODO: Represent with the envelopes
-    dsp.represent (stream);
+    dsp.representWithActiveChannels (stream);
     return stream;
 }
 
