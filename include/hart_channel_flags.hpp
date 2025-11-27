@@ -6,12 +6,16 @@
 namespace hart
 {
 
+/// @brief A set of boolean flags mapped to each audio channel
 class ChannelFlags
 {
 private:
     static constexpr size_t m_maxChannels = 64;  // Can be expanded if you need more
 
 public:
+    /// @brief Creates a new channel flags object
+    /// @param defaultValues Initial value for all flags
+    /// @param numChannels Size of the contailer
     ChannelFlags (bool defaultValues = true, size_t numChannels = m_maxChannels)
     {
         if (numChannels > m_maxChannels)
@@ -21,6 +25,8 @@ public:
         setAllTo (defaultValues);
     }
 
+    /// @brief Sets all flags to a new value
+    /// @param newValues New values for all flags
     void setAllTo (bool newValues)
     {
         if (newValues == true)
@@ -29,11 +35,17 @@ public:
             m_flags.reset();
     }
 
+    /// @brief Returns the size (not capacity) of the container
+    /// @details This size is guaranteed to be equal to the number
+    /// of channels in whatever it's assotiated with, or more.
     size_t size() const noexcept
     {
         return m_numChannels;
     }
 
+    /// @brief Resizes the container
+    /// @details Does not change the capacity - it's fixed.
+    /// Does not change the flags values.
     void resize (size_t newNumChannels)
     {
         if (newNumChannels > m_maxChannels)
@@ -42,6 +54,9 @@ public:
         m_numChannels = newNumChannels;
     }
 
+    /// @brief Access the flag value for a specific channel
+    /// @param channel Number of channel (0-based)
+    /// @return A reference to underlying storage for the corresponding flag
     std::bitset<m_maxChannels>::reference operator[] (size_t channel) {
         if (channel >= m_numChannels)
             HART_THROW_OR_RETURN (hart::SizeError, "ChannelFlags index is out of range", {});
@@ -49,6 +64,9 @@ public:
         return m_flags[channel];
     }
 
+    /// @brief Access the flag value for a specific channel
+    /// @param channel Number of channel (0-based)
+    /// @return Value of a corresponding flag
     bool operator[] (size_t channel) const {
         if (channel >= m_numChannels)
             HART_THROW_OR_RETURN (hart::SizeError, "ChannelFlags index is out of range", false);
@@ -56,6 +74,8 @@ public:
         return m_flags.test (channel);
     }
 
+    /// @brief Checks if all flags are set to `true`
+    /// @return `true` if all flags for all channels are `true`, `false` otherwise
     bool allTrue() const noexcept
     {
         // TODO: Can it be O(1)?
@@ -67,6 +87,8 @@ public:
         return true;
     }
 
+    /// @brief Checks if any of the flags is set to `true`
+    /// @return `true` if flag for at least one channel is `true`, `false` otherwise
     bool anyTrue() const noexcept
     {
         // TODO: Can it be O(1)?
