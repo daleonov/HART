@@ -64,7 +64,6 @@ public:
     /// @brief Runs all tests or generators
     int runAll()
     {
-        // TODO: Optional shuffle before running
         // TODO: Make data root dir if set, but doesn't exist
         // TODO: Add support for runnings tasks in a thread pool
 

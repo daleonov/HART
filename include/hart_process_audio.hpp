@@ -444,7 +444,6 @@ private:
             if (matchPassed != check.shouldPass)
             {
                 check.shouldSkip = true;
-                // TODO: Add optional label for each test
 
                 if (assertionLevel == SignalAssertionLevel::assert)
                 {
