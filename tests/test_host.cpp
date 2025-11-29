@@ -74,3 +74,17 @@ HART_TEST ("Signal Chain - DSP Move, Copy and Transfer")
         .withInputSignal (SineWave() >> moveMe >> copyMe >> std::move (ownMeAsAbstract) >> std::move (ownMeAsDerived))
         .process();
 }
+
+HART_TEST ("EqualsTo - Signal Move, Copy and Transfer")
+{
+    const auto copyMe = SineWave();
+    auto moveMe = SineWave();
+    auto transferMe = hart::make_unique<SineWave>();
+
+    processAudioWith (GainDb (0_dB))
+        .withInputSignal (SineWave())
+        .expectTrue (EqualsTo (copyMe))
+        .expectTrue (EqualsTo (std::move (moveMe)))
+        .expectTrue (EqualsTo (std::move (transferMe)))
+        .process();
+}

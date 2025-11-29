@@ -23,16 +23,37 @@ class EqualsTo:
     public Matcher<SampleType, EqualsTo<SampleType>>
 {
 public:
-    // TODO: Implement move and transfer for signals here
-    /// @brief Creates a matcher for a specific signal
+    /// @brief Creates a matcher for a specific signal by transfering smart pointer
+    /// details The reference signal can be something simple like a @ref SineWave, or more
+    /// complex signal with DSP effects chain and automation envelopes.
+    /// @note Tip: To compare audio to a pre-recorded wav file, you can use @ref WavFile.
+    /// @param referenceSignal Signal to compare the incoming audio against
+    /// @param toleranceLinear Absolute tolerance for comparing frames, in linear domain (not decibels)
+    EqualsTo (std::unique_ptr<SignalBase<SampleType>>&& referenceSignal, double toleranceLinear = (SampleType) 1e-5):
+        m_referenceSignal (std::move (referenceSignal)),
+        m_toleranceLinear ((SampleType) toleranceLinear)
+    {
+    }
+    
+    /// @brief Creates a matcher for a specific signal by copying it
     /// details The reference signal can be something simple like a @ref SineWave, or more
     /// complex signal with DSP effects chain and automation envelopes.
     /// @note Tip: To compare audio to a pre-recorded wav file, you can use @ref WavFile.
     /// @param referenceSignal Signal to compare the incoming audio against
     /// @param toleranceLinear Absolute tolerance for comparing frames, in linear domain (not decibels)
     EqualsTo (const SignalBase<SampleType>& referenceSignal, double toleranceLinear = (SampleType) 1e-5):
-        m_referenceSignal (std::move (referenceSignal.copy())),
-        m_toleranceLinear ((SampleType) toleranceLinear)
+        EqualsTo (referenceSignal.copy(), toleranceLinear)
+    {
+    }
+
+    /// @brief Creates a matcher for a specific signal by moving it
+    /// details The reference signal can be something simple like a @ref SineWave, or more
+    /// complex signal with DSP effects chain and automation envelopes.
+    /// @note Tip: To compare audio to a pre-recorded wav file, you can use @ref WavFile.
+    /// @param referenceSignal Signal to compare the incoming audio against
+    /// @param toleranceLinear Absolute tolerance for comparing frames, in linear domain (not decibels)
+    EqualsTo (SignalBase<SampleType>&& referenceSignal, double toleranceLinear = (SampleType) 1e-5):
+        EqualsTo (referenceSignal.move(), toleranceLinear)
     {
     }
 
