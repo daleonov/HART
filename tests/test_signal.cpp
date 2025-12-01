@@ -164,3 +164,26 @@ HART_TEST ("Signal - Mixing Signals")
         .expectTrue (EqualsTo (SineWave() >> GainLinear (1.23 + 4.56 * 3.21)))
         .process();
 }
+
+HART_TEST ("Signal - Sawtooth")
+{
+    processAudioWith (GainDb())
+        .withLabel ("Normal use")
+        .withInputSignal (Sawtooth())
+        .expectTrue (PeaksAt (0_dB))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Arbitraty phase")
+        .withInputSignal (Sawtooth (1000_Hz, 1.2345_rad))
+        .expectTrue (PeaksAt (0_dB))
+        .expectFalse (EqualsTo (Sawtooth()))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("TwoPi starting phase")
+        .withInputSignal (Sawtooth (1000_Hz, hart::twoPi))
+        .expectTrue (PeaksAt (0_dB))
+        .expectTrue (EqualsTo (Sawtooth()))
+        .process();
+}
