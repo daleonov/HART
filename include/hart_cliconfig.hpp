@@ -51,6 +51,12 @@ public:
             "Number of displayed decimal places for values in radians in test output"
             )->default_val (1);
 
+        app.add_option (
+            "--cents-decimals",
+            m_centsDecimals,
+            "Number of displayed decimal places for values in cents in test output"
+            )->default_val (0);
+
         app.add_flag ("--run-generators,-g", m_runGeneratorsNotTests, "Run generators instead of tests");
         app.add_flag ("--shuffle", m_shuffle, "Shuffle task order. Obeys --seed value.");
     }
@@ -75,6 +81,9 @@ public:
     /// @see radPrecision
     int getRadDecimals() { return m_radDecimals; }
 
+    /// @see radPrecision
+    int getCentsDecimals() { return m_centsDecimals; }
+
     bool shouldRunGenerators() { return m_runGeneratorsNotTests; }
     bool shouldShuffleTasks() { return m_shuffle; }
 
@@ -92,6 +101,7 @@ private:
     int m_secDecimals = 0;
     int m_hzDecimals = 0;
     int m_radDecimals = 0;
+    int m_centsDecimals = 0;
 
     CLIConfig() = default;
 };

@@ -89,6 +89,18 @@ public:
         return true;
     }
 
+    /// @brief Checks how many channels are marked with `true`
+    /// @return Amount of flags set to `true`
+    size_t numTrue()
+    {
+        size_t res = 0;
+
+        for (size_t channel = 0; channel < m_maxChannels; ++channel)
+            res += m_flags.test (channel);
+
+        return res;
+    }
+
     /// @brief Checks if any of the flags is set to `true`
     /// @return `true` if flag for at least one channel is `true`, `false` otherwise
     bool anyTrue() const noexcept

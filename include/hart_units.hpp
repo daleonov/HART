@@ -31,6 +31,8 @@ constexpr double operator"" _rad (long double val) { return static_cast<double> 
 constexpr double operator"" _rad (unsigned long long val) { return static_cast<double>(val); }
 constexpr double operator"" _deg (long double val) { return static_cast<double> (val * hart::pi / 180.0); }
 constexpr double operator"" _deg (unsigned long long val) { return static_cast<double>(val) * hart::pi / 180.0; }
+constexpr double operator"" _cents (long double val) { return static_cast<double> (val); }
+constexpr double operator"" _cents (unsigned long long val) { return static_cast<double>(val); }
 
 /// @}
 

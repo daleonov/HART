@@ -186,4 +186,18 @@ HART_TEST ("Signal - Sawtooth")
         .expectTrue (PeaksAt (0_dB))
         .expectTrue (EqualsTo (Sawtooth()))
         .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Default Frequency")
+        .withInputSignal (Sawtooth())
+        .expectTrue (PeaksAt (0_dB))
+        .expectTrue (FundamentalEquals (1000_Hz))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Arbitrary Frequency")
+        .withInputSignal (Sawtooth (440_Hz))
+        .expectTrue (PeaksAt (0_dB))
+        .expectTrue (FundamentalEquals (440_Hz))
+        .process();
 }

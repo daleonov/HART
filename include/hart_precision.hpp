@@ -52,6 +52,14 @@ inline std::ostream& radPrecision (std::ostream& stream)
     return stream << std::fixed << std::setprecision (CLIConfig::getInstance().getRadDecimals());
 }
 
+/// @brief Sets number of decimal places for values in cents (frequency deviation)
+/// @details The precision is set via `--rad-decimals` CLI argument
+/// @see CLIConfig::getRadDecimals()
+inline std::ostream& centsPrecision (std::ostream& stream)
+{
+    return stream << std::fixed << std::setprecision (CLIConfig::getInstance().getCentsDecimals());
+}
+
 /// @}
 
 }  // namespace hart
