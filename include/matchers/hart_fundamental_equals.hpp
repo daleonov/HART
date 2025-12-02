@@ -128,7 +128,11 @@ public:
             << hzPrecision << m_observedHz << " Hz ("
             << centsPrecision << m_centsError << " cents off)";
 
-        return { 0, 0, stream.str() };
+        MatcherFailureDetails details;
+        details.frame = 0;  // Actually, more like a whole buffer is off
+        details.channel = 0;  // All the channels, actually
+        details.description = stream.str();
+        return details;
     }
 
     void represent (std::ostream& s) const override
@@ -158,8 +162,8 @@ private:
             size_t rev = 0;
 
             for (size_t j = 0; j < log2n; ++j)
-                if (i & (size_t(1) << j))
-                    rev |= size_t(1) << (log2n - 1 - j);
+                if (i & (size_t (1) << j))
+                    rev |= size_t (1) << (log2n - 1 - j);
 
             if (i < rev)
                 std::swap (spectrum[i], spectrum[rev]);
@@ -178,8 +182,8 @@ private:
                 {
                     std::complex<double> u = spectrum[i + j];
                     std::complex<double> v = spectrum[i + j + len / 2] * w;
-                    spectrum[i + j]            = u + v;
-                    spectrum[i + j + len / 2]  = u - v;
+                    spectrum[i + j] = u + v;
+                    spectrum[i + j + len / 2] = u - v;
                     w *= wlen;
                 }
             }

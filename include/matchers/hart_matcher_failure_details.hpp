@@ -5,6 +5,8 @@
 namespace hart
 {
 
+// TODO: Some reserved const values for "all channels/frames" or "irrelevant" cases
+
 /// @brief Details about matcher failure
 /// @see Matcher::getFailureDetails()
 /// @ingroup Matchers

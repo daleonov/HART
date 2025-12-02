@@ -81,7 +81,7 @@ public:
     /// @see radPrecision
     int getRadDecimals() { return m_radDecimals; }
 
-    /// @see radPrecision
+    /// @see centsPrecision
     int getCentsDecimals() { return m_centsDecimals; }
 
     bool shouldRunGenerators() { return m_runGeneratorsNotTests; }
