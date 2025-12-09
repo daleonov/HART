@@ -165,7 +165,7 @@ HART_TEST ("Signal - Mixing Signals")
         .process();
 }
 
-HART_TEST ("Signal - Sawtooth")
+HART_TEST ("Signal - Sawtooth Frequency")
 {
     processAudioWith (GainDb())
         .withLabel ("Normal use")
@@ -200,4 +200,22 @@ HART_TEST ("Signal - Sawtooth")
         .expectTrue (PeaksAt (0_dB))
         .expectTrue (FundamentalEquals (440_Hz))
         .process();
+}
+
+HART_TEST ("Signal - Sawtooth Peaks")
+{
+    const std::array<double, 7> sampleRatesHz = {44.1_kHz, 48_kHz, 88.2_kHz, 96_kHz, 192_kHz, 45.678_kHz, 57.689_kHz};
+    const std::array<double, 8> frequenciesHz = {10_Hz, 20_Hz, 123_Hz, 440_Hz, 1_kHz, 3.456_kHz, 8_kHz, 9.876_kHz};
+    constexpr double cyclesToGenerate = 10.0;
+    constexpr double toleranceLinear = 5e-2;
+
+    for (double sampleRateHz : sampleRatesHz)
+        for (double frequencyHz : frequenciesHz)
+            processAudioWith (GainDb())
+                .withSampleRate (sampleRateHz)
+                .withDuration (cyclesToGenerate / frequencyHz)
+                .withLabel ("Peak at " + std::to_string (sampleRateHz) + " Hz SR, " + std::to_string (frequencyHz) + " Hz")
+                .withInputSignal (Sawtooth (frequencyHz))
+                .expectTrue (PeaksAt (0_dB, toleranceLinear))
+                .process();
 }

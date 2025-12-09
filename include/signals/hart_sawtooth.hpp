@@ -36,7 +36,7 @@ public:
         m_sampleRateHz = sampleRateHz;
         m_phaseIncrementRadians = hart::twoPi * m_frequencyHz / m_sampleRateHz;
         m_ratio = m_frequencyHz / m_sampleRateHz;
-        adjustMakeupGain();
+        updateMakeupGain();
     }
 
     void renderNextBlock (AudioBuffer<SampleType>& output) override
@@ -87,13 +87,57 @@ private:
     double m_ratio = m_frequencyHz / m_sampleRateHz;
     SampleType m_makeupGainLinear = (SampleType) 1;
 
-    void adjustMakeupGain()
+    inline void updateMakeupGain()
     {
-        // TODO: Calculate the peak instead of measuring it
+        // Pre-calculated poly fits for common sample rates.
+        // Generated a few cycles at a given sample rate at various sawtooth frequencies,
+        // measured sample peak at each one, calculated a quadratic fit. It's almost linear,
+        // but slightly curved, so the quadratic fit is bang on.
+
+        if (floatsEqual (m_sampleRateHz, 44100.0))
+        {
+            m_makeupGainLinear = approximateMakeupGain (0.9999792899251587, -4.535565865100019e-05, 5.14460147253294e-10);
+            return;
+        }
+
+        if (floatsEqual (m_sampleRateHz, 48000.0))
+        {
+            m_makeupGainLinear = approximateMakeupGain (0.9999806254677883, -4.16723249855034e-05, 4.342374921390162e-10);
+            return;
+        }
+
+        if (floatsEqual (m_sampleRateHz, 88200.0))
+        {
+            m_makeupGainLinear = approximateMakeupGain (0.9999858295396981, -2.267921714003928e-05, 1.287471954911674e-10);
+            return;
+        }
+
+        if (floatsEqual (m_sampleRateHz, 96000.0))
+        {
+            m_makeupGainLinear = approximateMakeupGain (0.9999827886316706, -2.089171398739896e-05, 1.118510164833643e-10);
+            return;
+        }
+
+        if (floatsEqual (m_sampleRateHz, 192000.0))
+        {
+            m_makeupGainLinear = approximateMakeupGain (1.000109987458273, -1.047641814174239e-05, 2.964600179948776e-11);
+            return;
+        }
+
+        // Uncommon sampling rate - generate a few cycles and observe sample peak value.
+        m_makeupGainLinear = measureMakeupGain();
+    }
+
+    inline SampleType approximateMakeupGain (double a0, double a1, double a2)
+    {
+        return static_cast<SampleType> (1.0 / (m_frequencyHz * (a2 * m_frequencyHz + a1) + a0));
+    }
+
+    SampleType measureMakeupGain()
+    {
         const double cyclesToMeasure = 32.0;
         const size_t framesToMeasure = static_cast<size_t> (cyclesToMeasure * m_sampleRateHz / m_frequencyHz);
         const double originalPhaseRadians = m_phaseRadians;
-        m_makeupGainLinear = (SampleType) 1;
 
         AudioBuffer<SampleType> buffer (1, framesToMeasure);
         renderNextBlock (buffer);
@@ -103,8 +147,8 @@ private:
         for (size_t i = 0; i < framesToMeasure; ++i)
             peakLinear = std::max (peakLinear, std::abs (buffer[0][i]));
 
-        m_makeupGainLinear = SampleType ((peakLinear > (SampleType) 0) ?  SampleType (1) / peakLinear : (SampleType) 1);
-        m_phaseRadians = originalPhaseRadians;      
+        m_phaseRadians = originalPhaseRadians;     
+        return static_cast<SampleType> ((peakLinear > (SampleType) 0) ?  SampleType (1) / peakLinear : (SampleType) 1); 
     }
 };
 
