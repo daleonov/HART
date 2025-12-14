@@ -219,3 +219,46 @@ HART_TEST ("Signal - Sawtooth Peaks")
                 .expectTrue (PeaksAt (0_dB, toleranceLinear))
                 .process();
 }
+
+HART_TEST ("Signal - Impulse")
+{
+    processAudioWith (GainDb())
+        .withLabel ("Peaks at unity")
+        .withInputSignal (Impulse())
+        .expectTrue (PeaksAt (0_dB))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Produces silence after initial peak")
+        .withInputSignal (Impulse().skipTo (1_ms))
+        .expectTrue (EqualsTo (Silence()))
+        .process();
+
+    processAudioWith (GainDb())
+        .withLabel ("Has pulse at every channel")
+        .withInputSignal (Impulse())
+        .withInputChannels (5)
+        .withOutputChannels (5)
+        .expectTrue (PeaksAt (0_dB).atChannel (0))
+        .expectTrue (PeaksAt (0_dB).atChannel (1))
+        .expectTrue (PeaksAt (0_dB).atChannel (2))
+        .expectTrue (PeaksAt (0_dB).atChannel (3))
+        .expectTrue (PeaksAt (0_dB).atChannel (4))
+        .process();
+
+    Impulse impulse;
+
+    processAudioWith (GainDb())
+        .withLabel ("Dummy pass")
+        .withInputSignal (impulse)
+        .process();
+
+    impulse.reset();
+
+    processAudioWith (GainDb())
+        .withLabel ("Resets correctly")
+        .withInputSignal (impulse)
+        .expectTrue (PeaksAt (0_dB))
+        .expectTrue (EqualsTo (Impulse()))
+        .process();
+}
