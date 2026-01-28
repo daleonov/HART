@@ -31,17 +31,18 @@ public:
         ) override;
 
     void process (
-        const AudioBuffer<SampleType>& input,
-        AudioBuffer<SampleType>& output,
-        const EnvelopeBuffers& envelopeBuffers
+        const hart::AudioBuffer<SampleType>& input,
+        hart::AudioBuffer<SampleType>& output,
+        const hart::EnvelopeBuffers& envelopeBuffers,
+        hart::ChannelFlags channelsToProcess
         ) override;
 
     void reset() override;
     void setValue (int id, double value) override;
     void represent (std::ostream& stream) const override;
     bool supportsEnvelopeFor (int id) const override;
-    bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels);
-    virtual bool supportsSampleRate (double sampleRateHz) const;
+    bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const;
+    virtual bool supportsSampleRate (double sampleRateHz) const override;
 
     // Optional, if your class not copyable/movable:
     // HART_DSP_FORBID_COPY_AND_MOVE
