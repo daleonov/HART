@@ -198,6 +198,22 @@ public:
             );
     }
 
+    /// @brief Copies audio from another generic audio buffer
+    /// @param destChannel Channel within this buffer to copy the frames to
+    /// @param destStartFrame Start frame within this buffer's channel
+    /// @param source Pointer to the source sample data, must contain at least `numFrames` samples
+    /// @param numFrames Number of frames to copy
+    void copyFrom (size_t destChannel, size_t destStartFrame, const SampleType* source, size_t numFrames)
+    {
+        if (destChannel >= m_numChannels)
+            HART_THROW_OR_RETURN_VOID (hart::IndexError, "Invalid destination channel");
+
+        if (destStartFrame + numFrames > m_numFrames)
+            HART_THROW_OR_RETURN_VOID (hart::IndexError, "Invalid frame range");
+
+        std::copy (source, source + numFrames, m_channelPointers[destChannel] + destStartFrame);
+    }
+
     /// @brief Clears the entire buffer
     /// @details Sets all frames in all channels to zeros
     void clear()
