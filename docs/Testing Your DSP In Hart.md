@@ -10,7 +10,7 @@ To do it, make a subclass of @ref hart::DSP and put your class inside of it. You
 
 ```cpp
 class MyDSPWrapper :
-    public hart::DSP<float, MyDSPWrapper<float>>  // Note the CRTP in the template - it's important!
+    public hart::DSP<float, MyDSPWrapper>  // Note the CRTP in the template - it's important!
 {
 public:
     // Optional, but encouraged to do - for setValue()
@@ -21,7 +21,7 @@ public:
     };
 
     MyDSPWrapper();
-    // Also, move and copy ctros and assignements are optional, but encouraged
+    // Also, move and copy ctors and assignements are optional, but encouraged
 
     void prepare (
         double sampleRateHz,
@@ -31,8 +31,8 @@ public:
         ) override;
 
     void process (
-        const hart::AudioBuffer<SampleType>& input,
-        hart::AudioBuffer<SampleType>& output,
+        const hart::AudioBuffer<float>& input,
+        hart::AudioBuffer<float>& output,
         const hart::EnvelopeBuffers& envelopeBuffers,
         hart::ChannelFlags channelsToProcess
         ) override;
@@ -41,7 +41,7 @@ public:
     void setValue (int id, double value) override;
     void represent (std::ostream& stream) const override;
     bool supportsEnvelopeFor (int id) const override;
-    bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const;
+    bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const override;
     virtual bool supportsSampleRate (double sampleRateHz) const override;
 
     // Optional, if your class not copyable/movable:
