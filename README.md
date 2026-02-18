@@ -141,3 +141,7 @@ Expected sample value: 0.310784 (-10.2 dB), difference: 0.001190 (-58.5 dB)
 ## What's next?
 
 Note that HART is still in its infancy! It still needs some time to land on somewhat final API, and become a complete and bug-free solution we all want it to be. Speaking of complete and bug-free, contributions are very welcome!
+
+## Known issues:
+ - Doesn't actually support non-copyable DSP for wrapping, which creates unnecessary friction when making custom DSP wrappers for testing. Will probably remove copy semantics in the future, to make things easier.
+ - Doesn't support sidechain signals yet. The current workaround is to take advantage of multi-channel inputs.
