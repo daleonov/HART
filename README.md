@@ -6,6 +6,8 @@ High-level Audio Regression and Testing
 
 🎓 Tutorial: https://daleonov.github.io/HART/TestingYourDspInHart.html
 
+Also, you might want to check the `develop` branch. I tend to keep perfectly good new stuff sitting at `develop` for a while, before merging it to `main`.
+
 ## What is HART?
 
 HART is a testing framework for audio DSP. It's a header-only library, and compatible with C++11.
@@ -60,6 +62,11 @@ HART_TEST_WITH_TAGS ("Ny Test Name", "[my][test][tags]")
     HART_EXPECT_TRUE (someValue == someOtherValue);
 }
 ```
+## More examples
+
+Check the `tests/` directory. HART uses itself to test itself... yeah, I know! But it's a good reference!
+
+I also intend to add a separate article with test ideas and examples to the [documentation](https://daleonov.github.io/HART/). I use HART for my own work (obviously!), so there's a decent amount of basic kinds of tests I keep coming back to. So, once I get them together in an article, you'll see a link here.
 
 ## Output example
 
