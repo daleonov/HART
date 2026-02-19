@@ -2,6 +2,7 @@
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
 using hart::Channel;
+using hart::MidSideChannel;
 
 HART_TEST ("GainDb - GainDb Values")
 {
@@ -242,5 +243,32 @@ HART_TEST ("Mute")
         .expectTrue (PeaksAt (0_dB))
         .expectTrue (EqualsTo (SineWave()).atChannels ({0, 2}))
         .expectTrue (EqualsTo (Silence()).atChannels ({1, 3, 4}))
+        .process();
+}
+
+HART_TEST ("StereoToMidSide")
+{
+    processAudioWith (StereoToMidSide())
+        .withLabel ("Side channel cancellation")
+        .withInputSignal (SineWave() >> GainLinear (0.5))
+        .inStereo()
+        .expectTrue (EqualsTo (Silence()).atChannel (MidSideChannel::side))
+        .expectTrue (EqualsTo (SineWave()).atChannel (MidSideChannel::mid))
+        .process();
+
+    processAudioWith (StereoToMidSide())
+        .withLabel ("Mid channel cancellation")
+        .withInputSignal (SineWave() >> GainLinear (0.5) >> GainLinear (-1.0).atChannel (Channel::right))
+        .inStereo()
+        .expectTrue (EqualsTo (Silence()).atChannel (MidSideChannel::mid))
+        .expectTrue (EqualsTo (SineWave()).atChannel (MidSideChannel::side))
+        .process();
+
+    processAudioWith (StereoToMidSide())
+        .withLabel ("No cancellation for true stereo")
+        .withInputSignal (WhiteNoise())
+        .inStereo()
+        .expectFalse (EqualsTo (Silence()).atChannel (MidSideChannel::mid))
+        .expectFalse (EqualsTo (Silence()).atChannel (MidSideChannel::side))
         .process();
 }

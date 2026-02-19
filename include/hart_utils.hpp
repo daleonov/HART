@@ -39,6 +39,13 @@ enum Channel
     right = 1
 };
 
+/// @brief Helper values for mid-side channel indices
+enum MidSideChannel
+{
+    mid = 0,
+    side = 1
+};
+
 /// @brief `std::clamp()` replacement for C++11
 template <typename NumericType>
 NumericType clamp (const NumericType& value, const NumericType& low, const NumericType& high)
