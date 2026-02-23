@@ -61,9 +61,7 @@ public:
         if (this == &other)
             return *this;
 
-        if (m_numChannels != other.m_numChannels)
-            HART_THROW_OR_RETURN (hart::ChannelLayoutError, "Can't move from a buffer with different number of channels", *this);
-
+        m_numChannels = other.m_numChannels;
         m_numFrames = other.m_numFrames;
         m_frames = std::move (other.m_frames);
         m_channelPointers = std::move (other.m_channelPointers);
@@ -238,7 +236,7 @@ public:
     }
 
 private:
-    const size_t m_numChannels = 0;
+    size_t m_numChannels = 0;
     size_t m_numFrames = 0;
     std::vector<SampleType> m_frames;
     std::vector<SampleType*> m_channelPointers;
