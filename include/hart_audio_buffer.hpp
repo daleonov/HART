@@ -1,9 +1,11 @@
 #pragma once
 
 #include <algorithm>  // max_element(), copy(), fill()
+#include <cmath>  // isnan()
 #include <vector>
 
 #include "hart_exceptions.hpp"
+#include "hart_utils.hpp"  // nan(), floatsEqual()
 
 namespace hart {
 
@@ -11,9 +13,10 @@ template <typename SampleType>
 class AudioBuffer
 {
 public:
-    AudioBuffer (size_t numChannels = 0, size_t numFrames = 0) :
+    AudioBuffer (size_t numChannels = 0, size_t numFrames = 0, double sampleRateHz = nan<double>()) :
         m_numChannels (numChannels),
         m_numFrames (numFrames),
+        m_sampleRateHz (sampleRateHz),
         m_frames (m_numChannels * m_numFrames),
         m_channelPointers (m_numChannels)
     {
@@ -23,6 +26,7 @@ public:
     AudioBuffer(const AudioBuffer& other) :
         m_numChannels (other.m_numChannels),
         m_numFrames (other.m_numFrames),
+        m_sampleRateHz (other.m_sampleRateHz),
         m_frames (other.m_frames),
         m_channelPointers (m_numChannels)
     {
@@ -32,6 +36,7 @@ public:
     AudioBuffer (AudioBuffer&& other) :
         m_numChannels (other.m_numChannels),
         m_numFrames (other.m_numFrames),
+        m_sampleRateHz (other.m_sampleRateHz),
         m_frames (std::move (other.m_frames)),
         m_channelPointers (std::move (other.m_channelPointers))
     {
@@ -49,6 +54,7 @@ public:
             HART_THROW_OR_RETURN (hart::ChannelLayoutError, "Can't copy from a buffer with different number of channels", *this);
 
         m_numFrames = other.m_numFrames;
+        m_sampleRateHz = other.m_sampleRateHz;
         m_frames = other.m_frames;
         m_channelPointers.resize (m_numChannels);
         updateChannelPointers();
@@ -63,6 +69,7 @@ public:
 
         m_numChannels = other.m_numChannels;
         m_numFrames = other.m_numFrames;
+        m_sampleRateHz = other.m_sampleRateHz;
         m_frames = std::move (other.m_frames);
         m_channelPointers = std::move (other.m_channelPointers);
         other.erase();
@@ -82,11 +89,31 @@ public:
 
     static AudioBuffer emptyLike (const AudioBuffer& other)
     {
-        return AudioBuffer (other.getNumChannels(), other.getNumFrames());
+        return other.hasSampleRate()
+            ? AudioBuffer (other.getNumChannels(), other.getNumFrames(), other.getSampleRateHz())
+            : AudioBuffer (other.getNumChannels(), other.getNumFrames());
     }
 
     size_t getNumChannels() const { return m_numChannels; }
     size_t getNumFrames() const { return m_numFrames; }
+
+    bool hasSampleRate() const 
+    {
+        return ! std::isnan (m_sampleRateHz);
+    }
+
+    double getSampleRateHz() const
+    {
+        hassert (! std::isnan (m_sampleRateHz));  // Call hasSampleRate() first! This buffer doesn't have a specific sample rate.
+        return m_sampleRateHz;
+    }
+
+    double getLengthSeconds() const
+    {
+        hassert (! std::isnan (m_sampleRateHz));  // This buffer doesn't have a specific sample rate, and hence the length is unknown
+        hassert (! floatsEqual (m_sampleRateHz, 0.0));
+        return static_cast <double> (m_numFrames) / m_sampleRateHz;
+    }
 
     SampleType* operator[] (size_t channel)
     {
@@ -102,6 +129,9 @@ public:
     {
         if (otherBuffer.getNumChannels() != m_numChannels)
             HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "Channel count mismatch");
+
+        // Not a huge deal, but appending a buffer with a different SR must be at least a little suspicious
+        hassert ((! hasSampleRate() || ! otherBuffer.hasSampleRate()) || floatsEqual (getSampleRateHz(), otherBuffer.getSampleRateHz()));
 
         const size_t thisNumFrames = m_numFrames;
         const size_t otherNumFrames = otherBuffer.getNumFrames();
@@ -123,6 +153,8 @@ public:
 
     void erase()
     {
+        // Keeping the sample rate though, just wiping the data
+
         m_numFrames = 0;
         m_frames.clear();
 
@@ -189,6 +221,9 @@ public:
         if (destStartFrame + numFrames > m_numFrames || sourceStartFrame + numFrames > source.m_numFrames)
             HART_THROW_OR_RETURN_VOID (hart::IndexError, "Invalid frame range");
 
+        // Not a huge deal, but copying from a buffer with different SR must be at least a little suspicious
+        hassert ((! hasSampleRate() || ! source.hasSampleRate()) || floatsEqual (getSampleRateHz(), source.getSampleRateHz()));
+
         std::copy (
             source.m_channelPointers[sourceChannel] + sourceStartFrame,
             source.m_channelPointers[sourceChannel] + sourceStartFrame + numFrames,
@@ -213,7 +248,7 @@ public:
     }
 
     /// @brief Clears the entire buffer
-    /// @details Sets all frames in all channels to zeros
+    /// @details Sets all frames in all channels to zeros, keeping the sample rate value intact
     void clear()
     {
         std::fill (m_frames.begin(), m_frames.end(), (SampleType) 0);
@@ -238,6 +273,7 @@ public:
 private:
     size_t m_numChannels = 0;
     size_t m_numFrames = 0;
+    double m_sampleRateHz = nan<double>();
     std::vector<SampleType> m_frames;
     std::vector<SampleType*> m_channelPointers;
 

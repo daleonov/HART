@@ -3,7 +3,7 @@
 #include <algorithm>  // min(), max()
 #include <cctype>  // isalpha()
 #include <cmath>  // pow()
-#include <limits>  // infinity()
+#include <limits>  // infinity(), nan()
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -45,6 +45,13 @@ enum MidSideChannel
     mid = 0,
     side = 1
 };
+
+/// @brief Returns a quiet NaN value for the given floating-point type.
+template<typename FloatType>
+inline FloatType nan()
+{
+    return std::numeric_limits<FloatType>::quiet_NaN();
+}
 
 /// @brief `std::clamp()` replacement for C++11
 template <typename NumericType>
