@@ -313,8 +313,9 @@ public:
         m_inputSignal->prepareWithDSPChain (m_sampleRateHz, m_numInputChannels, m_blockSizeFrames);
         offsetFrames = 0;
 
-        AudioBuffer<SampleType> fullInputBuffer (m_numInputChannels);
-        AudioBuffer<SampleType> fullOutputBuffer (m_numOutputChannels);
+        // TODO: Pre-allocate full buffer sizes here, as they're already known at this point
+        AudioBuffer<SampleType> fullInputBuffer (m_numInputChannels, 0, m_sampleRateHz);
+        AudioBuffer<SampleType> fullOutputBuffer (m_numOutputChannels, 0, m_sampleRateHz);
         bool atLeastOneCheckFailed = false;
 
         while (offsetFrames < m_durationFrames)
@@ -323,8 +324,8 @@ public:
 
             const size_t blockSizeFrames = std::min (m_blockSizeFrames, m_durationFrames - offsetFrames);
 
-            hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, blockSizeFrames);
-            hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, blockSizeFrames);
+            hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, blockSizeFrames, m_sampleRateHz);
+            hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, blockSizeFrames, m_sampleRateHz);
             m_inputSignal->renderNextBlockWithDSPChain (inputBlock);
             m_processor->processWithEnvelopes (inputBlock, outputBlock);
 
@@ -340,10 +341,10 @@ public:
         atLeastOneCheckFailed |= ! allChecksPassed;
 
         if (m_saveOutputMode == Save::always || (m_saveOutputMode == Save::whenFails && atLeastOneCheckFailed))
-            WavWriter<SampleType>::writeBuffer (fullOutputBuffer, m_saveOutputPath, m_sampleRateHz, m_saveOutputWavFormat);
+            WavWriter<SampleType>::writeBuffer (fullOutputBuffer, m_saveOutputPath, m_saveOutputWavFormat);
     
         if (m_savePlotMode == Save::always || (m_savePlotMode == Save::whenFails && atLeastOneCheckFailed))
-            plotData (fullInputBuffer, fullOutputBuffer, m_sampleRateHz, m_savePlotPath);
+            plotData (fullInputBuffer, fullOutputBuffer, m_savePlotPath);
 
         return std::move (m_processor);
     }

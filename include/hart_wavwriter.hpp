@@ -11,6 +11,7 @@
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_units.hpp"
+#include "hart_utils.hpp"  // floatsEqual()
 #include "hart_wavformat.hpp"
 
 namespace hart
@@ -20,8 +21,12 @@ template <typename SampleType>
 class WavWriter
 {
 public:
-    static void writeBuffer (const AudioBuffer<SampleType>& buffer, const std::string& fileName, double sampleRateHz, WavFormat wavFormat = WavFormat::pcm24)
+    static void writeBuffer (const AudioBuffer<SampleType>& buffer, const std::string& fileName, WavFormat wavFormat = WavFormat::pcm24)
     {
+        // Sample rate must be supplied in buffer's metadata
+        hassert (buffer.hasSampleRate());
+        hassert (! floatsEqual (buffer.getSampleRateHz(), 0.0));
+
         const size_t numFrames = buffer.getNumFrames();
         const size_t numChannels = buffer.getNumChannels();
 
@@ -29,7 +34,7 @@ public:
         drwav_data_format drWavFormat;
         drWavFormat.container = drwav_container_riff;
         drWavFormat.channels = static_cast<drwav_uint16> (numChannels);
-        drWavFormat.sampleRate = static_cast<drwav_uint32> (sampleRateHz);
+        drWavFormat.sampleRate = static_cast<drwav_uint32> (buffer.getSampleRateHz());
 
         switch (wavFormat)
         {

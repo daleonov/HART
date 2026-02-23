@@ -11,10 +11,19 @@ namespace hart {
 /// @brief Plots audio buffers as an svg file
 /// @private
 template <typename SampleType>
-void plotData (const AudioBuffer<SampleType>& input, const AudioBuffer<SampleType>& output, double sampleRateHz, const std::string& plotFilePath)
+void plotData (const AudioBuffer<SampleType>& input, const AudioBuffer<SampleType>& output, const std::string& plotFilePath)
 {
-    const double bufferSizeSeconds = static_cast <double> (output.getNumFrames()) / sampleRateHz;
-    const double timeIncrementSeconds = 1.0 / sampleRateHz;
+    // Missing sample rates are not a big deal, but
+    // we're expecting this method to be called by the
+    // test runner, where sample rates are properly defined
+    hassert (input.hasSampleRate());
+    hassert (output.hasSampleRate());
+    hassert (! floatsEqual (input.getSampleRateHz(), 0.0));
+    hassert (! floatsEqual (output.getSampleRateHz(), 0.0));
+    hassert (floatsEqual (input.getSampleRateHz(), output.getSampleRateHz()));
+
+    const double bufferSizeSeconds = output.getLengthSeconds();
+    const double timeIncrementSeconds = 1.0 / output.getSampleRateHz();
 
     signalsmith::plot::Figure figure;
     auto& inputSignalPlot = figure (0, 0).plot (1200, 200);
