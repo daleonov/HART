@@ -3,6 +3,7 @@
 #include <algorithm>  // min()
 #include <cassert>
 #include <cmath>
+#include <functional>
 #include <iomanip>
 #include <memory>
 #include <sstream>
@@ -250,6 +251,22 @@ public:
         return *this;
     }
 
+    /// @brief Enables saving output audio to a provided buffer
+    /// @param buffer An output buffer to receive the data. You can pass an unitialised buffer, among other things, as it will be move-assigned.
+    AudioTestBuilder& saveOutputTo (AudioBuffer<SampleType>& buffer)
+    {
+        m_outputBufferSink = [&buffer] (AudioBuffer<SampleType>&& buf) { buffer = std::move(buf); };
+        return *this;
+    }
+
+    /// @brief Enables saving output audio via provided callback
+    /// @param outputBufferSink A callable that accepts a buffer rvalue. The buffer is moved into the provided sink. The test runner takes ownership of the callable object.
+    AudioTestBuilder& saveOutputTo (std::function<void (AudioBuffer<SampleType>&&)> outputBufferSink)
+    {
+        m_outputBufferSink = std::move (outputBufferSink);
+        return *this;
+    }
+
     /// @brief Enables saving a plot to an SVG file
     /// @details This will plot an input and output audio as a waveform
     /// @param path File path - relative or absolute. If relative path is set, it will be appended to the provided `--data-root-path` CLI argument.
@@ -346,6 +363,9 @@ public:
         if (m_savePlotMode == Save::always || (m_savePlotMode == Save::whenFails && atLeastOneCheckFailed))
             plotData (fullInputBuffer, fullOutputBuffer, m_savePlotPath);
 
+        if (m_outputBufferSink)
+            m_outputBufferSink (std::move (fullOutputBuffer));
+
         return std::move (m_processor);
     }
 
@@ -391,6 +411,8 @@ private:
 
     std::string m_savePlotPath;
     Save m_savePlotMode = Save::never;
+
+    std::function<void (AudioBuffer<SampleType>&&)> m_outputBufferSink = nullptr;
 
     template<
         typename MatcherType,

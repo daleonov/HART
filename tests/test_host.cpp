@@ -88,3 +88,32 @@ HART_TEST ("EqualsTo - Signal Move, Copy and Transfer")
         .expectTrue (EqualsTo (std::move (transferMe)))
         .process();
 }
+
+HART_TEST ("Move audio output to an external buffer")
+{
+    hart::AudioBuffer<float> bufferA;
+    HART_ASSERT_TRUE (hart::floatsEqual (bufferA.getLengthSeconds(), 0.0));
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Saving via buffer reference")
+        .withInputSignal (SineWave())
+        .withDuration (1_ms)
+        .saveOutputTo (bufferA)
+        .process();
+
+    HART_EXPECT_TRUE (hart::floatsEqual (bufferA.getLengthSeconds(), 1_ms, 5_us));
+
+    hart::AudioBuffer<float> bufferB;
+    bool wasCalled = false;
+    HART_ASSERT_TRUE (hart::floatsEqual (bufferB.getLengthSeconds(), 0.0));
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Saving via callable")
+        .withInputSignal (SineWave())
+        .withDuration (1_ms)
+        .saveOutputTo ([&bufferB, &wasCalled] (hart::AudioBuffer<float>&& outputBuffer) { wasCalled = true; bufferB = std::move (outputBuffer); })
+        .process();
+
+    HART_EXPECT_TRUE (wasCalled == true);
+    HART_EXPECT_TRUE (hart::floatsEqual (bufferB.getLengthSeconds(), 1_ms, 5_us));
+}
