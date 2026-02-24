@@ -1,5 +1,6 @@
 #pragma once
 
+#include "signals/hart_audio_buffer_signal.hpp"
 #include "signals/hart_impulse.hpp"
 #include "signals/hart_mixed_signal.hpp"
 #include "signals/hart_sawtooth.hpp"
