@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "hart_exceptions.hpp"
+#include "hart_precision.hpp"  // hzPrecision
 #include "hart_utils.hpp"  // nan(), floatsEqual()
 
 namespace hart {
@@ -271,6 +272,17 @@ public:
             HART_THROW_OR_RETURN_VOID (hart::IndexError, "Invalid frame range");
 
         std::fill (m_channelPointers[channel], m_channelPointers[channel] + numFrames, (SampleType) 0);
+    }
+
+    void represent (std::ostream& stream) const
+    {
+        std::ostringstream oss;
+        stream << "AudioBuffer (" << m_numChannels << ", " << m_numFrames;
+
+        if (hasSampleRate())
+            stream << ", " << hzPrecision << m_sampleRateHz << ')';
+        else
+            stream << ", nan())";
     }
 
 private:

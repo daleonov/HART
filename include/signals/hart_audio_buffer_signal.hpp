@@ -129,7 +129,7 @@ public:
         stream << "AudioBufferSignal (";
 
         if (m_buffer != nullptr)
-            stream << representAudioBuffer();
+            m_buffer->represent (stream);
         else
             stream << "<nullptr>";
 
@@ -150,21 +150,6 @@ private:
     std::shared_ptr<AudioBuffer<SampleType>> m_buffer;
     Loop m_loop = Loop::no;
     size_t m_readPosition = 0;
-
-    std::string representAudioBuffer() const
-    {
-        // TODO: Buffer ctor representation, not generic __repr__() style
-        std::ostringstream oss;
-        oss << '<' << m_buffer->getNumChannels() << "ch, " << m_buffer->getNumFrames() << " frames";
-
-        if (m_buffer->hasSampleRate())
-            oss << ", " << m_buffer->getSampleRateHz() << " Hz";
-        else
-            oss << ", sample rate unknown";
-
-        oss << '>';
-        return oss.str();
-    }
 };
 
 HART_SIGNAL_DECLARE_ALIASES_FOR (AudioBufferSignal)
