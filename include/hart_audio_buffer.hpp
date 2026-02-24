@@ -110,6 +110,9 @@ public:
 
     double getLengthSeconds() const
     {
+        if (m_numFrames == 0)
+            return 0.0;
+
         hassert (! std::isnan (m_sampleRateHz));  // This buffer doesn't have a specific sample rate, and hence the length is unknown
         hassert (! floatsEqual (m_sampleRateHz, 0.0));
         return static_cast <double> (m_numFrames) / m_sampleRateHz;
