@@ -111,12 +111,28 @@ public:
         return *this;
     }
 
-    /// @brief Sets the input signal for the test
+    /// @brief Sets the input signal for the test by copying it
     /// @param signal Input signal, see @ref Signals
     AudioTestBuilder& withInputSignal (const SignalBase<SampleType>& signal)
     {
-        // TODO: Implement moving/transfering a signal instance as well
         m_inputSignal = std::move (signal.copy());
+        return *this;
+    }
+
+    /// @brief Sets the input signal for the test by moving it
+    /// @param signal Input signal, see @ref Signals
+    AudioTestBuilder& withInputSignal (SignalBase<SampleType>&& signal)
+    {
+        m_inputSignal = std::move (signal.move());
+        return *this;
+    }
+
+    /// @brief Sets the input signal for the test by transfering its smart pointer
+    /// @note The ownership of the smart pointer will be transferred to this class
+    /// @param signal Input signal, see @ref Signals
+    AudioTestBuilder& withInputSignal (std::unique_ptr<SignalBase<SampleType>> signal)
+    {
+        m_inputSignal = std::move (signal);
         return *this;
     }
 
