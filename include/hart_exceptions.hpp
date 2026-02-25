@@ -90,11 +90,13 @@ class NullPointerError:
 #define HART_THROW(ExceptionType, message) do { HART_THROW_IMPL(ExceptionType, message); } while (0)
 #define HART_THROW_OR_RETURN(ExceptionType, message, returnValue) { HART_THROW_IMPL (ExceptionType, message); return returnValue; }
 #define HART_THROW_OR_RETURN_VOID(ExceptionType, message) { HART_THROW_IMPL (ExceptionType, message); return; }
+#define HART_THROW_OR_CONTINUE(ExceptionType, message) { HART_THROW_IMPL (ExceptionType, message); continue; }
 #else
 #define HART_THROW_IMPL(ExceptionType, message) throw ExceptionType (std::string (message) +  ", file: " __FILE__ ", line: " HART_LINE_STRING)
 #define HART_THROW(ExceptionType, message) do { HART_THROW_IMPL(ExceptionType, message); } while (0)
 #define HART_THROW_OR_RETURN(ExceptionType, message, returnValue) HART_THROW (ExceptionType, message)
 #define HART_THROW_OR_RETURN_VOID(ExceptionType, message) HART_THROW (ExceptionType, message)
+#define HART_THROW_OR_CONTINUE(ExceptionType, message) HART_THROW (ExceptionType, message)
 #endif  // HART_DO_NOT_THROW_EXCEPTIONS
 
 #define hassertfalse HART_THROW (hart::HartAssertException, "hassertfalse failed")
