@@ -43,6 +43,7 @@ public:
     void setValue (int /* paramId */, double /* value */) override {}
     void reset() override {}
     HART_DEFINE_GENERIC_REPRESENT (StereoToMidSide)
+    HART_DSP_COPYABLE (StereoToMidSide)
 };
 
 HART_DSP_DECLARE_ALIASES_FOR (StereoToMidSide)

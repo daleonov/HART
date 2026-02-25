@@ -59,6 +59,7 @@ public:
     }
 
     HART_DEFINE_GENERIC_REPRESENT (Mute)
+    HART_DSP_COPYABLE (Mute)
 };
 
 HART_DSP_DECLARE_ALIASES_FOR(Mute)
