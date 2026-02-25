@@ -35,12 +35,12 @@ public:
         m_numChannels(other.m_numChannels),
         m_startTimestampSeconds (other.m_startTimestampSeconds)
     {
-        if (other.dspChain.size() == 0)
+        if (other.m_dspChain.size() == 0)
             return;
 
-        dspChain.reserve (other.dspChain.size());
+        m_dspChain.reserve (other.m_dspChain.size());
 
-        for (auto& dsp : other.dspChain)
+        for (auto& dsp : other.m_dspChain)
         {
             std::unique_ptr<DSPBase<SampleType>> dspCopy = dsp->copy();
 
@@ -57,7 +57,7 @@ public:
             if (dspCopy == nullptr)
                 HART_THROW_OR_CONTINUE (hart::NullPointerError, "One of the DSP effects in the DSP chain has failed to return a copy");
 
-            dspChain.push_back (std::move (dspCopy));
+            m_dspChain.push_back (std::move (dspCopy));
         }
     }
 
@@ -65,7 +65,7 @@ public:
     SignalBase (SignalBase&& other) noexcept:
         m_numChannels (other.m_numChannels),
         m_startTimestampSeconds (other.m_startTimestampSeconds),
-        dspChain (std::move (other.dspChain))
+        m_dspChain (std::move (other.m_dspChain))
     {
         other.m_numChannels = 0;
         other.m_startTimestampSeconds = 0.0;
@@ -82,14 +82,14 @@ public:
 
         m_numChannels = other.m_numChannels;
         m_startTimestampSeconds = other.m_startTimestampSeconds;
-        dspChain.clear();
+        m_dspChain.clear();
 
-        if (other.dspChain.size() == 0)
+        if (other.m_dspChain.size() == 0)
             return *this;
 
-        dspChain.reserve (other.dspChain.size());
+        m_dspChain.reserve (other.m_dspChain.size());
 
-        for (auto& dsp : other.dspChain)
+        for (auto& dsp : other.m_dspChain)
         {
             std::unique_ptr<DSPBase<SampleType>> dspCopy = dsp->copy();
 
@@ -106,7 +106,7 @@ public:
             if (dspCopy == nullptr)
                 HART_THROW_OR_CONTINUE (hart::NullPointerError, "One of the DSP effects in the DSP chain has failed to return a copy");
 
-            dspChain.push_back (std::move (dspCopy));
+            m_dspChain.push_back (std::move (dspCopy));
         }
 
         return *this;
@@ -119,7 +119,7 @@ public:
             return *this;
 
         m_numChannels = other.m_numChannels;
-        dspChain = std::move (other.dspChain);
+        m_dspChain = std::move (other.m_dspChain);
         m_startTimestampSeconds = other.m_startTimestampSeconds;
         other.m_numChannels = 0;
         other.m_startTimestampSeconds = 0.0;
@@ -199,7 +199,7 @@ public:
         prepare (sampleRateHz, numOutputChannels, maxBlockSizeFrames);
         const size_t numInputChannels = numOutputChannels;
 
-        for (auto& dsp : dspChain)
+        for (auto& dsp : m_dspChain)
         {
             if (! dsp->supportsChannelLayout (numInputChannels, numOutputChannels))
                 HART_THROW_OR_RETURN_VOID (ChannelLayoutError, "Not all DSP in the Signal's DSP chain support its channel layout");
@@ -225,7 +225,7 @@ public:
         renderNextBlock (output);
         AudioBuffer<SampleType>& inputReplacing = output;
 
-        for (auto& dsp : dspChain)
+        for (auto& dsp : m_dspChain)
             dsp->processWithEnvelopes (inputReplacing, output);
     }
 
@@ -236,7 +236,7 @@ public:
     {
         reset();
 
-        for (auto& dsp : dspChain)
+        for (auto& dsp : m_dspChain)
             dsp->reset();
     }
 
@@ -248,7 +248,7 @@ public:
     {
         represent (stream);
 
-        for (const auto& dsp : dspChain)
+        for (const auto& dsp : m_dspChain)
             stream << " >> " << *dsp;
     }
 
@@ -269,7 +269,7 @@ protected:
 
     size_t m_numChannels = 1;
     double m_startTimestampSeconds = 0.0;
-    std::vector<std::unique_ptr<DSPBase<SampleType>>> dspChain;
+    std::vector<std::unique_ptr<DSPBase<SampleType>>> m_dspChain;
 
 private:
     void performSkipTo (double sampleRateHz, size_t numOutputChannels, size_t maxBlockSizeFrames)
@@ -383,7 +383,7 @@ public:
     DerivedSignal operator-() const
     {
         auto newSignal = static_cast<const DerivedSignal&> (*this);
-        newSignal.dspChain.emplace_back (hart::make_unique<GainLinear<SampleType>> (SampleType (-1)));
+        newSignal.m_dspChain.emplace_back (hart::make_unique<GainLinear<SampleType>> (SampleType (-1)));
         return newSignal;
     }
 
@@ -407,12 +407,12 @@ private:
     {
         static_assert (!std::is_lvalue_reference<DerivedDSP>::value, "DSP must be passed as an rvalue");
         static_assert (std::is_base_of<DSPBase<SampleType>, typename std::decay<DerivedDSP>::type>::value, "Argument must be a DSP object");
-        this->dspChain.emplace_back (dsp.move());
+        this->m_dspChain.emplace_back (dsp.move());
     }
 
     void _followedBy(std::unique_ptr<DSPBase<SampleType>> dsp)
     {
-        this->dspChain.emplace_back (std::move (dsp));
+        this->m_dspChain.emplace_back (std::move (dsp));
     }
 };
 
