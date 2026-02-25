@@ -560,11 +560,7 @@ inline std::ostream& operator<< (std::ostream& stream, const DSPBase<SampleType>
 ///  - You don't want to trouble yourself with implementing copy semantics for your class
 /// @ingroup DSP
 #define HART_DSP_NON_COPYABLE \
-    std::unique_ptr<DSP<SampleType>> copy() const override \
-    { \
-        static_assert (false, "This DSP cannot be copied"); \
-        return nullptr; \
-    }
+    std::unique_ptr<DSP<SampleType>> copy() const override { return nullptr; }
 
 /// @brief Forbids @ref hart::DSP::move() method
 /// @details Put this into your class body's ```public``` section if either is true:
@@ -579,11 +575,7 @@ inline std::ostream& operator<< (std::ostream& stream, const DSPBase<SampleType>
 /// ```
 /// @ingroup DSP
 #define HART_DSP_NON_MOVABLE \
-    std::unique_ptr<DSP<SampleType>> move() override \
-    { \
-        static_assert (false, "This DSP cannot be moved"); \
-        return nullptr; \
-    }
+    std::unique_ptr<DSP<SampleType>> move() override { return nullptr; }
 
 /// @brief Implements a generic @ref hart::DSP::copy() method
 /// @ingroup DSP
