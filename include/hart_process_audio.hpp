@@ -39,21 +39,10 @@ template <typename SampleType>
 class AudioTestBuilder
 {
 public:
-    /// @brief Copies the DSP instance into the host
-    /// @details DSP instance will be moved into this host, and then returned by @ref process(), so you can re-use it.
-    /// @param dsp Your DSP instance.
-    template <typename DSPType>
-    AudioTestBuilder (DSPType&& dsp,
-        typename std::enable_if<
-            std::is_lvalue_reference<DSPType&&>::value &&
-            std::is_base_of<DSPBase<SampleType>, typename std::decay<DSPType>::type>::value
-        >::type* = 0)
-    : m_processor (dsp.copy())
-    {
-    }
-
     /// @brief Moves the DSP instance into the host
     /// @details DSP instance will be moved into this host, and then returned by @ref process(), so you can re-use it.
+    /// You can only pass a DSP by moving it, since some of the custom DSP wrappers can be non-copyable.
+    /// If you do want to copy a DSP instance here, use its DSPBase::copy() method explicitly.
     /// @param dsp Your DSP instance
     template <typename DSPType>
     AudioTestBuilder (DSPType&& dsp,
