@@ -38,10 +38,27 @@ public:
         if (other.dspChain.size() == 0)
             return;
 
-        dspChain.reserve (dspChain.size());
+        dspChain.reserve (other.dspChain.size());
 
         for (auto& dsp : other.dspChain)
-            dspChain.push_back (dsp->copy());
+        {
+            std::unique_ptr<DSPBase<SampleType>> dspCopy = dsp->copy();
+
+            // If you hit this, one of the effects in the DSP chain is either:
+            // - non-copyable by design, or
+            // - missing copy() implementation.
+            // There's a good chance it's your custom DSP wrapper, as they're non-copyable by default,
+            // while built-in HART DSP effects are properly copyable. If you really want your effect in
+            // this DSP chain, consider one of the following options:
+            // 1. Move the whole Signal instance that contains this DSP, instead of copying it.
+            // 2. Move your DSP instance into the signal chain, instead of copying it. You can do this
+            //    either via an rvalue ref, or a unique_ptr.
+            // 3. Implement copy semantics (including copy() method) in your DSP subclass.
+            if (dspCopy == nullptr)
+                HART_THROW_OR_CONTINUE (hart::NullPointerError, "One of the DSP effects in the DSP chain has failed to return a copy");
+
+            dspChain.push_back (std::move (dspCopy));
+        }
     }
 
     /// @brief Moves from other signal
@@ -70,9 +87,28 @@ public:
         if (other.dspChain.size() == 0)
             return *this;
 
+        dspChain.reserve (other.dspChain.size());
+
         for (auto& dsp : other.dspChain)
-            dspChain.push_back (dsp->copy());
-        
+        {
+            std::unique_ptr<DSPBase<SampleType>> dspCopy = dsp->copy();
+
+            // If you hit this, one of the effects in the DSP chain is either:
+            // - non-copyable by design, or
+            // - missing copy() implementation.
+            // There's a good chance it's your custom DSP wrapper, as they're non-copyable by default,
+            // while built-in HART DSP effects are properly copyable. If you really want your effect in
+            // this DSP chain, consider one of the following options:
+            // 1. Move the whole Signal instance that contains this DSP, instead of copying it.
+            // 2. Move your DSP instance into the signal chain, instead of copying it. You can do this
+            //    either via an rvalue ref, or a unique_ptr.
+            // 3. Implement copy semantics (including copy() method) in your DSP subclass.
+            if (dspCopy == nullptr)
+                HART_THROW_OR_CONTINUE (hart::NullPointerError, "One of the DSP effects in the DSP chain has failed to return a copy");
+
+            dspChain.push_back (std::move (dspCopy));
+        }
+
         return *this;
     }
 
@@ -257,93 +293,68 @@ private:
 /// @brief Base class for signals
 /// @ingroup Signals
 /// @tparam SampleType Type of values that will be generated, typically ```float``` or ```double```
-/// @tparam Derived Subclass for CRTP
-template<typename SampleType, typename Derived>
+/// @tparam DerivedSignal Subclass for CRTP
+template<typename SampleType, typename DerivedSignal>
 class Signal:
     public SignalBase<SampleType>
 {
 public:
-    /// @brief Adds a DSP effect to the end of signal's DSP chain by copying it
-    /// @note If your DSP object does not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
+    /// @brief Adds a DSP effect to the end of signal's DSP chain
+    /// @note You can only add a DSP by moving it, since some of the custom DSP wrappers can be non-copyable.
+    /// If you do want to copy a dsp to the chain, use its DSPBase::copy() method explicitly.
     /// @param dsp A DSP effect instance
-    Derived& followedBy (const DSPBase<SampleType>& dsp) &
+    template <typename DerivedDSP>
+    typename std::enable_if<
+        ! std::is_lvalue_reference<DerivedDSP>::value && std::is_base_of<DSPBase<SampleType>, typename std::decay<DerivedDSP>::type>::value,
+        DerivedSignal&
+    >::type
+    followedBy (DerivedDSP&& dsp) &
     {
-        this->dspChain.emplace_back (dsp.copy());
-        return static_cast<Derived&> (*this);
-    }
-    /// @brief Adds a DSP effect to the end of signal's DSP chain by copying it
-    /// @note If your DSP object does not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
-    /// @param dsp A DSP effect instance
-    Derived&& followedBy (const DSPBase<SampleType>& dsp) &&
-    {
-        this->dspChain.emplace_back (dsp.copy());
-        return static_cast<Derived&&> (*this);
+        _followedBy (std::forward<DerivedDSP> (dsp));
+        return static_cast<DerivedSignal&> (*this);
     }
 
-    /// @brief Adds a DSP effect to the end of signal's DSP chain by transfering a smart pointer
-    /// @note If your DSP object does not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
+    /// @brief Adds a DSP effect to the end of signal's DSP chain
+    /// @note You can only add a DSP by moving it, since some of the custom DSP wrappers can be non-copyable.
+    /// If you do want to copy a dsp to the chain, use its DSPBase::copy() method explicitly.
     /// @param dsp A DSP effect instance
-    Signal& followedBy (std::unique_ptr<DSPBase<SampleType>> dsp) &
+    template <typename DerivedDSP>
+    typename std::enable_if<
+        ! std::is_lvalue_reference<DerivedDSP>::value && std::is_base_of<DSPBase<SampleType>, typename std::decay<DerivedDSP>::type>::value,
+        DerivedSignal&&
+    >::type
+    followedBy (DerivedDSP&& dsp) &&
     {
-        this->dspChain.emplace_back (std::move (dsp));
-        return static_cast<Derived&> (*this);
+        _followedBy (std::forward<DerivedDSP> (dsp));
+        return static_cast<DerivedSignal&&> (*this);
     }
 
-    /// @brief Adds a DSP effect to the end of signal's DSP chain by transfering a smart pointer
-    /// @note If your DSP object does not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
-    /// @param dsp A DSP effect instance
-    Signal&& followedBy (std::unique_ptr<DSPBase<SampleType>> dsp) &&
+    /// @brief Adds a DSP effect to the end of signal's DSP chain
+    /// @note DSP smart pointer ownership will be transferred to the Signal instance
+    /// @param dsp Smart pointer to DSP effect instance
+    DerivedSignal& followedBy (std::unique_ptr<DSPBase<SampleType>> dsp) &
     {
-        this->dspChain.emplace_back (std::move (dsp));
-        return static_cast<Derived&&> (*this);
+        _followedBy (std::move (dsp));
+        return static_cast<DerivedSignal&> (*this);
     }
 
-    /// @brief Adds a DSP effect to the end of signal's DSP chain by moving it
-    /// @note If your DSP object does not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
-    /// @param dsp A DSP effect instance
-    template <
-        typename DerivedDSP,
-        typename = typename std::enable_if<
-            std::is_base_of<
-                DSPBase<SampleType>,
-                typename std::decay<DerivedDSP>::type
-                >::value
-            >::type
-        >
-    Derived& followedBy (DerivedDSP&& dsp) &
+    /// @brief Adds a DSP effect to the end of signal's DSP chain
+    /// @note DSP smart pointer ownership will be transferred to the Signal instance
+    /// @param dsp Smart pointer to DSP effect instance
+    DerivedSignal&& followedBy (std::unique_ptr<DSPBase<SampleType>> dsp) &&
     {
-        this->dspChain.emplace_back (dsp.move());
-        return static_cast<Derived&> (*this);
+        _followedBy (std::move (dsp));
+        return static_cast<DerivedSignal&&> (*this);
     }
-
-    /// @brief Adds a DSP effect to the end of signal's DSP chain by moving it
-    /// @note If your DSP object does not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
-    /// @param dsp A DSP effect instance
-    template <
-        typename DerivedDSP,
-        typename = typename std::enable_if<
-            std::is_base_of<
-                DSPBase<SampleType>,
-                typename std::decay<DerivedDSP>::type
-                >::value
-            >::type
-        >
-    Derived&& followedBy (DerivedDSP&& dsp) &&
-    {
-        this->dspChain.emplace_back (dsp.move());
-        return static_cast<Derived&&> (*this);
-    }
-
-    // TODO: Add followedBy() for smart pointer to DSO
 
     std::unique_ptr<SignalBase<SampleType>> copy() const override
     {
-        return hart::make_unique<Derived> (static_cast<const Derived&> (*this));
+        return hart::make_unique<DerivedSignal> (static_cast<const DerivedSignal&> (*this));
     }
 
     std::unique_ptr<SignalBase<SampleType>> move() override
     {
-        return hart::make_unique<Derived> (std::move (static_cast<const Derived&> (*this)));
+        return hart::make_unique<DerivedSignal> (std::move (static_cast<const DerivedSignal&> (*this)));
     }
 
     /// @brief Skips the signal to a specific timestamp
@@ -351,10 +362,10 @@ public:
     /// envelopes. Calling it multiple times on one instance will stack the skip times.
     /// @note Keep in mind that the skip is accurate within one audio frame tolerance
     /// @param startTimestampSeconds How much time to skip from the start of the signal
-    Derived& skipTo (double startTimestampSeconds) &
+    DerivedSignal& skipTo (double startTimestampSeconds) &
     {
         _skipTo (startTimestampSeconds);
-        return static_cast<Derived&> (*this);
+        return static_cast<DerivedSignal&> (*this);
     }
 
     /// @brief Skips the signal to a specific timestamp
@@ -362,22 +373,22 @@ public:
     /// envelopes. Calling it multiple times on one instance will stack the skip times.
     /// @note Keep in mind that the skip is accurate within one audio frame tolerance
     /// @param startTimestampSeconds How much time to skip from the start of the signal
-    Derived& skipTo (double startTimestampSeconds) &&
+    DerivedSignal&& skipTo (double startTimestampSeconds) &&
     {
         _skipTo (startTimestampSeconds);
-        return static_cast<Derived&&> (*this);
+        return static_cast<DerivedSignal&&> (*this);
     }
 
     /// @brief Returns a copy of this signal, but with flipped phase
-    Derived operator-() const
+    DerivedSignal operator-() const
     {
-        auto newSignal = static_cast<const Derived&> (*this);
+        auto newSignal = static_cast<const DerivedSignal&> (*this);
         newSignal.dspChain.emplace_back (hart::make_unique<GainLinear<SampleType>> (SampleType (-1)));
         return newSignal;
     }
 
     /// @brief Returns a copy of this signal, but with flipped phase
-    Derived operator~() const
+    DerivedSignal operator~() const
     {
         return -(*this);
     }
@@ -386,9 +397,22 @@ private:
     void _skipTo (double startTimestampSeconds)
     {
         if (startTimestampSeconds < 0)
-            HART_THROW_OR_RETURN (hart::ValueError, "Can't skip to a negative timestamp", static_cast<Derived&> (*this));
+            HART_THROW_OR_RETURN (hart::ValueError, "Can't skip to a negative timestamp", static_cast<DerivedSignal&> (*this));
 
         this->m_startTimestampSeconds += startTimestampSeconds;
+    }
+
+    template <typename DerivedDSP>
+    void _followedBy (DerivedDSP&& dsp)
+    {
+        static_assert (!std::is_lvalue_reference<DerivedDSP>::value, "DSP must be passed as an rvalue");
+        static_assert (std::is_base_of<DSPBase<SampleType>, typename std::decay<DerivedDSP>::type>::value, "Argument must be a DSP object");
+        this->dspChain.emplace_back (dsp.move());
+    }
+
+    void _followedBy(std::unique_ptr<DSPBase<SampleType>> dsp)
+    {
+        this->dspChain.emplace_back (std::move (dsp));
     }
 };
 
@@ -402,86 +426,28 @@ std::ostream& operator<< (std::ostream& stream, const SignalBase<SampleType>& si
     return stream;
 }
 
-// TODO: Drop some of the >> overloads - too many of those!
-
-/// @brief Adds a DSP effect to the end of signal's DSP chain by moving it
+/// @brief Adds a DSP effect to the end of signal's DSP chain by transfering it
+/// @details Accepts any value that can be moved into the signal's DSP chain:
+/// - An rvalue of a class derived from `DSPBase<SampleType>`
+/// - An `std::unique_ptr<DSPBase<SampleType>>`
 /// @relates Signal
 /// @ingroup Signals
-template<
-    typename SampleType,
-    typename DerivedSignal,
-    typename DerivedDSP, typename std::enable_if<std::is_base_of<DSPBase<SampleType>, typename std::decay<DerivedDSP>::type>::value>::type>
-Signal<SampleType, DerivedSignal>& operator>> (Signal<SampleType, DerivedSignal>& signal, DerivedDSP&& dsp)
+template<typename DerivedSignal, typename DerivedDSP>
+auto operator>> (DerivedSignal& signal, DerivedDSP&& dsp) -> decltype (signal.followedBy (std::forward<DerivedDSP> (dsp)))
 {
-    return signal.followedBy (std::move (dsp));
-}
-
-/// @brief Adds a DSP effect to the end of signal's DSP chain by copying it
-/// @relates Signal
-/// @ingroup Signals
-template<typename SampleType, typename DerivedSignal>
-Signal<SampleType, DerivedSignal>& operator>> (Signal<SampleType, DerivedSignal>& signal, const DSPBase<SampleType>& dsp)
-{
-    return signal.followedBy (dsp);
-}
-
-/// @brief Adds a DSP effect to the end of signal's DSP chain by copying it
-/// @relates Signal
-/// @ingroup Signals
-template<typename SampleType, typename DerivedSignal>
-Signal<SampleType, DerivedSignal>&& operator>> (Signal<SampleType, DerivedSignal>&& signal, const DSPBase<SampleType>& dsp)
-{
-    return std::move (signal.followedBy (dsp));
+    return signal.followedBy (std::forward<DerivedDSP> (dsp));
 }
 
 /// @brief Adds a DSP effect to the end of signal's DSP chain by transfering it
-/// @details This is for smart pointers to abstract DSP type
+/// @details Accepts any value that can be moved into the signal's DSP chain:
+/// - An rvalue of a class derived from `DSPBase<SampleType>`
+/// - An `std::unique_ptr<DSPBase<SampleType>>`
 /// @relates Signal
 /// @ingroup Signals
-template<typename SampleType, typename DerivedSignal>
-Signal<SampleType, DerivedSignal>& operator>> (Signal<SampleType, DerivedSignal>& signal, std::unique_ptr<DSPBase<SampleType>>&& dsp)
+template<typename DerivedSignal, typename DerivedDSP>
+auto operator>> (DerivedSignal&& signal, DerivedDSP&& dsp) -> decltype (std::move (signal).followedBy (std::forward<DerivedDSP> (dsp)))
 {
-    signal.followedBy (std::move (dsp));
-    return signal;
-}
-
-/// @brief Adds a DSP effect to the end of signal's DSP chain by transfering it
-/// @details This is for smart pointers to abstract DSP type
-/// @relates Signal
-/// @ingroup Signals
-template<typename SampleType, typename DerivedSignal>
-Signal<SampleType, DerivedSignal>&& operator>> (Signal<SampleType, DerivedSignal>&& signal, std::unique_ptr<DSPBase<SampleType>>&& dsp)
-{
-    signal.followedBy (std::move (dsp));
-    return std::move (signal);
-}
-
-/// @brief Adds a DSP effect to the end of signal's DSP chain by transfering it
-/// @details This is for smart pointers to actual (derived) DSP type
-/// @relates Signal
-/// @ingroup Signals
-template<
-    typename SampleType,
-    typename DerivedSignal,
-    typename DerivedDSP, typename = typename std::enable_if<std::is_base_of<DSPBase<SampleType>, DerivedDSP>::value>::type>
-Signal<SampleType, DerivedSignal>& operator>>(Signal<SampleType, DerivedSignal>& signal, std::unique_ptr<DerivedDSP>&& dsp)
-{
-    signal.followedBy (std::move (dsp));
-    return signal;
-}
-
-/// @brief Adds a DSP effect to the end of signal's DSP chain by transfering it
-/// @details This is for smart pointers to actual (derived) DSP type
-/// @relates Signal
-/// @ingroup Signals
-template<
-    typename SampleType,
-    typename DerivedSignal,
-    typename DerivedDSP, typename = typename std::enable_if<std::is_base_of<DSPBase<SampleType>, DerivedDSP>::value>::type>
-Signal<SampleType, DerivedSignal>&& operator>>(Signal<SampleType, DerivedSignal>&& signal, std::unique_ptr<DerivedDSP>&& dsp)
-{
-    signal.followedBy (std::move (dsp));
-    return std::move (signal);
+    return std::move (signal).followedBy (std::forward<DerivedDSP> (dsp));
 }
 
 }  // namespace hart
