@@ -67,7 +67,7 @@ public:
 
     /// @brief Resets to initial state
     /// @details Ideally should be implemented in a way that audio produced after resetting is identical to audio produced after instantiation
-    virtual void reset() = 0;
+    virtual void reset() {}
 
     /// @brief Sets DSP value
     /// @param paramId Some ID that your subclass understands;
