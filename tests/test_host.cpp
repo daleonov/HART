@@ -22,14 +22,15 @@ HART_TEST ("Host - DSP Move, Copy and Transfer")
         .process();
 
     // 2. Copy:
+    // Must be copied explicitly via copy() call
     const GainDb copyMe;
-    processAudioWith (copyMe)
+    processAudioWith (copyMe.copy())
         .withInputSignal (SineWave())
         .expectTrue (EqualsTo (SineWave()))
         .process();
 
     // ...and of course it should be reusable after copying:
-    processAudioWith (copyMe)
+    processAudioWith (copyMe.copy())
         .withInputSignal (SineWave())
         .expectTrue (EqualsTo (SineWave()))
         .process();
