@@ -66,12 +66,12 @@ HART_TEST ("Host - DSP Re-use")
 HART_TEST ("Signal Chain - DSP Move, Copy and Transfer")
 {
     GainDb moveMe;
-    const GainDb copyMe;
+    const GainDb copyMe;  // Must be copied explicitly via copy() call
     std::unique_ptr<hart::DSPBase<float>> ownMeAsAbstract = hart::make_unique<GainDb>();
     std::unique_ptr<GainDb> ownMeAsDerived = hart::make_unique<GainDb>();
 
     processAudioWith (GainDb (0_dB))
-        .withInputSignal (SineWave() >> moveMe >> copyMe >> std::move (ownMeAsAbstract) >> std::move (ownMeAsDerived))
+        .withInputSignal (SineWave() >> std::move (moveMe) >> copyMe.copy() >> std::move (ownMeAsAbstract) >> std::move (ownMeAsDerived))
         .process();
 }
 

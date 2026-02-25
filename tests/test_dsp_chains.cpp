@@ -114,7 +114,7 @@ HART_TEST ("DSP Chains - Long Chains")
 
     processAudioWith (GainDb (0_dB))
         .withLabel ("Clippers with random thresholds")
-        .withInputSignal (signalWithLongFxChainC)
+        .withInputSignal (std::move (signalWithLongFxChainC))
         .expectTrue (PeaksAt (expectedPeakDb))
         .process();
 }
