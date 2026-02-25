@@ -118,10 +118,10 @@ public:
     virtual bool supportsSampleRate (double /* sampleRateHz */) const { return true; }
 
     /// @brief Returns a smart pointer with a copy of this object
-    virtual std::unique_ptr<DSPBase<SampleType>> copy() const = 0;
+    virtual std::unique_ptr<DSPBase<SampleType>> copy() const { return nullptr; }
 
     /// @brief Returns a smart pointer with a moved instance of this object
-    virtual std::unique_ptr<DSPBase<SampleType>> move() = 0;
+    virtual std::unique_ptr<DSPBase<SampleType>> move() { return nullptr; }
 
     /// @brief Destructor
     virtual ~DSPBase() = default;
