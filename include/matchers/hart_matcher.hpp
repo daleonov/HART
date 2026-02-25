@@ -135,18 +135,36 @@ public:
     /// @param channelsToMatch List of channels this matcher should apply to,
     /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` for left and right channels only.
     /// @see `hart::Channel`
-    Derived& atChannels (std::initializer_list<size_t> channelsToMatch)
+    Derived& atChannels (std::initializer_list<size_t> channelsToMatch) &
     {
-        m_channelsToMatch.setAllTo (false);
+        _atChannels (channelsToMatch);
+        return static_cast<Derived&> (*this);
+    }
 
-        for (size_t channel : channelsToMatch)
-        {
-            if (channel >= m_channelsToMatch.size())
-                HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
+    /// @brief Makes this matcher check only specific channels, and ignore the rest
+    /// @details If not set, the matcher applies to all channels by default.
+    /// If you call this method multiple times, only the last one will be applied.
+    /// To select only one channel, consider using @ref Matcher::atChannel() instead.
+    /// @param channelsToMatch List of channels this matcher should apply to,
+    /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` for left and right channels only.
+    /// @see `hart::Channel`
+    Derived&& atChannels (std::initializer_list<size_t> channelsToMatch) &&
+    {
+        _atChannels (channelsToMatch);
+        return static_cast<Derived&&> (*this);
+    }
 
-            m_channelsToMatch[channel] = true;
-        }
-
+    /// @brief Makes this matcher check only one specific channel, and ignore the rest
+    /// @details If not set, the matcher applies to all channels by default.
+    /// If you call this method multiple times, only the last one will be applied.
+    /// To select multiple channels, use @ref Matcher::atChannels() instead.
+    /// @param channelToMatch Channel this matcher should apply to (zero-based),
+    /// e.g. `0` or `Channel::left` for left channel.
+    /// @note If not set, the matcher applies to all channels by default
+    /// @see `hart::Channel`
+    Derived& atChannel (size_t channelToMatch) &
+    {
+        _atChannel (channelToMatch);
         return static_cast<Derived&> (*this);
     }
 
@@ -158,14 +176,19 @@ public:
     /// e.g. `0` or `Channel::left` for left channel.
     /// @note If not set, the matcher applies to all channels by default
     /// @see `hart::Channel`
-    Derived& atChannel (size_t channelToMatch)
+    Derived&& atChannel (size_t channelToMatch) &&
     {
-        if (channelToMatch >= m_channelsToMatch.size())
-            HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
+        _atChannel (channelToMatch);
+        return static_cast<Derived&&> (*this);
+    }
 
-        m_channelsToMatch.setAllTo (false);
-        m_channelsToMatch[channelToMatch] = true;
-
+    /// @brief Makes this matcher check all channels
+    /// @details This is the default setting anyway, so this method is only
+    /// for cases when you need to override previous @ref atChannel(),
+    /// @ref `atChannels()` or @ref atAllChannelsExcept() calls.
+    Derived& atAllChannels() &
+    {
+        _atAllChannels();
         return static_cast<Derived&> (*this);
     }
 
@@ -173,9 +196,22 @@ public:
     /// @details This is the default setting anyway, so this method is only
     /// for cases when you need to override previous @ref atChannel(),
     /// @ref `atChannels()` or @ref atAllChannelsExcept() calls.
-    Derived& atAllChannels()
+    Derived&& atAllChannels() &&
     {
-        m_channelsToMatch.setAllTo (true);
+        _atAllChannels();
+        return static_cast<Derived&&> (*this);
+    }
+
+    /// @brief Makes this matcher check only specific channels, and ignore the rest
+    /// @details If not set, matcher checks all channels by default.
+    /// If you call this method multiple times, only the last one will be applied.
+    /// @param channelsToSkip List of channels this matcher should NOT check,
+    /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` to skip left and right
+    /// channels, and match the rest
+    /// @see `hart::Channel`
+    Derived& atAllChannelsExcept (std::initializer_list<size_t> channelsToSkip) &
+    {
+        _atAllChannelsExcept (channelsToSkip);
         return static_cast<Derived&> (*this);
     }
 
@@ -186,19 +222,10 @@ public:
     /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` to skip left and right
     /// channels, and match the rest
     /// @see `hart::Channel`
-    Derived& atAllChannelsExcept (std::initializer_list<size_t> channelsToSkip)
+    Derived&& atAllChannelsExcept (std::initializer_list<size_t> channelsToSkip) &&
     {
-        m_channelsToMatch.setAllTo (true);
-
-        for (size_t channel : channelsToSkip)
-        {
-            if (channel >= m_channelsToMatch.size())
-                HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
-
-            m_channelsToMatch[channel] = false;
-        }
-
-        return static_cast<Derived&> (*this);
+        _atAllChannelsExcept (channelsToSkip);
+        return static_cast<Derived&&> (*this);
     }
 
     // TODO: Move to MatcherBase together with m_channelsToMatch to make it non-virtual?
@@ -224,6 +251,47 @@ protected:
     bool appliesToChannel (size_t channel)
     {
         return m_channelsToMatch[channel];
+    }
+
+private:
+    void _atChannels (std::initializer_list<size_t> channelsToMatch)
+    {
+        m_channelsToMatch.setAllTo (false);
+
+        for (size_t channel : channelsToMatch)
+        {
+            if (channel >= m_channelsToMatch.size())
+                HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
+
+            m_channelsToMatch[channel] = true;
+        }
+    }
+
+    void _atChannel (size_t channelToMatch)
+    {
+        if (channelToMatch >= m_channelsToMatch.size())
+            HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
+
+        m_channelsToMatch.setAllTo (false);
+        m_channelsToMatch[channelToMatch] = true;
+    }
+
+    void _atAllChannels()
+    {
+        m_channelsToMatch.setAllTo (true);
+    }
+
+    void _atAllChannelsExcept (std::initializer_list<size_t> channelsToSkip)
+    {
+        m_channelsToMatch.setAllTo (true);
+
+        for (size_t channel : channelsToSkip)
+        {
+            if (channel >= m_channelsToMatch.size())
+                HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
+
+            m_channelsToMatch[channel] = false;
+        }
     }
 };
 

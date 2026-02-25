@@ -266,23 +266,38 @@ public:
     /// @brief Adds a DSP effect to the end of signal's DSP chain by copying it
     /// @note If your DSP object does not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
     /// @param dsp A DSP effect instance
-    Derived& followedBy (const DSPBase<SampleType>& dsp)
+    Derived& followedBy (const DSPBase<SampleType>& dsp) &
     {
         this->dspChain.emplace_back (dsp.copy());
+        return static_cast<Derived&> (*this);
+    }
+    /// @brief Adds a DSP effect to the end of signal's DSP chain by copying it
+    /// @note If your DSP object does not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
+    /// @param dsp A DSP effect instance
+    Derived&& followedBy (const DSPBase<SampleType>& dsp) &&
+    {
+        this->dspChain.emplace_back (dsp.copy());
+        return static_cast<Derived&&> (*this);
+    }
+
+    /// @brief Adds a DSP effect to the end of signal's DSP chain by transfering a smart pointer
+    /// @note If your DSP object does not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
+    /// @param dsp A DSP effect instance
+    Signal& followedBy (std::unique_ptr<DSPBase<SampleType>> dsp) &
+    {
+        this->dspChain.emplace_back (std::move (dsp));
         return static_cast<Derived&> (*this);
     }
 
     /// @brief Adds a DSP effect to the end of signal's DSP chain by transfering a smart pointer
     /// @note If your DSP object does not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
     /// @param dsp A DSP effect instance
-    Signal& followedBy (std::unique_ptr<DSPBase<SampleType>> dsp)
+    Signal&& followedBy (std::unique_ptr<DSPBase<SampleType>> dsp) &&
     {
         this->dspChain.emplace_back (std::move (dsp));
-        return static_cast<Derived&> (*this);
+        return static_cast<Derived&&> (*this);
     }
 
-    // TODO: Add check if rvalue
-    // TODO: Check if if this template ever gets picked
     /// @brief Adds a DSP effect to the end of signal's DSP chain by moving it
     /// @note If your DSP object does not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
     /// @param dsp A DSP effect instance
@@ -295,12 +310,29 @@ public:
                 >::value
             >::type
         >
-    Signal& followedBy (DerivedDSP&& dsp)
+    Derived& followedBy (DerivedDSP&& dsp) &
     {
         this->dspChain.emplace_back (dsp.move());
         return static_cast<Derived&> (*this);
     }
 
+    /// @brief Adds a DSP effect to the end of signal's DSP chain by moving it
+    /// @note If your DSP object does not support copying or moving, use version of this method that takes a ```unique_ptr``` instead
+    /// @param dsp A DSP effect instance
+    template <
+        typename DerivedDSP,
+        typename = typename std::enable_if<
+            std::is_base_of<
+                DSPBase<SampleType>,
+                typename std::decay<DerivedDSP>::type
+                >::value
+            >::type
+        >
+    Derived&& followedBy (DerivedDSP&& dsp) &&
+    {
+        this->dspChain.emplace_back (dsp.move());
+        return static_cast<Derived&&> (*this);
+    }
 
     // TODO: Add followedBy() for smart pointer to DSO
 
@@ -319,13 +351,21 @@ public:
     /// envelopes. Calling it multiple times on one instance will stack the skip times.
     /// @note Keep in mind that the skip is accurate within one audio frame tolerance
     /// @param startTimestampSeconds How much time to skip from the start of the signal
-    Derived& skipTo (double startTimestampSeconds)
+    Derived& skipTo (double startTimestampSeconds) &
     {
-        if (startTimestampSeconds < 0)
-            HART_THROW_OR_RETURN (hart::ValueError, "Can't skip to a negative timestamp", static_cast<Derived&> (*this));
-
-        this->m_startTimestampSeconds += startTimestampSeconds;
+        _skipTo (startTimestampSeconds);
         return static_cast<Derived&> (*this);
+    }
+
+    /// @brief Skips the signal to a specific timestamp
+    /// @details Fast-forwards the signal, with all attaches DSP effects and their automation
+    /// envelopes. Calling it multiple times on one instance will stack the skip times.
+    /// @note Keep in mind that the skip is accurate within one audio frame tolerance
+    /// @param startTimestampSeconds How much time to skip from the start of the signal
+    Derived& skipTo (double startTimestampSeconds) &&
+    {
+        _skipTo (startTimestampSeconds);
+        return static_cast<Derived&&> (*this);
     }
 
     /// @brief Returns a copy of this signal, but with flipped phase
@@ -340,6 +380,15 @@ public:
     Derived operator~() const
     {
         return -(*this);
+    }
+
+private:
+    void _skipTo (double startTimestampSeconds)
+    {
+        if (startTimestampSeconds < 0)
+            HART_THROW_OR_RETURN (hart::ValueError, "Can't skip to a negative timestamp", static_cast<Derived&> (*this));
+
+        this->m_startTimestampSeconds += startTimestampSeconds;
     }
 };
 

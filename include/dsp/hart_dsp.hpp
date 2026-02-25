@@ -324,6 +324,19 @@ class DSP:
     public DSPBase<SampleType>
 {
 public:
+    /// @brief Adds envelope to a specific parameter by moving it
+    /// @details Guaranteed to be called strictly after the @ref supportsEnvelopeFor() callback,
+    /// and only if it has returned ```true``` for this specific ```paramId```.
+    /// Can be chained together like ```myEffect.withEnvelope (someId, someEnvelope).withEnvelope (otherId, otherEnvelope)```.
+    /// If called multiple times for the same paramId, only last envelope for this ID will be used, all previous ones will be descarded.
+    /// @param paramId Some ID that your subclass understands
+    /// @param envelope Envelope to be attached
+    /// @return Reference to itself for chaining
+    Derived& withEnvelope (int paramId, Envelope&& envelope) &
+    {
+        _withEnvelope (paramId, envelope);
+        return static_cast<Derived&> (*this);
+    }
 
     /// @brief Adds envelope to a specific parameter by moving it
     /// @details Guaranteed to be called strictly after the @ref supportsEnvelopeFor() callback,
@@ -333,12 +346,23 @@ public:
     /// @param paramId Some ID that your subclass understands
     /// @param envelope Envelope to be attached
     /// @return Reference to itself for chaining
-    Derived& withEnvelope (int paramId, Envelope&& envelope)
+    Derived&& withEnvelope (int paramId, Envelope&& envelope) &&
     {
-        if (! this->supportsEnvelopeFor (paramId))
-            HART_THROW_OR_RETURN (hart::UnsupportedError, std::string ("DSP doesn't support envelopes for param ID: ") + std::to_string (paramId), *this);
+        _withEnvelope (paramId, envelope);
+        return static_cast<Derived&&> (*this);
+    }
 
-        this->m_envelopes.emplace (paramId, hart::make_unique<Envelope> (std::move (envelope)));
+    /// @brief Adds envelope to a specific parameter by copying it
+    /// @details Guaranteed to be called strictly after the @ref supportsEnvelopeFor() callback,
+    /// and only if it has returned ```true``` for this specific ```paramId```.
+    /// Can be chained together like ```myEffect.withEnvelope (someId, someEnvelope).withEnvelope (otherId, otherEnvelope)```.
+    /// If called multiple times for the same paramId, only last envelope for this ID will be used, all previous ones will be descarded.
+    /// @param paramId Some ID that your subclass understands
+    /// @param envelope Envelope to be attached
+    /// @return Reference to itself for chaining
+    Derived& withEnvelope (int paramId, const Envelope& envelope) &
+    {
+        _withEnvelope (paramId, envelope);
         return static_cast<Derived&> (*this);
     }
 
@@ -350,13 +374,10 @@ public:
     /// @param paramId Some ID that your subclass understands
     /// @param envelope Envelope to be attached
     /// @return Reference to itself for chaining
-    Derived& withEnvelope (int paramId, const Envelope& envelope)
+    Derived&& withEnvelope (int paramId, const Envelope& envelope) &&
     {
-        if (! this->supportsEnvelopeFor(paramId))
-            HART_THROW_OR_RETURN (hart::UnsupportedError, std::string ("DSP doesn't support envelopes for param ID: ") + std::to_string (paramId), *this);
-
-        this->m_envelopes.emplace (paramId, envelope.copy());
-        return static_cast<Derived&> (*this);
+        _withEnvelope (paramId, envelope);
+        return static_cast<Derived&&> (*this);
     }
 
     // TODO: withEnvelope() that takes a unique_ptr to the envelope
@@ -380,18 +401,37 @@ public:
     /// @param channelsToProcess List of channels this DSP should apply to,
     /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` for left and right channels only.
     /// @see `hart::Channel`
-    Derived& atChannels (std::initializer_list<size_t> channelsToProcess)
+    Derived& atChannels (std::initializer_list<size_t> channelsToProcess) &
     {
-        this->m_channelsToProcess.setAllTo (false);
+        _atChannels (channelsToProcess);
+        return static_cast<Derived&> (*this);
+    }
 
-        for (size_t channel : channelsToProcess)
-        {
-            if (channel >= this->m_channelsToProcess.size())
-                HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
+    /// @brief Makes this DSP process only specific channels, and ignore the rest
+    /// @details If not set, the DSP applies to all channels by default.
+    /// If you call this method multiple times, only the last one will be applied.
+    /// To select only one channel, consider using @ref DSP::atChannel() instead.
+    /// @param channelsToProcess List of channels this DSP should apply to,
+    /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` for left and right channels only.
+    /// @see `hart::Channel`
+    Derived&& atChannels (std::initializer_list<size_t> channelsToProcess) &&
+    {
+        _atChannels (channelsToProcess);
+        return static_cast<Derived&&> (*this);
+    }
 
-            this->m_channelsToProcess[channel] = true;
-        }
-
+    /// @brief Makes this DSP process only specific channels, and bypass the rest
+    /// @details If not set, the DSP applies to all channels by default.
+    /// If you call this method multiple times, only the last one will be applied.
+    /// To select multiple channels, use @ref DSP::atChannels() or
+    /// @ref atAllChannelsExcept() instead.
+    /// @param channelToProcess Channel this DSP should apply to (zero-based),
+    /// e.g. `0` or `Channel::left` for left channel.
+    /// @note If not set, the DSP applies to all channels by default
+    /// @see `hart::Channel`
+    Derived& atChannel (size_t channelToProcess) &
+    {
+        _atChannel (channelToProcess);
         return static_cast<Derived&> (*this);
     }
 
@@ -404,14 +444,19 @@ public:
     /// e.g. `0` or `Channel::left` for left channel.
     /// @note If not set, the DSP applies to all channels by default
     /// @see `hart::Channel`
-    Derived& atChannel (size_t channelToProcess)
+    Derived&& atChannel (size_t channelToProcess) &&
     {
-        if (channelToProcess >= this->m_channelsToProcess.size())
-            HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
+        _atChannel (channelToProcess);
+        return static_cast<Derived&&> (*this);
+    }
 
-        this->m_channelsToProcess.setAllTo (false);
-        this->m_channelsToProcess[channelToProcess] = true;
-
+    /// @brief Makes this DSP apply to all channels
+    /// @details This is the default setting anyway, so this method is only
+    /// for cases when you need to override previous @ref atChannel(),
+    /// @ref atChannels() or @ref atAllChannelsExcept() calls.
+    Derived& atAllChannels() &
+    {
+        this->m_channelsToProcess.setAllTo (true);
         return static_cast<Derived&> (*this);
     }
 
@@ -419,9 +464,22 @@ public:
     /// @details This is the default setting anyway, so this method is only
     /// for cases when you need to override previous @ref atChannel(),
     /// @ref atChannels() or @ref atAllChannelsExcept() calls.
-    Derived& atAllChannels()
+    Derived&& atAllChannels() &&
     {
         this->m_channelsToProcess.setAllTo (true);
+        return static_cast<Derived&&> (*this);
+    }
+
+    /// @brief Makes this DSP process only specific channels, and bypass the rest
+    /// @details If not set, DSP applies to all channels by default.
+    /// If you call this method multiple times, only the last one will be applied.
+    /// @param channelsToSkip List of channels this DSP should NOT apply to,
+    /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` to bypass left and right
+    /// channels, and process the rest
+    /// @see `hart::Channel`
+    Derived& atAllChannelsExcept (std::initializer_list<size_t> channelsToSkip) &
+    {
+        _atAllChannelsExcept (channelsToSkip);
         return static_cast<Derived&> (*this);
     }
 
@@ -432,7 +490,52 @@ public:
     /// e.g. `{0, 1}` or `{Channel::left, Channel::right}` to bypass left and right
     /// channels, and process the rest
     /// @see `hart::Channel`
-    Derived& atAllChannelsExcept (std::initializer_list<size_t> channelsToSkip)
+    Derived&& atAllChannelsExcept (std::initializer_list<size_t> channelsToSkip) &&
+    {
+        _atAllChannelsExcept (channelsToSkip);
+        return static_cast<Derived&&> (*this);
+    }
+
+private:
+    void _withEnvelope (int paramId, Envelope&& envelope)
+    {
+        if (! this->supportsEnvelopeFor (paramId))
+            HART_THROW_OR_RETURN (hart::UnsupportedError, std::string ("DSP doesn't support envelopes for param ID: ") + std::to_string (paramId), *this);
+
+        this->m_envelopes.emplace (paramId, hart::make_unique<Envelope> (std::move (envelope)));
+    }
+
+    void _withEnvelope (int paramId, const Envelope& envelope)
+    {
+        if (! this->supportsEnvelopeFor(paramId))
+            HART_THROW_OR_RETURN (hart::UnsupportedError, std::string ("DSP doesn't support envelopes for param ID: ") + std::to_string (paramId), *this);
+
+        this->m_envelopes.emplace (paramId, envelope.copy());
+    }
+
+    void _atChannels (std::initializer_list<size_t> channelsToProcess)
+    {
+        this->m_channelsToProcess.setAllTo (false);
+
+        for (size_t channel : channelsToProcess)
+        {
+            if (channel >= this->m_channelsToProcess.size())
+                HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
+
+            this->m_channelsToProcess[channel] = true;
+        }
+    }
+
+    void _atChannel (size_t channelToProcess)
+    {
+        if (channelToProcess >= this->m_channelsToProcess.size())
+            HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
+
+        this->m_channelsToProcess.setAllTo (false);
+        this->m_channelsToProcess[channelToProcess] = true;
+    }
+
+    void _atAllChannelsExcept (std::initializer_list<size_t> channelsToSkip)
     {
         this->m_channelsToProcess.setAllTo (true);
 
@@ -443,8 +546,6 @@ public:
 
             this->m_channelsToProcess[channel] = false;
         }
-
-        return static_cast<Derived&> (*this);
     }
 };
 
