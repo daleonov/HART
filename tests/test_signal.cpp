@@ -214,7 +214,7 @@ HART_TEST ("Signal - Sawtooth Peaks")
             processAudioWith (GainDb())
                 .withSampleRate (sampleRateHz)
                 .withDuration (cyclesToGenerate / frequencyHz)
-                .withLabel ("Peak at " + std::to_string (sampleRateHz) + " Hz SR, " + std::to_string (frequencyHz) + " Hz")
+                .withLabel (HART_STR ("Peak at " << hart::hzPrecision << sampleRateHz << " Hz SR, " << frequencyHz << " Hz"))
                 .withInputSignal (Sawtooth (frequencyHz))
                 .expectTrue (PeaksAt (0_dB, toleranceLinear))
                 .process();

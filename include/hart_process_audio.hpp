@@ -257,6 +257,7 @@ public:
     }
 
     /// @brief Enables saving output audio to a provided buffer
+    /// @details: Tip: You can use @ref HART_STR() to construct file names using "<<" syntax.
     /// @param buffer An output buffer to receive the data. You can pass an unitialised buffer, among other things, as it will be move-assigned.
     AudioTestBuilder& saveOutputTo (AudioBuffer<SampleType>& buffer)
     {
@@ -265,6 +266,7 @@ public:
     }
 
     /// @brief Enables saving output audio via provided callback
+    /// @details: Tip: You can use @ref HART_STR() to construct file names using "<<" syntax.
     /// @param outputBufferSink A callable that accepts a buffer rvalue. The buffer is moved into the provided sink. The test runner takes ownership of the callable object.
     AudioTestBuilder& saveOutputTo (std::function<void (AudioBuffer<SampleType>&&)> outputBufferSink)
     {
@@ -274,6 +276,7 @@ public:
 
     /// @brief Enables saving a plot to an SVG file
     /// @details This will plot an input and output audio as a waveform
+    /// Tip: You can use @ref HART_STR() to construct file names using "<<" syntax.
     /// @param path File path - relative or absolute. If relative path is set, it will be appended to the provided `--data-root-path` CLI argument.
     /// @param mode When to save, see @ref hart::Save
     /// @see HART_REQUIRES_DATA_PATH_ARG
@@ -290,6 +293,7 @@ public:
     /// @brief Adds a label to the test
     /// @details Useful when you call @ref process() multiple times in one test case - the label
     /// will be put into test failure report to indicate exactly which test has failed.
+    /// Tip: You can use @ref HART_STR() to construct label strings using "<<" syntax.
     /// @param testLabel Any text, to be used as a label
     AudioTestBuilder& withLabel (const std::string& testLabel)
     {
