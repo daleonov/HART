@@ -354,7 +354,7 @@ public:
 
     std::unique_ptr<SignalBase<SampleType>> move() override
     {
-        return hart::make_unique<DerivedSignal> (std::move (static_cast<DerivedSignal&> (*this)));
+        return hart::make_unique<DerivedSignal> (std::move (static_cast<DerivedSignal&&> (*this)));
     }
 
     /// @brief Skips the signal to a specific timestamp
