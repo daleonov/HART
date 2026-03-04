@@ -190,7 +190,7 @@ private:
         std::ostringstream oss;
         oss << '[';
 
-        if (durationUs >= 1'000'000)
+        if (durationUs >= 1000000)
         {
             const double durationSeconds = durationUs / 1.0e6;
             oss << std::setw (targetWidth - 2) << std::right
