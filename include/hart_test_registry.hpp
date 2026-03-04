@@ -144,8 +144,6 @@ private:
         const auto timestampFinish = std::chrono::high_resolution_clock::now();
         const auto testDuration = timestampFinish - timestampStart;
 
-        // TODO: Output test durations
-
         std::cout << '\r';
         const bool expectationsFailed = ExpectationFailureMessages::get().size() > 0;
         const std::string testDurationLabel = formatDuration (testDuration);
