@@ -237,7 +237,7 @@ public:
         reset();
 
         for (auto& dsp : m_dspChain)
-            dsp->reset();
+            dsp->resetWithEnvelopes();
     }
 
     /// @brief Makes a text representation of this signal and its entire signal chain for test failure outputs.

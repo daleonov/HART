@@ -219,6 +219,17 @@ public:
         prepare (sampleRateHz, numInputChannels, numOutputChannels, maxBlockSizeFrames);
     }
 
+    void resetWithEnvelopes()
+    {
+        for (auto& item : m_envelopes)
+        {
+            std::unique_ptr<Envelope>& envelope = item.second;
+            envelope->reset();
+        }
+
+        reset();
+    }
+
     /// @brief Returns a structure indicating which channels should be processed by this DSP
     /// @details See @ref atChannels(), @ref atChannel(), @ref atAllChannels()
     /// @return Set of flags for each channel, see @ref hart::ChannelFlags.
