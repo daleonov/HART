@@ -192,7 +192,7 @@ private:
 
         if (durationUs >= 1'000'000)
         {
-            const double durationSeconds = durationUs / 1'000'000.0;
+            const double durationSeconds = durationUs / 1.0e6;
             oss << std::setw (targetWidth - 2) << std::right
                 << std::fixed << std::setprecision (2)
                 << durationSeconds << " s] ";
