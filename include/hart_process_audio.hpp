@@ -33,6 +33,14 @@ enum class Save
     never  ///< File will not be saved
 };
 
+/// @brief Determines whether to reset the Signal after the warm-up stage
+/// @ingroup TestRunner
+enum class ResetSignalAfter
+{
+    no,  ///< The signal will continue seamlessly
+    yes  ///< The signal's state will be reset
+};
+
 /// @brief A DSP host used for building and running tests inside a test case
 /// @ingroup TestRunner
 template <typename SampleType>
@@ -101,13 +109,35 @@ public:
     }
 
     /// @brief Sets the total duration of the input signal to be processed
-    /// @param Duration of the signal in seconds. You can use time-related literails from @ref Units.
+    /// @param duration of the signal in seconds. You can use time-related literails from @ref Units.
     AudioTestBuilder& withDuration (double durationSeconds)
     {
         if (durationSeconds < 0)
-            HART_THROW_OR_RETURN(hart::ValueError, "Signal duration should be a non-negative value in Hz", *this);
+            HART_THROW_OR_RETURN(hart::ValueError, "Signal duration should be a non-negative value in seconds", *this);
 
-        m_durationSeconds = durationSeconds;
+        m_testDurationSeconds = durationSeconds;
+        return *this;
+    }
+
+    /// @brief Adds a warm‑up period before the main test.
+    /// @details The signal will be processed for this time, but no matchers will be invoked.
+    /// This can be useful if your DSP uses parameter smoothers internally, that need to settle
+    /// before performing the test, or has some sort of attack envelope stage, like a compressor,
+    /// that you want to skip. This time will be added up with a regular test render run, i.e.
+    /// `processAudioWith (...).withDuration (100_ms).withWarmUp (10_ms)` will result in
+    /// 10 + 100 = 110 ms of total rendered audio.
+    /// @note Calling `saveOutputTo()` (both for wav files and `AudioBuffer`s) and `savePlotTo()`
+    /// will always output the entire rendered piece of audio, including this warm-up stage.
+    /// @param warmUpDurationSeconds Duration of the warm‑up in seconds
+    /// @param resetSignalAfter Whether to restart the input signal generator after the warm‑up stage,
+    /// see @ref hart::ResetSignalAfter
+    AudioTestBuilder& withWarmUp (double warmUpDurationSeconds, ResetSignalAfter resetSignalAfter = ResetSignalAfter::no)
+    {
+        if (warmUpDurationSeconds < 0)
+            HART_THROW_OR_RETURN (hart::ValueError, "Warm-up should be a non-negative value in seconds", *this);
+
+        m_warmUpDurationSeconds = warmUpDurationSeconds;
+        m_resetSignalAfterWarmUp = resetSignalAfter == ResetSignalAfter::yes;
         return *this;
     }
 
@@ -241,6 +271,7 @@ public:
     }
 
     /// @brief Enables saving output audio to a wav file
+    /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the output file
     /// @param path File path - relative or absolute. If relative path is set, it will be appended to the provided `--data-root-path` CLI argument.
     /// @param mode When to save, see @ref hart::Save
     /// @param wavFormat Format of the wav file, see hart::WavFormat for supported options
@@ -257,7 +288,8 @@ public:
     }
 
     /// @brief Enables saving output audio to a provided buffer
-    /// @details: Tip: You can use @ref HART_STR() to construct file names using "<<" syntax.
+    /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the output buffer
+    /// @details Tip: You can use @ref HART_STR() to construct file names using "<<" syntax.
     /// @param buffer An output buffer to receive the data. You can pass an unitialised buffer, among other things, as it will be move-assigned.
     AudioTestBuilder& saveOutputTo (AudioBuffer<SampleType>& buffer)
     {
@@ -266,7 +298,8 @@ public:
     }
 
     /// @brief Enables saving output audio via provided callback
-    /// @details: Tip: You can use @ref HART_STR() to construct file names using "<<" syntax.
+    /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the output buffer
+    /// @details Tip: You can use @ref HART_STR() to construct file names using "<<" syntax.
     /// @param outputBufferSink A callable that accepts a buffer rvalue. The buffer is moved into the provided sink. The test runner takes ownership of the callable object.
     AudioTestBuilder& saveOutputTo (std::function<void (AudioBuffer<SampleType>&&)> outputBufferSink)
     {
@@ -276,6 +309,7 @@ public:
 
     /// @brief Enables saving a plot to an SVG file
     /// @details This will plot an input and output audio as a waveform
+    /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the plot
     /// Tip: You can use @ref HART_STR() to construct file names using "<<" syntax.
     /// @param path File path - relative or absolute. If relative path is set, it will be appended to the provided `--data-root-path` CLI argument.
     /// @param mode When to save, see @ref hart::Save
@@ -305,9 +339,11 @@ public:
     /// @details Call this after setting all the test parameters
     std::unique_ptr<DSPBase<SampleType>> process()
     {
-        m_durationFrames = (size_t) std::round (m_sampleRateHz * m_durationSeconds);
+        const size_t totalDurationFrames = (size_t) std::round (m_sampleRateHz * (m_testDurationSeconds + m_warmUpDurationSeconds));
+        const size_t warmUpDurationFrames = (size_t) std::round (m_sampleRateHz * m_warmUpDurationSeconds);
+        const size_t testDurationFrames = totalDurationFrames - warmUpDurationFrames;
 
-        if (m_durationFrames == 0)
+        if (totalDurationFrames == 0)
             HART_THROW_OR_RETURN (hart::SizeError, "Nothing to process", std::move (m_processor));
 
         for (auto& check : perBlockChecks)
@@ -344,18 +380,38 @@ public:
         AudioBuffer<SampleType> fullOutputBuffer (m_numOutputChannels, 0, m_sampleRateHz);
         bool atLeastOneCheckFailed = false;
 
-        while (offsetFrames < m_durationFrames)
+        // Warm-up render
+        while (offsetFrames < warmUpDurationFrames)
         {
-            // TODO: Do not continue if there are no checks, or all checks should skip and there's no input and output file to write
-
-            const size_t blockSizeFrames = std::min (m_blockSizeFrames, m_durationFrames - offsetFrames);
+            const size_t blockSizeFrames = std::min (m_blockSizeFrames, warmUpDurationFrames - offsetFrames);
 
             hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, blockSizeFrames, m_sampleRateHz);
             hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, blockSizeFrames, m_sampleRateHz);
             m_inputSignal->renderNextBlockWithDSPChain (inputBlock);
             m_processor->processWithEnvelopes (inputBlock, outputBlock);
 
-            const bool allChecksPassed = processChecks (perBlockChecks, outputBlock);
+            fullInputBuffer.appendFrom (inputBlock);
+            fullOutputBuffer.appendFrom (outputBlock);
+
+            offsetFrames += blockSizeFrames;
+        }
+
+        if (m_resetSignalAfterWarmUp)
+            m_inputSignal->resetWithDSPChain();
+
+        // Main test render
+        while (offsetFrames < totalDurationFrames)
+        {
+            // TODO: Do not continue if there are no checks, or all checks should skip and there's no input and output file to write
+
+            const size_t blockSizeFrames = std::min (m_blockSizeFrames, totalDurationFrames - offsetFrames);
+
+            hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, blockSizeFrames, m_sampleRateHz);
+            hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, blockSizeFrames, m_sampleRateHz);
+            m_inputSignal->renderNextBlockWithDSPChain (inputBlock);
+            m_processor->processWithEnvelopes (inputBlock, outputBlock);
+
+            const bool allChecksPassed = processChecks (perBlockChecks, outputBlock, offsetFrames);
             atLeastOneCheckFailed |= ! allChecksPassed;
             fullInputBuffer.appendFrom (inputBlock);
             fullOutputBuffer.appendFrom (outputBlock);
@@ -363,8 +419,16 @@ public:
             offsetFrames += blockSizeFrames;
         }
 
-        const bool allChecksPassed = processChecks (fullSignalChecks, fullOutputBuffer);
-        atLeastOneCheckFailed |= ! allChecksPassed;
+        if (testDurationFrames != 0 && ! fullSignalChecks.empty())
+        {
+            AudioBuffer<SampleType> mainOutput (m_numOutputChannels, testDurationFrames, m_sampleRateHz);
+
+            for (size_t channel = 0; channel < m_numOutputChannels; ++channel)
+                mainOutput.copyFrom (channel, 0, fullOutputBuffer, channel, warmUpDurationFrames, testDurationFrames);
+
+            const bool allChecksPassed = processChecks (fullSignalChecks, mainOutput, warmUpDurationFrames);
+            atLeastOneCheckFailed |= ! allChecksPassed;
+        }
 
         if (m_saveOutputMode == Save::always || (m_saveOutputMode == Save::whenFails && atLeastOneCheckFailed))
             WavWriter<SampleType>::writeBuffer (fullOutputBuffer, m_saveOutputPath, m_saveOutputWavFormat);
@@ -406,8 +470,9 @@ private:
     size_t m_numInputChannels = 1;
     size_t m_numOutputChannels = 1;
     std::vector<ParamValue> paramValues;
-    double m_durationSeconds = 0.1;
-    size_t m_durationFrames = static_cast<size_t> (m_durationSeconds * m_sampleRateHz);
+    double m_testDurationSeconds = 0.1;
+    double m_warmUpDurationSeconds = 0.0;
+    bool m_resetSignalAfterWarmUp = false;
     size_t offsetFrames = 0;
     std::string m_testLabel = {};
 
@@ -461,7 +526,7 @@ private:
         group.push_back({ matcher.copy(), assertionLevel, false, shouldPass });
     }
 
-    bool processChecks (std::vector<Check>& checksGroup, AudioBuffer<SampleType>& outputBlock)
+    bool processChecks (std::vector<Check>& checksGroup, AudioBuffer<SampleType>& outputBlock, size_t baseFrameOffset)
     {
         for (auto& check : checksGroup)
         {
@@ -488,7 +553,7 @@ private:
                     stream << std::endl << "Condition: " << *matcher;
 
                     if (check.shouldPass)
-                        appendFailureDetails (stream, matcher->getFailureDetails(), outputBlock);
+                        appendFailureDetails (stream, matcher->getFailureDetails(), outputBlock, baseFrameOffset);
 
                     throw hart::TestAssertException (std::string (stream.str()));
                 }
@@ -503,7 +568,7 @@ private:
                     stream << std::endl << "Condition: " << * matcher;
 
                     if (check.shouldPass)
-                        appendFailureDetails (stream, matcher->getFailureDetails(), outputBlock);
+                        appendFailureDetails (stream, matcher->getFailureDetails(), outputBlock, baseFrameOffset);
 
                     hart::ExpectationFailureMessages::get().emplace_back (stream.str());
                 }
@@ -518,15 +583,35 @@ private:
         return true;
     }
 
-    void appendFailureDetails (std::stringstream& stream, const MatcherFailureDetails& details, AudioBuffer<SampleType>& observedAudioBlock)
+    void appendFailureDetails (std::stringstream& stream, const MatcherFailureDetails& details, AudioBuffer<SampleType>& observedAudioBlock, size_t baseFrameOffset)
     {
-        const double timestampSeconds = static_cast<double> (offsetFrames + details.frame) / m_sampleRateHz;
+        const size_t frameOverall = baseFrameOffset + details.frame;
+        const double timestampOverall = static_cast<double> (frameOverall) / m_sampleRateHz;
+        const size_t warmUpDurationFrames = (size_t) std::round (m_sampleRateHz * m_warmUpDurationSeconds);
         const SampleType sampleValue = observedAudioBlock[details.channel][details.frame];
 
         stream << std::endl
-            << "Channel: " << details.channel << std::endl
-            << "Frame: " << details.frame << std::endl
-            << secPrecision << "Timestamp: " << timestampSeconds << " seconds" << std::endl
+            << "Channel: " << details.channel << std::endl;
+
+        if (warmUpDurationFrames == 0)
+        {
+            stream
+                << "Frame: " << frameOverall << std::endl
+                << secPrecision << "Timestamp: " << timestampOverall << " seconds";
+        }
+        else
+        {
+            const size_t framePostWarmUp = frameOverall - warmUpDurationFrames;
+            const double timestampPostWarmUp = static_cast<double> (framePostWarmUp) / m_sampleRateHz;
+            stream
+                << "Frame (overall): " << frameOverall << std::endl
+                << "Frame (post warm-up): " << framePostWarmUp << std::endl
+                << secPrecision
+                << "Timestamp (overall): " << timestampOverall << " seconds" << std::endl
+                << "Timestamp (post warm-up): " << timestampPostWarmUp << " seconds";
+        }
+
+        stream << std::endl
             << linPrecision << "Sample value: " << sampleValue
             << dbPrecision << " (" << ratioToDecibels (std::abs (sampleValue)) << " dB)" << std::endl
             << details.description;
