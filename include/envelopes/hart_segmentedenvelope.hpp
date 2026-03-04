@@ -37,7 +37,8 @@ public:
 
     void renderNextBlock (size_t blockSize, std::vector<double>& valuesOutput) override
     {
-        if (valuesOutput.size() != blockSize)
+        // TODO: Make this statement strict (valuesOutput.size() != blockSize) once we have a proper EnvelopeBuffers class
+        if (valuesOutput.size() < blockSize)
         {
             HART_WARNING ("Make sure to configure your envelope container size before processing audio");
             valuesOutput.resize (blockSize);
