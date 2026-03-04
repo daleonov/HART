@@ -1,8 +1,11 @@
 #pragma once
 
 #include <algorithm>  // shuffle()
+#include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <random>
+#include <sstream>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -121,6 +124,8 @@ private:
         std::string assertionFailMessage;
         ExpectationFailureMessages::clear();
 
+        const auto timestampStart = std::chrono::high_resolution_clock::now();
+
         try
         {
             task.func();
@@ -136,15 +141,19 @@ private:
             assertionFailed = true;
         }
 
+        const auto timestampFinish = std::chrono::high_resolution_clock::now();
+        const auto testDuration = timestampFinish - timestampStart;
+
         // TODO: Output test durations
 
         std::cout << '\r';
         const bool expectationsFailed = ExpectationFailureMessages::get().size() > 0;
+        const std::string testDurationLabel = formatDuration (testDuration);
 
         if (assertionFailed || expectationsFailed)
         {
             constexpr char separator[] = "-------------------------------------------";
-            std::cout << "[  </3   ] " << task.name << " - failed" << std::endl;
+            std::cout << "[  </3   ] " << testDurationLabel << task.name << " - failed" << std::endl;
 
             if (assertionFailed)
             {
@@ -161,7 +170,7 @@ private:
         }
         else
         {
-            std::cout << "[   <3   ] " << task.name << " - passed" << std::endl;
+            std::cout << "[   <3   ] " << testDurationLabel << task.name << " - passed" << std::endl;
             ++tasksPassed;
         }
     }
@@ -170,6 +179,37 @@ private:
     {
         std::mt19937 rng (CLIConfig::getInstance().getRandomSeed());
         std::shuffle (tasks.begin(), tasks.end(), rng);
+    }
+
+    static std::string formatDuration (std::chrono::high_resolution_clock::duration duration)
+    {
+        using std::chrono::duration_cast;
+        using std::chrono::microseconds;
+        const long long int durationUs = duration_cast<microseconds> (duration).count();
+        constexpr int targetWidth = 7;
+        std::ostringstream oss;
+        oss << '[';
+
+        if (durationUs >= 1'000'000)
+        {
+            const double durationSeconds = durationUs / 1'000'000.0;
+            oss << std::setw (targetWidth - 2) << std::right
+                << std::fixed << std::setprecision (2)
+                << durationSeconds << " s] ";
+        }
+        else if (durationUs >= 1000)
+        {
+            const long long int durationMs = durationUs / 1000;
+            oss << std::setw (targetWidth - 3) << std::right
+                << durationMs << " ms] ";
+        }
+        else
+        {
+            oss << std::setw (targetWidth - 3) << std::right
+                << durationUs << " us] ";
+        }
+
+        return oss.str();
     }
 };
 
