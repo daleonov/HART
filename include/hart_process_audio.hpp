@@ -290,10 +290,14 @@ public:
     /// @brief Enables saving output audio to a provided buffer
     /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the output buffer
     /// @details Tip: You can use @ref HART_STR() to construct file names using "<<" syntax.
-    /// @param buffer An output buffer to receive the data. You can pass an unitialised buffer, among other things, as it will be move-assigned.
-    AudioTestBuilder& saveOutputTo (AudioBuffer<SampleType>& buffer)
+    /// @param receivingBuffer An output buffer to receive the data. You can pass an unitialised buffer, among other things, as it will be move-assigned.
+    AudioTestBuilder& saveOutputTo (AudioBuffer<SampleType>& receivingBuffer)
     {
-        m_outputBufferSink = [&buffer] (AudioBuffer<SampleType>&& buf) { buffer = std::move(buf); };
+        m_outputBufferSink = [&receivingBuffer] (AudioBuffer<SampleType>&& outputBuffer)
+        {
+            receivingBuffer = std::move (outputBuffer);
+        };
+
         return *this;
     }
 
@@ -321,6 +325,30 @@ public:
 
         m_savePlotPath = toAbsolutePath (path);
         m_savePlotMode = mode;
+        return *this;
+    }
+
+    /// @brief Moves the input signal after the processing into the provided smart pointer
+    /// @details It's useful if you want to re-use your signal, query it for something,
+    /// or extract some DSP instance from its DSP chain after the test.
+    /// @param receivingSignal A smart pointer that will receive the moved signal
+    AudioTestBuilder& saveInputSignalTo (std::unique_ptr<SignalBase<SampleType>>& receivingSignal)
+    {
+        m_inputSignalSink = [&receivingSignal] (std::unique_ptr<SignalBase<SampleType>>&& usedSignal)
+        {
+            receivingSignal = std::move (usedSignal);
+        };
+
+        return *this;
+    }
+
+    /// @brief Moves the input signal after the processing via provided callback
+    /// @details It's useful if you want to re-use your signal, query it for something,
+    /// or extract some DSP instance from its DSP chain after the test.
+    /// @param inputSignalSink A callable that accepts the moved signal
+    AudioTestBuilder& saveInputSignalTo (std::function<void (std::unique_ptr<SignalBase<SampleType>>&&)> inputSignalSink)
+    {
+        m_inputSignalSink = std::move (inputSignalSink);
         return *this;
     }
 
@@ -436,8 +464,11 @@ public:
         if (m_savePlotMode == Save::always || (m_savePlotMode == Save::whenFails && atLeastOneCheckFailed))
             plotData (fullInputBuffer, fullOutputBuffer, m_savePlotPath);
 
-        if (m_outputBufferSink)
+        if (m_outputBufferSink != nullptr)
             m_outputBufferSink (std::move (fullOutputBuffer));
+
+        if (m_inputSignalSink != nullptr)
+            m_inputSignalSink (std::move (m_inputSignal));
 
         return std::move (m_processor);
     }
@@ -487,6 +518,7 @@ private:
     Save m_savePlotMode = Save::never;
 
     std::function<void (AudioBuffer<SampleType>&&)> m_outputBufferSink = nullptr;
+    std::function<void (std::unique_ptr<SignalBase<SampleType>>&&)> m_inputSignalSink = nullptr;
 
     template<
         typename MatcherType,
