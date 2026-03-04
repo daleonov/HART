@@ -33,11 +33,11 @@ enum class Save
     never  ///< File will not be saved
 };
 
-/// @brief Determines whether to reset the Signal after the warm-up stage
+/// @brief Determines whether to reset the Signal in a given context
 /// @ingroup TestRunner
-enum class ResetSignalAfter
+enum class ResetSignal
 {
-    no,  ///< The signal will continue seamlessly
+    no,  ///< The signal will continue from whatever state it was in
     yes  ///< The signal's state will be reset
 };
 
@@ -129,40 +129,43 @@ public:
     /// @note Calling `saveOutputTo()` (both for wav files and `AudioBuffer`s) and `savePlotTo()`
     /// will always output the entire rendered piece of audio, including this warm-up stage.
     /// @param warmUpDurationSeconds Duration of the warm‑up in seconds
-    /// @param resetSignalAfter Whether to restart the input signal generator after the warm‑up stage,
-    /// see @ref hart::ResetSignalAfter
-    AudioTestBuilder& withWarmUp (double warmUpDurationSeconds, ResetSignalAfter resetSignalAfter = ResetSignalAfter::no)
+    /// @param resetSignalAfterWarmUp Whether to restart the input signal generator after the warm‑up stage,
+    /// see @ref hart::ResetSignal
+    AudioTestBuilder& withWarmUp (double warmUpDurationSeconds, ResetSignal resetSignalAfterWarmUp = ResetSignal::no)
     {
         if (warmUpDurationSeconds < 0)
             HART_THROW_OR_RETURN (hart::ValueError, "Warm-up should be a non-negative value in seconds", *this);
 
         m_warmUpDurationSeconds = warmUpDurationSeconds;
-        m_resetSignalAfterWarmUp = resetSignalAfter == ResetSignalAfter::yes;
+        m_resetSignalAfterWarmUp = resetSignalAfterWarmUp == ResetSignal::yes;
         return *this;
     }
 
     /// @brief Sets the input signal for the test by copying it
     /// @param signal Input signal, see @ref Signals
-    AudioTestBuilder& withInputSignal (const SignalBase<SampleType>& signal)
+    AudioTestBuilder& withInputSignal (const SignalBase<SampleType>& signal, ResetSignal resetSignalBeforeProcessing = ResetSignal::no)
     {
         m_inputSignal = std::move (signal.copy());
+        m_resetSignalBeforeProcessing = resetSignalBeforeProcessing == ResetSignal::yes;
         return *this;
     }
 
     /// @brief Sets the input signal for the test by moving it
     /// @param signal Input signal, see @ref Signals
-    AudioTestBuilder& withInputSignal (SignalBase<SampleType>&& signal)
+    AudioTestBuilder& withInputSignal (SignalBase<SampleType>&& signal, ResetSignal resetSignalBeforeProcessing = ResetSignal::no)
     {
         m_inputSignal = std::move (signal.move());
+        m_resetSignalBeforeProcessing = resetSignalBeforeProcessing == ResetSignal::yes;
         return *this;
     }
 
     /// @brief Sets the input signal for the test by transfering its smart pointer
     /// @note The ownership of the smart pointer will be transferred to this class
     /// @param signal Input signal, see @ref Signals
-    AudioTestBuilder& withInputSignal (std::unique_ptr<SignalBase<SampleType>> signal)
+    AudioTestBuilder& withInputSignal (std::unique_ptr<SignalBase<SampleType>> signal, ResetSignal resetSignalBeforeProcessing = ResetSignal::no)
     {
         m_inputSignal = std::move (signal);
+        m_resetSignalBeforeProcessing = resetSignalBeforeProcessing == ResetSignal::yes;
         return *this;
     }
 
@@ -399,7 +402,9 @@ public:
         if (m_inputSignal == nullptr)
             HART_THROW_OR_RETURN (hart::StateError, "No input signal - call withInputSignal() first!", std::move (m_processor));
 
-        m_inputSignal->resetWithDSPChain();
+        if (m_resetSignalBeforeProcessing)
+            m_inputSignal->resetWithDSPChain();
+
         m_inputSignal->prepareWithDSPChain (m_sampleRateHz, m_numInputChannels, m_blockSizeFrames);
         offsetFrames = 0;
 
@@ -504,6 +509,7 @@ private:
     double m_testDurationSeconds = 0.1;
     double m_warmUpDurationSeconds = 0.0;
     bool m_resetSignalAfterWarmUp = false;
+    bool m_resetSignalBeforeProcessing = false;
     size_t offsetFrames = 0;
     std::string m_testLabel = {};
 
