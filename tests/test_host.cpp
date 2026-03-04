@@ -2,6 +2,8 @@
 #include "hart.hpp"
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
+using hart::decibelsToRatio;
+using hart::ResetSignal;
 
 HART_TEST ("Host - DSP Move, Copy and Transfer")
 {
@@ -117,4 +119,71 @@ HART_TEST ("Move audio output to an external buffer")
 
     HART_EXPECT_TRUE (wasCalled == true);
     HART_EXPECT_TRUE (hart::floatsEqual (bufferB.getLengthSeconds(), 1_ms, 5_us));
+}
+
+HART_TEST ("Re-using the input signal")
+{
+    const auto gainEnvelope = SegmentedEnvelope (decibelsToRatio (-10_dB))
+        .hold (10_ms)
+        .rampTo (decibelsToRatio (-6_dB), 10_ms, SegmentedEnvelope::Shape::linear)
+        .hold (10_ms)
+        .rampTo (decibelsToRatio (-3_dB), 10_ms, SegmentedEnvelope::Shape::linear)
+        .hold (10_ms)
+        .rampTo (decibelsToRatio (-1_dB), 10_ms, SegmentedEnvelope::Shape::linear);
+
+    std::unique_ptr<hart::SignalBase<float>> reusableSignal = nullptr;
+
+    // Fresh signal instance
+    // 5ms of stable -10dB signal
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("First section")
+        //.withInputSignal (SineSweep().withDuration (200_ms) >> GainLinear().withEnvelope (GainLinear::gainLinear, gainEnvelope))
+        .withInputSignal (SineWave() >> GainLinear().withEnvelope (GainLinear::gainLinear, gainEnvelope))
+        .withDuration (5_ms)
+        .saveInputSignalTo (reusableSignal)  // Via smart pointer reference
+        .expectTrue (PeaksAt (-10_dB))
+        .process();
+
+    // Re-using it, but from whatever state it was in after "First section" test
+    // -10dB for 5ms, then 10ms ramp, then 5ms of -6dB signal
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Second section")
+        .withInputSignal (std::move (reusableSignal), ResetSignal::no)  // Re-use it
+        .withDuration (20_ms)
+        .saveInputSignalTo (reusableSignal)  // Save it via same smart pointer reference
+        .expectTrue (PeaksAt (-6_dB))
+        .process();
+
+    // Now receiving it via sink function, instead of smart pointer
+    auto inputSignalSink = [&reusableSignal] (std::unique_ptr<hart::SignalBase<float>>&& usedSignal)
+    {
+        reusableSignal = std::move (usedSignal);
+    };
+
+    // -6dB for 5ms, then 10ms ramp, then -3dB for 5ms
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Third section")
+        .withInputSignal (std::move (reusableSignal), ResetSignal::no)  // Re-use it again
+        .withDuration (20_ms)
+        .saveInputSignalTo (inputSignalSink)  // Save it via provided function
+        .expectTrue (PeaksAt (-3_dB))
+        .process();
+
+    // Re-use it again, see if it still holds its state
+    // -3dB for 5ms, then 10ms ramp, then -1dB for 5ms
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Fourth section")
+        .withInputSignal (std::move (reusableSignal), ResetSignal::no)  // And re-use it again
+        .withDuration (20_ms)
+        .saveInputSignalTo (reusableSignal)  // Save it via provided function once again
+        .expectTrue (PeaksAt (-1_dB))
+        .process();
+
+    // Reset it back to initial state
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Back to first section")
+        .withInputSignal (std::move (reusableSignal), ResetSignal::yes)  // And re-use it one last time, but reset before rendering
+        .withDuration (5_ms)
+        .expectTrue (PeaksAt (-10_dB))
+        .process();
 }
