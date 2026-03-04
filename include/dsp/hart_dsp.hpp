@@ -54,6 +54,9 @@ public:
     /// It is guaranteed that ```envelopeBuffers``` will only contain the values for all attached envelopes for this instance of DSP
     /// effect, and will not contain any data (including key with empty item) if there's no envelope attached to a specific parameter
     /// ID in this effects's instance. It will never contain envelopes for IDs that get rejected by @ref supportsEnvelopeFor().
+    /// Each vector in the `envelopeBuffers` map is guaranteed to be at least as large as input (and output) block. For partial blocks,
+    /// only the first `input.getNumFrames()` elements contain valid data for the current block; the rest may be stale or uninitialized.
+    /// DSP implementations are expected to ignore values beyond that index range.
     /// @note This method may be called in a replacing manner, i. e. ```input``` and ```output``` may be references to the same object.
     /// @warning Remember that the very last block of audio is almost always smaller than the block size set in @ref prepare(), so be
     /// careful with buffer bounds.
@@ -245,7 +248,7 @@ public:
             hassert (input.getNumFrames() <= envelopeBuffer.size() && "Envelope Buffers were not allocated properly for this buffer size");
 
             // Render envelope values
-            getValues (paramId, envelopeBuffer.size(), envelopeBuffer);
+            getValues (paramId, input.getNumFrames(), envelopeBuffer);
         }
         
         process (input, output, m_envelopeBuffers, m_channelsToProcess);
