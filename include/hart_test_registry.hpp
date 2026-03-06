@@ -72,10 +72,33 @@ public:
 
         std::cout << hartAsciiArt << std::endl;
 
-        std::vector<TaskInfo>& tasks =
+        std::vector<TaskInfo>& taskPool =
             CLIConfig::getInstance().shouldRunGenerators()
                 ? generators
                 : tests;
+        std::vector<TaskInfo> tasks;
+        const std::string& requestedTagsUnparsed = CLIConfig::getInstance().getTags();
+        std::unordered_set<std::string> requestedTags;
+
+        if (requestedTagsUnparsed.empty())
+        {
+            tasks = std::move (taskPool);
+        }
+        else
+        {
+            requestedTags = parseTags (requestedTagsUnparsed);
+
+            for (TaskInfo& task : taskPool)
+            {
+                if (task.tags.empty())
+                    continue;
+
+                std::unordered_set<std::string> taskTags = parseTags (task.tags);
+
+                if (tagsMatch (requestedTags, taskTags))
+                    tasks.emplace_back (std::move (task));
+            }
+        }
 
         if (tasks.size() == 0)
         {
@@ -208,6 +231,32 @@ private:
         }
 
         return oss.str();
+    }
+
+    std::unordered_set<std::string> parseTags (const std::string& tagString)
+    {
+        std::unordered_set<std::string> tags;
+        size_t start = 0;
+        size_t end = 0;
+
+        while ((start = tagString.find ('[', end)) != std::string::npos)
+        {
+            end = tagString.find (']', start + 1);
+
+            if (end != std::string::npos)
+                tags.insert (tagString.substr (start + 1, end - start - 1));
+        }
+
+        return tags;
+    }
+
+    bool tagsMatch (const std::unordered_set<std::string>& requestedTags, const std::unordered_set<std::string>& testTags)
+    {
+        for (const std::string& tag : testTags)
+            if (requestedTags.find (tag) != requestedTags.end())
+                return true;
+
+        return false;
     }
 };
 

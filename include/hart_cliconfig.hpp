@@ -18,7 +18,7 @@ public:
     void initCommandLineArgs()
     {
         app.add_option ("--data-root-path,-d", m_dataRootPath, "Data root path");
-        app.add_option ("--tags,-t", m_tags, "Test tags. Nut supported yet!");
+        app.add_option ("--tags,-t", m_tags, "Test tags");
         app.add_option ("--seed,-s", m_seed, "Random seed")->default_val (0);
 
         app.add_option (
@@ -86,6 +86,7 @@ public:
 
     bool shouldRunGenerators() { return m_runGeneratorsNotTests; }
     bool shouldShuffleTasks() { return m_shuffle; }
+    std::string& getTags() { return m_tags; }
 
 private:
     CLI::App app { "HART" };
