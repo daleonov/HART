@@ -88,7 +88,7 @@ public:
     /// @return The value of requested parameter in a unit that your subclass understands
     /// @note This method is only intended for parameters that don't have an automation envelope attached to this specific instance.
     /// To get values for automated parameters, use @c envelopeBuffers provided in @ref process() callback.
-    virtual double getValue (int paramId) const
+    virtual double getValue (int /* paramId */) const
     {
         return 0.0;
     }
