@@ -219,6 +219,8 @@ public:
         prepare (sampleRateHz, numInputChannels, numOutputChannels, maxBlockSizeFrames);
     }
 
+    /// @brief Resets the DSP instance, and all associated Envelopes
+    /// @attention If you're not making a custom host, you probably don't need to call this method.
     void resetWithEnvelopes()
     {
         for (auto& item : m_envelopes)

@@ -37,17 +37,14 @@ public:
         hart::ChannelFlags channelsToProcess
         ) override;
 
-    void reset() override;
     void setValue (int id, double value) override;
-    void represent (std::ostream& stream) const override;
+    void represent (std::ostream& stream) const override;  // Or just use HART_DEFINE_GENERIC_REPRESENT (MyDSPWrapper)
     bool supportsEnvelopeFor (int id) const override;
     bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const override;
     virtual bool supportsSampleRate (double sampleRateHz) const override;
 
-    // Optional, if your class not copyable/movable:
-    // HART_DSP_FORBID_COPY_AND_MOVE
 private:
-    MyActualEffectClass& m_effect;
+    MyActualEffectClass& m_effect;  // Or a unique_ptr, if your underlying class in non-movable
 };
 
 ```
@@ -58,7 +55,7 @@ HART supports processing in both ```float``` and ```double``` when it comes to a
 
 # Your main file
 
-Like most automated tests, they're designed to run as a separate executable. So, if you're making an audio plugin or something like that, just make a separate target (project) that builds into a basic console application. Your main function should something look like this:
+Like most automated tests, they're designed to run as a separate executable. So, if you're making an audio plugin or something similar, just make a separate target (project) that builds into a basic console application. Keep your non-audio tests (done with Catch2, gtest etc) as another separate target. Your main function should look something like this:
 
 ```cpp
 #define HART_IMPLEMENTATION  // It's a header-only library, so this is required
@@ -101,33 +98,52 @@ HART_TEST ("My first HART Test")
 
 It's probably pretty clear what this tests is trying to express, but let's break it down.
 
-## Instantiating your effect [1]
+## [1] Instantiating your effect
 
-You create your wrapped effect's instance and hand it over to the test host (test runner). There are a few ways to do it, but in any case it will own and instance of your effect. You create, run the test, and it's gone. For the next test, you make another instance of the effect. I might relax this rule and let you pass a non-owned pointer to it, if enought people as me to, but right now I think this is the way to do it.
+You create your wrapped effect's instance and hand it over to the test host (test runner). You can either move it, or pass a `unique_ptr` to it. In any case the test runner will own an instance of your effect, while it's rendering audio, and then it will spit it back out. To copy, you have to explicitly call `myDSPWrapper.copy()`. If you construct multiple tests in one test case (multiple `process()` calls), you can either instantiate a new DSP every time, or re-use it, as `process()` returns a `unique_ptr` with your used object, after the rendering finishes.  So you can re-use it multiple times, if you do not want to instantiate a new one every time, or want it's state to keep flowing, or want to to domething else with it between the tests.
 
-If your effect doesn't have copy/move semantics, you can still pass it wrapped in a smart pointer like so:
+So, to summarize:
 
 ```cpp
-processAudioWith (std::make_unique<MyDSPWrapper>())
+// 1. Basic rvalue instantiation - this is the easiest way
+processAudioWith (MyDSPWrapper())./*...*/.process()
+
+// 2. Moving a named object
+MyDSPWrapper myDSPWrapper;
+processAudioWith (std::move (myDSPWrapper))./*...*/.process()
+
+// 3. Copying a copyable object
+const MyDSPWrapper myDSPWrapper;
+processAudioWith (myDSPWrapper.copy())./*...*/.process()
+
+// 4. Transfering a smart pointer
+processAudioWith (std::make_unique<MyDSPWrapper>())./*...*/.process()
+
+// 5. Re-using an object
+auto reUseMe = processAudioWith (/*Create it any way you like*/)./*...*/.process()  // Returns a unique_ptr to the used DSP instance
+reUseMe = processAudioWith (std::move (reUseMe))./*...*/.process()  // Re-using the DSP instance
+reUseMe = processAudioWith (std::move (reUseMe))./*...*/.process()  // Re-using it again
 ```
 
-So if your object is not trivially movable or copyable, you can still use HART for testing it with. @ref hart::AudioTestBuilder::process() will spit out your DSP instance as a smart pointer after processing, so you can re-use it multiple times, if you do not want to instantiate a new one every time.
-
-## Defining input signal [2]
+## [2] Defining input signal
 
 You feed some audio into your effect, to check what comes out. This is the core purpose of this framework. In the future, I'll probably add support for synths and virtual instruments - I need that too - but audio effects is a priority.
 
 "Signal" is one of the core concepts of this framework. It  can be as simple as a sine wave. It can be something more complex: with a chain of effects with automation envelopes to shape it. Or it can be just a wav file - I know a lot of people just want to play some pre-rendered audio through it, you can do it too, easily!
 
-## Setting some values [3]
+If you ever need to re-use the signal instance, you can get it via `AudioTestBuilder::saveInputSignalTo()`. For example, there are some cases, where you want to put your DSP instance into a signal's DSP chain (yes, you can do it too!), and this way you can eventually get your DSP instance back.
+
+## [3] Setting some values
 
 Obviously, you want to put your effect in some state first, in most cases. In most cases, you just want to set a few fixed values - just chain a few withValue() statements - they will call DSP::setValue() that you've implemented earlier. Of course, you can not do those statements at all, and it will keep your effect in its default state.
 
-You can also do something more fance with the parameters - think automation curves like in DAWs, or the LFOs. You can do this to in HART - more on this later! Check Envelopes section of this reference for details.
+If your DSP has internal value smoothing, or needs some time to settle for any other reason, you might want to call `AudioTestBuilder::withWarmUp (timeInSeconds)` as well - it will run the audio through it for requested duration, but will not do any matcher checks (your `expectTrue()`, `assertFalse()` etc - see the next section). And only after that, it will run the test with the matchers.
 
-## Checking the audio produced by your effect [4]
+You can also do something more fancy with the parameters - think automation curves like in DAWs, or the LFOs. You can do this to in HART - more on this later! Check Envelopes section of this reference for details.
 
-This is what this framework is for, after all. PeaksAt is something called "matcher" (totally stole this term from Catch2). If receives audio from your effect's output and checks it. This one, as the name implies, checks if the signal peaks at 3dB. By the way, you get a bunch of handy constants and literalls for better readability, like `_dB` or `_kHz` - you're welcome to use them.
+## [4] Checking the audio produced by your effect
+
+This is what this framework is for, after all. `PeaksAt` is something called "matcher" (totally stole this term from Catch2). If receives audio from your effect's output and checks it. This one, as the name implies, checks if the signal peaks at 3dB. By the way, you get a bunch of handy constants and literals for better readability, like `_dB` or `_kHz` - you're welcome to use them. See `hart_units.hpp` header for the full list.
 
 Other matchers can, for example, compare your output with some other signal or a wav file. And they're passed in as objects - it means you make your own and use them, just like the stock ones. So, if you need, say, check LUFS values, inter-sample peaks, or check something fancy in frequency domain, just subclass a Matcher, and pass it to the test runner.
 
@@ -141,11 +157,11 @@ You can have as many assertions/expectations as you want in a single test - just
 
 You also have `HART_ASSERT_TRUE()` and `HART_EXPECT_TRUE()` for trivial non-audio checks, in case you need them. But you shoudn't use HART for testing everything - use it for audio tests, and stick with Google Test (gtest) or Catch2 for everything else.
 
-## Run the test [5]
+## [5] Run the test
 
-You should always call it after your setup steps. Everything between steps [1] and [5] can come in any order, these are just some lightweight set up calls. Calling process launches the test, processes audio block by block and runs the checks. If any of these fails, you'll get a readable description of what went wrong.
+You should always call it after your setup steps. Everything between steps [1] and [5] can come in any order, these are just some lightweight set up calls. Calling process launches the test, processes audio block by block, and runs the checks. If any of these fails, you'll get a readable description of what went wrong.
 
-See @ref hart::AudioTestBuilder for the full list of options you can set.
+See `AudioTestBuilder` class documentation for the full list of options you can set.
 
 # Setting up the audio
 
@@ -162,7 +178,7 @@ Output Channels | 1 (mono)
 If you're looking for something different, you can change those like so:
 
 ```cpp
-hart::processAudioWith (testedBoosterProcessor)
+hart::processAudioWith (MyDSPWrapper())
     .withSampleRate (48_kHz)
     .withBlockSize (64)
     .withDuration (325.5_ms)
@@ -188,17 +204,32 @@ You can skip any parameters that don't care about (keeping them at their default
 
 # Logging the audio
 
-If your test fails, you might want to check what was the input or output audio. You can tell HART to output the audio easily:
+If your test fails, you might want to check what was the output audio. You can tell HART to output the audio easily:
 
 ```cpp
 processAudioWith (MyDSPWrapper())
     // Set up everything
-    .saveInputTo ("my_failed_test_input.wav")
-    .saveOutputTo ("my_failed_test_output.wav")
+    .saveOutputTo ("my_test_output.wav")
     .process();
 ```
 
-By default, they will save the audio only when any of the checks fail, but you can tell them to save audio regardless of the result via the second argument - handy for generating data for regression tests. See @ref hart::AudioTestBuilder::saveInputTo(), @ref hart::AudioTestBuilder::saveOutputTo() and @ref hart::Save. Supported formats are PCM at 16, 24 and 32 bits and float at 32 bit. Default is PCM24. You can use absolute or relative paths. For relative paths, set the `--data-root-path` CLI parameter to wherever you want HART to save them.
+By default, they will save the audio only when any of the checks fail, but you can tell them to save audio regardless of the result via the second argument - handy for generating data for regression tests. See `AudioTestBuilder::saveOutputTo()` and `hart::Save`. Supported formats are PCM at 16, 24 and 32 bits and float at 32 bit. Default is PCM24. You can use absolute or relative paths. For relative paths, set the `--data-root-path` CLI parameter to wherever you want HART to save them.
+
+If you want to avoid accessing file system, you can output audio to a buffer instead:
+
+```cpp
+hart::AudioBuffer<float> myBuffer;
+processAudioWith (MyDSPWrapper())
+    // Set up everything
+    .saveOutputTo (myBuffer)  // Takes a reference to your buffer, or a sink fuction
+    .process();
+
+// You can even re-use it as a reference audio signal
+processAudioWith (MyDSPWrapper())
+    .withInputSignal (AudioBufferSignal (myBuffer))  // Your buffered audio is a Signal now!
+    // ...
+    .process();
+```
 
 You can also log your audio as plots of your input and output waveform with @ref hart::AudioTestBuilder::savePlotTo():
 
@@ -347,6 +378,8 @@ To run tasks defined with those macros run your HART test binary with a `--run-g
 # Command line interface
 
 If you run your test binary with a `--help` CLI argument, it will tell you everything you need to know. Things you can do with it:
+
+* Provide a set of tags, to only run the tasks with those tags
 
 * Set data root path for your relative file paths (like wav files)
 
