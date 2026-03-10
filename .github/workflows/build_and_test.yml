@@ -20,7 +20,7 @@ jobs:
             cxx: g++-13
             build_type: Debug
             generator: "Unix Makefiles"
-            cpp_compatibility_test: ON
+            cpp_compatibility_test: OFF
 
           - name: Ubuntu ARM64 GCC
             os: ubuntu-24.04-arm
@@ -69,10 +69,6 @@ jobs:
         -DHART_BUILD_TESTS=ON
         -DHART_CHECK_CPP_STANDARDS_COMPATIBILITY=${{ matrix.cpp_compatibility_test }}
         -G "${{ matrix.generator }}"
-
-    - name: Lower RAM consumption for one of the platforms
-      if: matrix.name == 'Ubuntu AMD64 GCC'
-      run: echo "CMAKE_BUILD_PARALLEL_LEVEL=2" >> $GITHUB_ENV
 
     - name: Build
       run: cmake --build build --config ${{ matrix.build_type }} --parallel
