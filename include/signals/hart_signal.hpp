@@ -252,6 +252,60 @@ public:
             stream << " >> " << *dsp;
     }
 
+    /// @brief Returns the size of the DSP chain attached to the Signal
+    /// @return Number of elements in the DSP chain
+    size_t getDSPChainSize() const
+    {
+        return this->m_dspChain.size();
+    }
+
+    /// @brief Access a specific element in the DSP chain
+    /// @param index Index of the element. Can be negative. For non-negative values, it's a usual 0-based index.
+    /// For negative values, it's counted from the end, e.g. "-1" is the last element, "-2" is the second to last etc.
+    /// @throws hart::IndexError if the index is out of range
+    /// @return A pointer to the DSP instance
+    DSPBase<SampleType>* getDSP (int index = -1) const
+    {
+        if (this->m_dspChain.empty())
+            HART_THROW_OR_RETURN (hart::IndexError, "DSP chain is empty", nullptr);
+
+        const int size = static_cast<int> (this->m_dspChain.size());
+
+        if (index >= size || index < -size)
+            HART_THROW_OR_RETURN (hart::IndexError, "DSP chain index is out of range", nullptr);
+
+        if (index < 0)
+            index += size;
+
+        hassert (index >= 0 && index < size);
+        return this->m_dspChain[index].get();
+    }
+
+    /// @brief Extract a specific element in the DSP chain by removing it
+    /// @param index Index of the element. Can be negative. For non-negative values, it's a usual 0-based index.
+    /// For negative values, it's counted from the end, e.g. "-1" is the last element, "-2" is the second to last etc.
+    /// @throws hart::IndexError if the index is out of range
+    /// @return A smart pointer with the DSP instance
+    std::unique_ptr<DSPBase<SampleType>> popDSP (int index = -1)
+    {
+        if (this->m_dspChain.empty())
+            HART_THROW_OR_RETURN (hart::IndexError, "DSP chain is empty", nullptr);
+
+        const int size = static_cast<int> (this->m_dspChain.size());
+
+        if (index >= size || index < -size)
+            HART_THROW_OR_RETURN (hart::IndexError, "DSP chain index is out of range", nullptr);
+
+        if (index < 0)
+            index += size;
+
+        hassert (index >= 0 && index < size);
+
+        std::unique_ptr<DSPBase<SampleType>> dsp = std::move (this->m_dspChain[index]);
+        this->m_dspChain.erase (this->m_dspChain.begin() + index);
+        return dsp;
+    }
+
     /// @brief Helper for template resolution
     /// @private
     using m_SampleType = SampleType;

@@ -3,6 +3,7 @@
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
 using hart::decibelsToRatio;
+using hart::floatsEqual;
 using hart::ResetSignal;
 
 HART_TEST ("Host - DSP Move, Copy and Transfer")
@@ -185,5 +186,50 @@ HART_TEST ("Re-using the input signal")
         .withInputSignal (std::move (reusableSignal), ResetSignal::yes)  // And re-use it one last time, but reset before rendering
         .withDuration (5_ms)
         .expectTrue (PeaksAt (-10_dB))
+        .process();
+}
+
+HART_TEST ("Accessing DSP elements in Signal's DSP chain")
+{
+    std::unique_ptr<hart::SignalBase<float>> signalWithReusableDSP = nullptr;
+    
+    // Create some envelope to make sure the state is preserved between the two renders
+    const auto gainEnvelope = SegmentedEnvelope (-3_dB)
+        .hold (10_ms)
+        .rampTo (-6_dB, 10_ms);
+
+    // First render - will forward the 2nd (index 1) DSP's state to the end of the automation curve
+    processAudioWith (GainDb (0_dB))
+        .withInputSignal (SineWave() >> GainDb (+1_dB) >> GainDb().withEnvelope (GainDb::gainDb, gainEnvelope) >> GainDb (-1_dB))
+        .withDuration (50_ms)
+        .saveInputSignalTo (signalWithReusableDSP)
+        .expectTrue (PeaksAt (-3_dB))
+        .process();
+
+    // Sanity check
+    HART_ASSERT_TRUE (signalWithReusableDSP->getDSPChainSize() == 3);
+
+    // Peek at the DSP with a specific index, it stays in the DSP chain
+    HART_ASSERT_TRUE (signalWithReusableDSP->getDSP (0) != nullptr);
+    HART_EXPECT_TRUE (floatsEqual (+1_dB, signalWithReusableDSP->getDSP (0)->getValue (GainDb::gainDb)));
+    HART_ASSERT_TRUE (signalWithReusableDSP->getDSPChainSize() == 3);  // The DSP chain is still intact
+
+    // You can do this to update the state of the DSP as well
+    // Indices can be positive (counting fron the start) and negative (counting from the end)
+    HART_ASSERT_TRUE (signalWithReusableDSP->getDSP (-1) != nullptr);
+    HART_ASSERT_TRUE (signalWithReusableDSP->getDSP (-1) == signalWithReusableDSP->getDSP (2));  // Counting from the end vs counting from the start
+    HART_EXPECT_TRUE (floatsEqual (-1_dB, signalWithReusableDSP->getDSP (-1)->getValue (GainDb::gainDb)));
+    signalWithReusableDSP->getDSP (-1)->setValue (GainDb::gainDb, -15_dB);
+    HART_EXPECT_TRUE (floatsEqual (-15_dB, signalWithReusableDSP->getDSP (-1)->getValue (GainDb::gainDb)));
+
+    // Transfer a DSP instance, by removing it from the DSP chain
+    std::unique_ptr<hart::DSPBase<float>> reusableDSP = signalWithReusableDSP->popDSP (-2);
+    HART_ASSERT_TRUE (signalWithReusableDSP->getDSPChainSize() == 2);  // DSP element should be removed by popDSP()
+
+    processAudioWith (std::move (reusableDSP))
+        .withInputSignal (SineWave())
+        .withDuration (50_ms)
+        .saveInputSignalTo (signalWithReusableDSP)
+        .expectTrue (PeaksAt (-6_dB))
         .process();
 }
