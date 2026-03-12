@@ -306,10 +306,6 @@ public:
         return dsp;
     }
 
-    /// @brief Helper for template resolution
-    /// @private
-    using m_SampleType = SampleType;
-
 protected:
     void setNumChannels (size_t numChannels)
     {
