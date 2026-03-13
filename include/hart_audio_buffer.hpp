@@ -10,10 +10,16 @@
 
 namespace hart {
 
+/// @brief Container for audio data
+/// @note This class owns a memory block with audio samples - so it's a container, not a view. Treat it like a heavyweight object.
 template <typename SampleType>
 class AudioBuffer
 {
 public:
+    /// @brief Creates an audio buffer
+    /// @param numChannels Initial number of channels
+    /// @param numFrames Numbers of frames (samples) to be allocated in each channel
+    /// @param sampleRateHz Metadata for sample rate (in Hz) in which the data whould be interpreted, whenever applicable
     AudioBuffer (size_t numChannels = 0, size_t numFrames = 0, double sampleRateHz = nan<double>()) :
         m_numChannels (numChannels),
         m_numFrames (numFrames),
@@ -24,7 +30,8 @@ public:
         updateChannelPointers();
     }
 
-    AudioBuffer(const AudioBuffer& other) :
+    /// @brief Creates an audio buffer by copying
+    AudioBuffer (const AudioBuffer& other) :
         m_numChannels (other.m_numChannels),
         m_numFrames (other.m_numFrames),
         m_sampleRateHz (other.m_sampleRateHz),
@@ -34,6 +41,7 @@ public:
         updateChannelPointers();
     }
 
+    /// @brief Creates an audio buffer by moving
     AudioBuffer (AudioBuffer&& other) :
         m_numChannels (other.m_numChannels),
         m_numFrames (other.m_numFrames),
@@ -44,8 +52,10 @@ public:
         other.erase();
     }
 
+    /// @brief The destructor
     ~AudioBuffer() = default;
 
+    /// @brief Creates an audio buffer by copy-assigning
     AudioBuffer& operator= (const AudioBuffer& other)
     {
         if (this == &other)
@@ -63,6 +73,7 @@ public:
         return *this;
     }
 
+    /// @brief Creates an audio buffer by move-assigning
     AudioBuffer& operator= (AudioBuffer&& other)
     {
         if (this == &other)
@@ -78,16 +89,23 @@ public:
         return *this;
     }
 
+    /// @brief Gets a raw pointer to the read-only audio data
+    /// @return A pointer to the beginning of the audio data. Guaranteed to be a contiguous non-interleaved block of memory.
     const SampleType* const* getArrayOfReadPointers() const 
     {
         return static_cast<const SampleType* const*> (m_channelPointers.data());
     }
 
+    /// @brief Gets a raw pointer to the mutable audio data
+    /// @return A pointer to the beginning of the audio data. Guaranteed to be a contiguous non-interleaved block of memory.
     SampleType* const* getArrayOfWritePointers() 
     {
         return m_channelPointers.data();
     }
 
+    /// @brief Creates an empty audio buffer with the same number of channels, frames and sample rate as the `other` buffer.
+    /// @note The data from other buffer will not be copied, expect un-initialized values.
+    /// @other other Reference buffer
     static AudioBuffer emptyLike (const AudioBuffer& other)
     {
         return other.hasSampleRate()
@@ -95,20 +113,34 @@ public:
             : AudioBuffer (other.getNumChannels(), other.getNumFrames());
     }
 
+    /// @brief Get number of channels
+    /// @return Number of allocated channels
     size_t getNumChannels() const { return m_numChannels; }
+
+    /// @brief Get number of frames (samples)
+    /// @return Number of allocated frames (samples) in every channel
     size_t getNumFrames() const { return m_numFrames; }
 
+    /// @brief Check if a specific sample rate was assigned to the audio buffer
+    /// @note Unititialized buffers, as well as some specific Signal types, will not have a specific sample rate.
+    /// @return `true` if there is a specific sample rate value, `false` otherwise
     bool hasSampleRate() const 
     {
         return ! std::isnan (m_sampleRateHz);
     }
 
+    /// @brief Get a sample rate metadata
+    /// @note Call `hasSampleRate()` if you're not sure if the buffer has a specific sample rate
+    /// @return Buffer's sample rate in Hz
     double getSampleRateHz() const
     {
         hassert (! std::isnan (m_sampleRateHz));  // Call hasSampleRate() first! This buffer doesn't have a specific sample rate.
         return m_sampleRateHz;
     }
 
+    /// @brief Get a duration of the audio buffer
+    /// @note Before calling it, it's a good idea to call `hasSampleRate()` to check if the buffer has a specific sample rate, otherwise the duration is unknown.
+    /// @return Duration of the audio buffer in seconds
     double getLengthSeconds() const
     {
         if (m_numFrames == 0)
@@ -119,16 +151,26 @@ public:
         return static_cast <double> (m_numFrames) / m_sampleRateHz;
     }
 
+    /// @brief Get a raw pointer to a specific channel's mutable audio data
+    /// @note The data is guaranteed to have at least getNumFrames() amount of items, and guaranteed to be contiguus and non-interleaves block of memory
+    /// @return Pointer to the audio data
     SampleType* operator[] (size_t channel)
     {
         return m_channelPointers[channel];
     }
 
+    /// @brief Get a raw pointer to a specific channel's read-only audio data
+    /// @note The data is guaranteed to have at least getNumFrames() amount of items, and guaranteed to be contiguus and non-interleaves block of memory
+    /// @return Pointer to the audio data
     const SampleType* operator[] (size_t channel) const
     {
         return m_channelPointers[channel];
     }
 
+    /// @brief Appends data from another buffer
+    /// @warning This operation will resize the current buffer and potentially invalidate the previous raw data pointers returned by
+    /// `getArrayOfReadPointers()`, `getArrayOfWritePointers()` and the "`[]`" operator, so make sure to keep those external pointers up to date.
+    /// @param otherBuffer A buffer to append from
     void appendFrom (const AudioBuffer<SampleType>& otherBuffer)
     {
         if (otherBuffer.getNumChannels() != m_numChannels)
@@ -155,6 +197,8 @@ public:
         updateChannelPointers();
     }
 
+    /// @brief Clears the buffer
+    /// @details The number of frames after this operaion will be zero, but channel number will persist.
     void erase()
     {
         // Keeping the sample rate though, just wiping the data
@@ -169,6 +213,11 @@ public:
         updateChannelPointers();
     }
 
+    /// @brief Get the maximum absolute value in the buffer in a specific channel
+    /// @param channel Channel of which the magnitude should be measured
+    /// @param startFrame The beginnig of the range of the frames to look for magnitude
+    /// @param numFrames Number of frames, beginning with startFrame, to look for the magnitude
+    /// @return The maximum value, in linear domain (i.e. not decibels)
     SampleType getMagnitude (size_t channel, size_t startFrame, size_t numFrames) const
     {
         if (channel >= m_numChannels)
@@ -187,6 +236,10 @@ public:
         return std::abs (*peakSample);
     }
 
+    /// @brief Get the maximum absolute value in the buffer across all channels
+    /// @param startFrame The beginnig of the range of the frames to look for magnitude
+    /// @param numFrames Number of frames, beginning with startFrame, to look for the magnitude
+    /// @return The maximum value, in linear domain (i.e. not decibels)
     SampleType getMagnitude (size_t startFrame, size_t numFrames) const
     {
         if (startFrame + numFrames > m_numFrames || numFrames == 0)
@@ -274,6 +327,8 @@ public:
         std::fill (m_channelPointers[channel], m_channelPointers[channel] + numFrames, (SampleType) 0);
     }
 
+    /// @brief Prints readable representation of the audio buffer
+    /// @param stream String stream to append the representation to
     void represent (std::ostream& stream) const
     {
         std::ostringstream oss;
