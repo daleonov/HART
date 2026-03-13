@@ -69,14 +69,14 @@ On pass:
 88       88  88,    ,88  88           88,  
 88       88  `"8bbdP"Y8  88           "Y888
 
-[   <3   ] GainDb - GainDb Values - passed
-[   <3   ] GainDb - Channel Layouts - passed
-[   <3   ] HardClip - Threshold Values - passed
-[   <3   ] DSP Chains - Basic Gain - passed
-[   <3   ] DSP Chains - Order Matters - passed
-[   <3   ] DSP Chains - Long Chains - passed
-[   <3   ] Envelope - Gain Envelope Regression - passed
-[   <3   ] Host - DSP Move, Copy and Transfer - passed
+[   <3   ] [   1 ms] GainDb - GainDb Values - passed
+[   <3   ] [   1 ms] GainDb - Channel Layouts - passed
+[   <3   ] [   1 ms] HardClip - Threshold Values - passed
+[   <3   ] [   3 ms] DSP Chains - Basic Gain - passed
+[   <3   ] [   1 ms] DSP Chains - Order Matters - passed
+[   <3   ] [  85 ms] DSP Chains - Long Chains - passed
+[   <3   ] [   2 ms] Envelope - Gain Envelope Regression - passed
+[   <3   ] [ 466 us] Host - DSP Move, Copy and Transfer - passed
 
 [ PASSED ] 8/8
 ```
@@ -93,7 +93,7 @@ On fail:
 88       88  88,    ,88  88           88,  
 88       88  `"8bbdP"Y8  88           "Y888
 
-[  </3   ] GainDb - GainDb Values - failed
+[  </3   ] [   1 ms] GainDb - GainDb Values - failed
 -------------------------------------------
 expectTrue() failed at "Attenuation"
 Condition: PeaksAt (-2.5_dB, 0.001000)
@@ -103,12 +103,12 @@ Timestamp: 0.100 seconds
 Sample value: 0.707941 (-3.0 dB)
 Observed audio peaks at -3.0 dB
 -------------------------------------------
-[   <3   ] GainDb - Channel Layouts - passed
-[   <3   ] HardClip - Threshold Values - passed
-[   <3   ] DSP Chains - Basic Gain - passed
-[   <3   ] DSP Chains - Order Matters - passed
-[   <3   ] DSP Chains - Long Chains - passed
-[  </3   ] Envelope - Gain Envelope Regression - failed
+[   <3   ] [   2 ms] GainDb - Channel Layouts - passed
+[   <3   ] [   1 ms] HardClip - Threshold Values - passed
+[   <3   ] [   1 ms] DSP Chains - Basic Gain - passed
+[   <3   ] [   1 ms] DSP Chains - Order Matters - passed
+[   <3   ] [  80 ms] DSP Chains - Long Chains
+[  </3   ] [   1 ms] Envelope - Gain Envelope Regression - failed
 -------------------------------------------
 expectTrue() failed at "Envelope B"
 Condition: EqualsTo (WavFile ("Gain Envelope B.wav", Loop::no), 0.000010)
@@ -126,7 +126,7 @@ Timestamp: 0.000 seconds
 Sample value: 0.311974 (-10.1 dB)
 Expected sample value: 0.310784 (-10.2 dB), difference: 0.001190 (-58.5 dB)
 -------------------------------------------
-[   <3   ] Host - DSP Move, Copy and Transfer - passed
+[   <3   ] [ 506 us] Host - DSP Move, Copy and Transfer - passed
 
 [ PASSED ] 6/8
 [ FAILED ] 2/8
@@ -135,7 +135,5 @@ Expected sample value: 0.310784 (-10.2 dB), difference: 0.001190 (-58.5 dB)
 ## What's next?
 
 See @ref TestingYourDspInHart to learn how to use it.
-
-Note that HART is still in its infancy! It still needs some time to land on somewhat final API, and become a complete and bug-free solution we all want it to be. Speaking of complete and bug-free, contributions are very welcome!
 
 Github repo: https://github.com/daleonov/HART
