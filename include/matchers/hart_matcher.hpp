@@ -184,8 +184,8 @@ public:
 
     /// @brief Makes this matcher check all channels
     /// @details This is the default setting anyway, so this method is only
-    /// for cases when you need to override previous @ref atChannel(),
-    /// @ref `atChannels()` or @ref atAllChannelsExcept() calls.
+    /// for cases when you need to override previous `atChannel()`,
+    /// `atChannels()` or `atAllChannelsExcept()` calls.
     Derived& atAllChannels() &
     {
         _atAllChannels();
@@ -194,8 +194,8 @@ public:
 
     /// @brief Makes this matcher check all channels
     /// @details This is the default setting anyway, so this method is only
-    /// for cases when you need to override previous @ref atChannel(),
-    /// @ref `atChannels()` or @ref atAllChannelsExcept() calls.
+    /// for cases when you need to override previous `atChannel()`,
+    /// `atChannels()` or `atAllChannelsExcept()` calls.
     Derived&& atAllChannels() &&
     {
         _atAllChannels();

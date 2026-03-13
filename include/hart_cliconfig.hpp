@@ -68,7 +68,7 @@ public:
 
     CLI::App& getCLIApp() { return app; }
 
-    /// @drief Get data root path set by a "`--data-root-path`,`-d`" argument
+    /// @brief Get data root path set by a "`--data-root-path`,`-d`" argument
     std::string getDataRootPath() { return m_dataRootPath; }
 
     /// @brief Gets random seed set by a "`--seed`/`-s`" argument

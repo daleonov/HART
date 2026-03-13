@@ -109,7 +109,7 @@ public:
 
     /// @brief Creates an empty audio buffer with the same number of channels, frames and sample rate as the `other` buffer.
     /// @note The data from other buffer will not be copied, expect un-initialized values.
-    /// @other other Reference buffer
+    /// @param other Reference buffer
     static AudioBuffer emptyLike (const AudioBuffer& other)
     {
         return other.hasSampleRate()

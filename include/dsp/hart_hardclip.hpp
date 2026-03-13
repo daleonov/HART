@@ -93,7 +93,7 @@ public:
         return false;
     }
 
-    HART_DSP_COPYABLE (HardClip)
+    HART_DSP_COPYABLE (HardClip);
 
 private:
     double m_initialThresholdDb;

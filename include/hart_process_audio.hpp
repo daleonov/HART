@@ -109,7 +109,7 @@ public:
     }
 
     /// @brief Sets the total duration of the input signal to be processed
-    /// @param duration of the signal in seconds. You can use time-related literails from @ref Units.
+    /// @param durationSeconds of the signal in seconds. You can use time-related literails from @ref Units.
     AudioTestBuilder& withDuration (double durationSeconds)
     {
         if (durationSeconds < 0)
@@ -143,6 +143,8 @@ public:
 
     /// @brief Sets the input signal for the test by copying it
     /// @param signal Input signal, see @ref Signals
+    /// @param resetSignalBeforeProcessing Set to `ResetSignal::yes` if you want the runner to call
+    /// Signal::reset() before rendering audio, or to `ResetSignal::no` to keep its pre-existing state
     AudioTestBuilder& withInputSignal (const SignalBase<SampleType>& signal, ResetSignal resetSignalBeforeProcessing = ResetSignal::no)
     {
         m_inputSignal = std::move (signal.copy());
@@ -152,6 +154,8 @@ public:
 
     /// @brief Sets the input signal for the test by moving it
     /// @param signal Input signal, see @ref Signals
+    /// @param resetSignalBeforeProcessing Set to `ResetSignal::yes` if you want the runner to call
+    /// Signal::reset() before rendering audio, or to `ResetSignal::no` to keep its pre-existing state
     AudioTestBuilder& withInputSignal (SignalBase<SampleType>&& signal, ResetSignal resetSignalBeforeProcessing = ResetSignal::no)
     {
         m_inputSignal = std::move (signal.move());
@@ -162,6 +166,8 @@ public:
     /// @brief Sets the input signal for the test by transfering its smart pointer
     /// @note The ownership of the smart pointer will be transferred to this class
     /// @param signal Input signal, see @ref Signals
+    /// @param resetSignalBeforeProcessing Set to `ResetSignal::yes` if you want the runner to call
+    /// Signal::reset() before rendering audio, or to `ResetSignal::no` to keep its pre-existing state
     AudioTestBuilder& withInputSignal (std::unique_ptr<SignalBase<SampleType>> signal, ResetSignal resetSignalBeforeProcessing = ResetSignal::no)
     {
         m_inputSignal = std::move (signal);

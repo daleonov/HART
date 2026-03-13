@@ -88,7 +88,7 @@ public:
         return id == Params::gainLinear;
     }
 
-    HART_DSP_COPYABLE (GainLinear)
+    HART_DSP_COPYABLE (GainLinear);
 
 private:
     double m_initialGainLinear;

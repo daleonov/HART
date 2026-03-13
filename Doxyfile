@@ -2506,8 +2506,10 @@ SEARCH_INCLUDES        = YES
 # This tag requires that the tag SEARCH_INCLUDES is set to YES.
 
 INCLUDE_PATH           = include/ \
-                         dependencies/dr_libs/ \
-                         dependencies/CLI11/
+                         include/dependencies/dr_libs/ \
+                         include/dependencies/choc/ \
+                         include/dependencies/CLI11/ \
+                         include/dependencies/signalsmith/
 
 # You can use the INCLUDE_FILE_PATTERNS tag to specify one or more wildcard
 # patterns (like *.h and *.hpp) to filter out the header-files in the

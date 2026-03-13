@@ -39,7 +39,7 @@ public:
         m_impulseWasAlreadyRendered = false;
     }
 
-    HART_DEFINE_GENERIC_REPRESENT (Impulse)
+    HART_DEFINE_GENERIC_REPRESENT (Impulse);
 
 private:
     bool m_impulseWasAlreadyRendered = false;

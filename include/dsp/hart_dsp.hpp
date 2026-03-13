@@ -234,8 +234,8 @@ public:
     }
 
     /// @brief Returns a structure indicating which channels should be processed by this DSP
-    /// @details See @ref atChannels(), @ref atChannel(), @ref atAllChannels()
-    /// @return Set of flags for each channel, see @ref hart::ChannelFlags.
+    /// @details See `hart::DSP::atChannels()`, `hart::DSP::atChannel()`, `hart::DSP::atAllChannels()`
+    /// @return Set of flags for each channel, see `hart::ChannelFlags`.
     /// `true` for channels that need processing, `false` for channels that need bypassing.
     ChannelFlags getChannelsToProcess()
     {

@@ -41,7 +41,7 @@ namespace hart
 
 /// @brief Use to check some condition inside a test case. Failing will not abort the test runner.
 /// @details Helpful for free-standing checks (before or after rendering audio)
-/// @param cond A condition or boolean value to be checked. Will be triggered if it evaluates to `false`.
+/// @param condition A condition or boolean value to be checked. Will be triggered if it evaluates to `false`.
 /// @ingroup TestRunner
 #define HART_EXPECT_TRUE(condition) \
     if (!(condition)) hart::ExpectationFailureMessages::get().emplace_back (std::string ("HART_EXPECT_TRUE() failed at line ") + std::to_string (__LINE__) + ": \"" #condition "\"");

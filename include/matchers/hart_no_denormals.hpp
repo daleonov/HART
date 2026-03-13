@@ -68,7 +68,7 @@ public:
     void reset() override {}
     void prepare (double /*sampleRateHz*/, size_t /* numChannels */, size_t /* maxBlockSizeFrames */) override {}
 
-    HART_DEFINE_GENERIC_REPRESENT (NoDenormals)
+    HART_DEFINE_GENERIC_REPRESENT (NoDenormals);
 
 private:
     size_t m_failedFrame = 0;
