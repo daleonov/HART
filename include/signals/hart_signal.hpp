@@ -353,11 +353,15 @@ public:
     /// @note You can only add a DSP by moving it, since some of the custom DSP wrappers can be non-copyable.
     /// If you do want to copy a dsp to the chain, use its DSPBase::copy() method explicitly.
     /// @param dsp A DSP effect instance
-    template <typename DerivedDSP>
-    typename std::enable_if<
-        ! std::is_lvalue_reference<DerivedDSP>::value && std::is_base_of<DSPBase<SampleType>, typename std::decay<DerivedDSP>::type>::value,
-        DerivedSignal&
-    >::type
+    template<typename DerivedDSP,
+        typename = typename std::enable_if<
+            ! std::is_lvalue_reference<DerivedDSP>::value
+            && std::is_base_of<
+                DSPBase<SampleType>,
+                typename std::decay<DerivedDSP>::type
+                >::value
+            >::type>
+    DerivedSignal&
     followedBy (DerivedDSP&& dsp) &
     {
         _followedBy (std::forward<DerivedDSP> (dsp));
@@ -368,11 +372,15 @@ public:
     /// @note You can only add a DSP by moving it, since some of the custom DSP wrappers can be non-copyable.
     /// If you do want to copy a dsp to the chain, use its DSPBase::copy() method explicitly.
     /// @param dsp A DSP effect instance
-    template <typename DerivedDSP>
-    typename std::enable_if<
-        ! std::is_lvalue_reference<DerivedDSP>::value && std::is_base_of<DSPBase<SampleType>, typename std::decay<DerivedDSP>::type>::value,
-        DerivedSignal&&
-    >::type
+    template<typename DerivedDSP,
+        typename = typename std::enable_if<
+            ! std::is_lvalue_reference<DerivedDSP>::value
+            && std::is_base_of<
+                DSPBase<SampleType>,
+                typename std::decay<DerivedDSP>::type
+                >::value
+            >::type>
+    DerivedSignal&&
     followedBy (DerivedDSP&& dsp) &&
     {
         _followedBy (std::forward<DerivedDSP> (dsp));
