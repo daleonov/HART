@@ -8,10 +8,14 @@
 #include "hart_precision.hpp"  // hzPrecision
 #include "hart_utils.hpp"  // nan(), floatsEqual()
 
+/// @defgroup DataStructures Data Structures
+/// @brief Custom data structures and containers
+
 namespace hart {
 
 /// @brief Container for audio data
 /// @note This class owns a memory block with audio samples - so it's a container, not a view. Treat it like a heavyweight object.
+/// @ingroup DataStructures
 template <typename SampleType>
 class AudioBuffer
 {

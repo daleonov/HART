@@ -17,6 +17,9 @@
 namespace hart
 {
 
+/// @brief Helper class for writing audio buffers to wav files
+/// @details Intended for internal usem although can be used in the user tests as well
+/// @ingroup Utilities
 template <typename SampleType>
 class WavWriter
 {

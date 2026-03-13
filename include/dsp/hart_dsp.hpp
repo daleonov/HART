@@ -20,6 +20,7 @@ namespace hart
 /// @brief Hash table of automation envelope sequences mapped to param ids.
 /// @details Keys: Param IDs (int enums like GainDb::gainDb)
 ///          Values: Sequence of automation envelope values for this Param ID, one value per frame
+/// @ingroup DataStructures
 using EnvelopeBuffers = std::unordered_map<int, std::vector<double>>;
 
 /// @brief Polymorphic base for all DSP

@@ -6,6 +6,7 @@
 namespace hart {
 
 /// @brief Helper class for building strings with string stream syntax
+/// @private
 class Str
 {
 public:
@@ -30,6 +31,7 @@ private:
 
 /// @brief A helper to construct strings using the "<<" syntax
 /// @details Usage: `HART_STR ("Some text: " << someValue << "...")`
+/// @ingroup Utilities
 #define HART_STR(...) (hart::Str() << __VA_ARGS__).toStdString()
 
 }  // namespace hart

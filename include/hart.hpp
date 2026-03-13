@@ -23,14 +23,28 @@
 namespace hart
 {
 
-#define HART_FAIL_TEST_MSG(msg) throw hart::TestAssertException (std::string ("HART_FAIL_TEST_MSG() triggered test fail at line ") + std::to_string (__LINE__) + " with message: \"" + msg + '\"')
+/// @brief Fails a test case unconditionally with a text message
+/// @param message Message to be displayed
+/// @ingroup TestRunner
+#define HART_FAIL_TEST_MSG(message) throw hart::TestAssertException (std::string ("HART_FAIL_TEST_MSG() triggered test fail at line ") + std::to_string (__LINE__) + " with message: \"" + message + '\"')
+
+/// @brief Fails a test case unconditionally
+/// @ingroup TestRunner
 #define HART_FAIL_TEST() throw hart::TestAssertException (std::string ("HART_FAIL_TEST() triggered test fail at line ") + std::to_string (__LINE__))
 
-#define HART_ASSERT_TRUE(cond) \
-    if (!(cond)) throw hart::TestAssertException (std::string ("HART_ASSERT_TRUE() failed at line ") + std::to_string (__LINE__) + ": \"" #cond "\"");
+/// @brief Use to check some condition inside a test case. Failing will abort the test runner.
+/// @details Helpful for free-standing checks (before or after rendering audio)
+/// @param condition A condition or boolean value to be checked. Will be triggered if it evaluates to `false`.
+/// @ingroup TestRunner
+#define HART_ASSERT_TRUE(condition) \
+    if (!(condition)) throw hart::TestAssertException (std::string ("HART_ASSERT_TRUE() failed at line ") + std::to_string (__LINE__) + ": \"" #condition "\"");
 
-#define HART_EXPECT_TRUE(cond) \
-    if (!(cond)) hart::ExpectationFailureMessages::get().emplace_back (std::string ("HART_EXPECT_TRUE() failed at line ") + std::to_string (__LINE__) + ": \"" #cond "\"");
+/// @brief Use to check some condition inside a test case. Failing will not abort the test runner.
+/// @details Helpful for free-standing checks (before or after rendering audio)
+/// @param cond A condition or boolean value to be checked. Will be triggered if it evaluates to `false`.
+/// @ingroup TestRunner
+#define HART_EXPECT_TRUE(condition) \
+    if (!(condition)) hart::ExpectationFailureMessages::get().emplace_back (std::string ("HART_EXPECT_TRUE() failed at line ") + std::to_string (__LINE__) + ": \"" #condition "\"");
 
 #define HART_CONCAT_IMPL(x, y) x##y
 #define HART_CONCAT(x, y) HART_CONCAT_IMPL(x, y)

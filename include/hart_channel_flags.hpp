@@ -9,6 +9,7 @@ namespace hart
 {
 
 /// @brief A set of boolean flags mapped to each audio channel
+/// @ingroup DataStructures
 class ChannelFlags
 {
 private:

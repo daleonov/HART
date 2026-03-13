@@ -6,15 +6,20 @@
 namespace hart
 {
 
+/// @brief Holds values set by the user via CLI interface
+/// @details It's mostly intended for the internal use, but you may access it in your own test cases as well
+/// @ingroup TestRunner
 struct CLIConfig
 {
 public:
+    /// @brief Get the singleton instance
     static CLIConfig& getInstance()
     {
         static CLIConfig cfg;
         return cfg;
     }
 
+    /// @brief Inits the CLI arguments
     void initCommandLineArgs()
     {
         app.add_option ("--data-root-path,-d", m_dataRootPath, "Data root path");
@@ -63,7 +68,11 @@ public:
 
     CLI::App& getCLIApp() { return app; }
 
+    /// @drief Get data root path set by a "`--data-root-path`,`-d`" argument
     std::string getDataRootPath() { return m_dataRootPath; }
+
+    /// @brief Gets random seed set by a "`--seed`/`-s`" argument
+    /// @details You can use it in your test cases to keep your own random-ness dependent on the global random seed
     uint_fast32_t getRandomSeed() { return m_seed; }
 
     /// @see linPrecision

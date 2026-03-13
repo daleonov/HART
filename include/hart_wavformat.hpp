@@ -3,6 +3,7 @@
 namespace hart
 {
 
+/// @brief Audio data storage format for the wav files
 enum class WavFormat
 {
     pcm16,
