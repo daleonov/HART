@@ -578,7 +578,7 @@ private:
         group.push_back({ matcher.copy(), assertionLevel, false, shouldPass });
     }
 
-    bool processChecks (std::vector<Check>& checksGroup, AudioBuffer<SampleType>& inputAudio, AudioBuffer<SampleType>& outputAudio, size_t baseFrameOffset)
+    bool processChecks (std::vector<Check>& checksGroup, const AudioBuffer<SampleType>& inputAudio, const AudioBuffer<SampleType>& outputAudio, size_t baseFrameOffset)
     {
         for (auto& check : checksGroup)
         {
@@ -605,7 +605,7 @@ private:
                     stream << std::endl << "Condition: " << *matcher;
 
                     if (check.shouldPass)
-                        appendFailureDetails (stream, matcher->getFailureDetails(), outputAudio, baseFrameOffset);
+                        appendFailureDetails (stream, matcher->getFailureDetails(), inputAudio, outputAudio, baseFrameOffset);
 
                     throw hart::TestAssertException (std::string (stream.str()));
                 }
@@ -620,7 +620,7 @@ private:
                     stream << std::endl << "Condition: " << * matcher;
 
                     if (check.shouldPass)
-                        appendFailureDetails (stream, matcher->getFailureDetails(), outputAudio, baseFrameOffset);
+                        appendFailureDetails (stream, matcher->getFailureDetails(), inputAudio, outputAudio, baseFrameOffset);
 
                     hart::ExpectationFailureMessages::get().emplace_back (stream.str());
                 }
@@ -635,14 +635,15 @@ private:
         return true;
     }
 
-    void appendFailureDetails (std::stringstream& stream, const MatcherFailureDetails& details, AudioBuffer<SampleType>& observedAudioBlock, size_t baseFrameOffset)
+    void appendFailureDetails (std::stringstream& stream, const MatcherFailureDetails& details, const AudioBuffer<SampleType>& inputAudio, const AudioBuffer<SampleType>& observedOutputAudio, size_t baseFrameOffset)
     {
         // TODO: Display input sample info as well
 
         const size_t frameOverall = baseFrameOffset + details.frame;
         const double timestampOverall = static_cast<double> (frameOverall) / m_sampleRateHz;
         const size_t warmUpDurationFrames = (size_t) std::round (m_sampleRateHz * m_warmUpDurationSeconds);
-        const SampleType sampleValue = observedAudioBlock[details.channel][details.frame];
+        const SampleType inputSampleValue = inputAudio[details.channel][details.frame];
+        const SampleType outputSampleValue = observedOutputAudio[details.channel][details.frame];
 
         stream << std::endl
             << "Channel: " << details.channel << std::endl;
@@ -666,8 +667,10 @@ private:
         }
 
         stream << std::endl
-            << linPrecision << "Sample value: " << sampleValue
-            << dbPrecision << " (" << ratioToDecibels (std::abs (sampleValue)) << " dB)" << std::endl
+            << linPrecision << "Input sample value: " << inputSampleValue
+            << dbPrecision << " (" << ratioToDecibels (std::abs (inputSampleValue)) << " dB)" << std::endl
+            << linPrecision << "Output sample value: " << outputSampleValue
+            << dbPrecision << " (" << ratioToDecibels (std::abs (outputSampleValue)) << " dB)" << std::endl
             << details.description;
     }
 };
