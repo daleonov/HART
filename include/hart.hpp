@@ -55,7 +55,7 @@ namespace hart
         namespace { \
             struct HART_UNIQUE_ID(HART_RegistrarType) { \
                 HART_UNIQUE_ID(HART_RegistrarType)() { \
-                    hart::TestRegistry::getInstance().add (name, tags, category, &HART_UNIQUE_ID (HART_RunTask)); \
+                    hart::TestRegistry::getInstance().add (name, tags, __FILE__, __LINE__, category, &HART_UNIQUE_ID (HART_RunTask)); \
                 } \
             }; \
         } \

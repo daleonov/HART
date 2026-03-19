@@ -43,7 +43,7 @@ public:
     /// @brief Adds a task (test or generator)
     /// @details Gets called when a test case is declared with a macro like @ref HART_TEST()
     /// @private
-    void add (const std::string& name, const std::string& tags, TaskCategory testCategory, void (*func)())
+    void add (const std::string& name, const std::string& tags, const std::string& file, int line, TaskCategory testCategory, void (*func)())
     {
         std::unordered_set<std::string>& registeredNamesContainer =
             testCategory == TaskCategory::test
@@ -61,7 +61,7 @@ public:
                 ? tests
                 : generators;
 
-        tasks.emplace_back (TaskInfo {name, tags, func});
+        tasks.emplace_back (TaskInfo {name, tags, file, line, func});
     }
 
     /// @brief Runs all tests or generators
@@ -128,6 +128,8 @@ private:
     {
         std::string name;
         std::string tags;
+        std::string file;
+        int line;
         void (*func)();
     };
 
@@ -173,8 +175,19 @@ private:
 
         if (assertionFailed || expectationsFailed)
         {
+            // TODO: It would be nice to escape the characters in task.name that need to be escaped for taskSignature... but it's not very important.
             constexpr char separator[] = "-------------------------------------------";
-            std::cout << "[  </3   ] " << testDurationLabel << task.name << " - failed" << std::endl;
+            const bool isGenerateTask = CLIConfig::getInstance().shouldRunGenerators();
+            const std::string taskSignature =
+                isGenerateTask
+                ? (task.tags.empty() ? "HART_GENERATE (\"" + task.name + "\")" : "HART_GENERATE_WITH_TAGS (\"" + task.name + "\", " + task.tags + "\")")
+                : (task.tags.empty() ? "HART_TEST (\"" + task.name + "\")" : "HART_TEST_WITH_TAGS (\"" + task.name + "\", " + task.tags + "\")");
+
+            std::cout 
+                << "[  </3   ] " << testDurationLabel << task.name << " - failed" << std::endl
+                << separator << std::endl
+                << task.file << ':' << task.line << std::endl
+                << taskSignature << std::endl;
 
             if (assertionFailed)
             {
