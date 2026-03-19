@@ -452,7 +452,7 @@ public:
             m_inputSignal->renderNextBlockWithDSPChain (inputBlock);
             m_processor->processWithEnvelopes (inputBlock, outputBlock);
 
-            const bool allChecksPassed = processChecks (perBlockChecks, outputBlock, offsetFrames);
+            const bool allChecksPassed = processChecks (perBlockChecks, inputBlock, outputBlock, offsetFrames);
             atLeastOneCheckFailed |= ! allChecksPassed;
             fullInputBuffer.appendFrom (inputBlock);
             fullOutputBuffer.appendFrom (outputBlock);
@@ -462,12 +462,18 @@ public:
 
         if (testDurationFrames != 0 && ! fullSignalChecks.empty())
         {
-            AudioBuffer<SampleType> mainOutput (m_numOutputChannels, testDurationFrames, m_sampleRateHz);
+            // Full audio buffers for full audio matchers
+            // We want to skip the warm-up pieces for those
+            AudioBuffer<SampleType> fullInputNoWarmUpBuffer (m_numInputChannels, testDurationFrames, m_sampleRateHz);
+            AudioBuffer<SampleType> fullOutputNoWarmUpBuffer (m_numOutputChannels, testDurationFrames, m_sampleRateHz);
+
+            for (size_t channel = 0; channel < m_numInputChannels; ++channel)
+                fullInputNoWarmUpBuffer.copyFrom (channel, 0, fullInputBuffer, channel, warmUpDurationFrames, testDurationFrames);
 
             for (size_t channel = 0; channel < m_numOutputChannels; ++channel)
-                mainOutput.copyFrom (channel, 0, fullOutputBuffer, channel, warmUpDurationFrames, testDurationFrames);
+                fullOutputNoWarmUpBuffer.copyFrom (channel, 0, fullOutputBuffer, channel, warmUpDurationFrames, testDurationFrames);
 
-            const bool allChecksPassed = processChecks (fullSignalChecks, mainOutput, warmUpDurationFrames);
+            const bool allChecksPassed = processChecks (fullSignalChecks, fullInputNoWarmUpBuffer, fullOutputNoWarmUpBuffer, warmUpDurationFrames);
             atLeastOneCheckFailed |= ! allChecksPassed;
         }
 
@@ -572,7 +578,7 @@ private:
         group.push_back({ matcher.copy(), assertionLevel, false, shouldPass });
     }
 
-    bool processChecks (std::vector<Check>& checksGroup, AudioBuffer<SampleType>& outputBlock, size_t baseFrameOffset)
+    bool processChecks (std::vector<Check>& checksGroup, AudioBuffer<SampleType>& inputAudio, AudioBuffer<SampleType>& outputAudio, size_t baseFrameOffset)
     {
         for (auto& check : checksGroup)
         {
@@ -582,7 +588,7 @@ private:
             auto& assertionLevel = check.signalAssertionLevel;
             auto& matcher = check.matcher;
 
-            const bool matchPassed = matcher->match (outputBlock);
+            const bool matchPassed = matcher->match (inputAudio, outputAudio);
 
             if (matchPassed != check.shouldPass)
             {
@@ -599,7 +605,7 @@ private:
                     stream << std::endl << "Condition: " << *matcher;
 
                     if (check.shouldPass)
-                        appendFailureDetails (stream, matcher->getFailureDetails(), outputBlock, baseFrameOffset);
+                        appendFailureDetails (stream, matcher->getFailureDetails(), outputAudio, baseFrameOffset);
 
                     throw hart::TestAssertException (std::string (stream.str()));
                 }
@@ -614,12 +620,12 @@ private:
                     stream << std::endl << "Condition: " << * matcher;
 
                     if (check.shouldPass)
-                        appendFailureDetails (stream, matcher->getFailureDetails(), outputBlock, baseFrameOffset);
+                        appendFailureDetails (stream, matcher->getFailureDetails(), outputAudio, baseFrameOffset);
 
                     hart::ExpectationFailureMessages::get().emplace_back (stream.str());
                 }
 
-                // TODO: FIXME: Do not throw indife of per-block loop if requested to write input or output to a wav file, throw after the loop instead
+                // TODO: FIXME: Do not throw inside of per-block loop if requested to write input or output to a wav file, throw after the loop instead
                 // TODO: Stop processing if expect has failed and outputting to a file wasn't requested
                 // TODO: Skip all checks if check failed, but asked to output a wav file
                 return false;
@@ -631,6 +637,8 @@ private:
 
     void appendFailureDetails (std::stringstream& stream, const MatcherFailureDetails& details, AudioBuffer<SampleType>& observedAudioBlock, size_t baseFrameOffset)
     {
+        // TODO: Display input sample info as well
+
         const size_t frameOverall = baseFrameOffset + details.frame;
         const double timestampOverall = static_cast<double> (frameOverall) / m_sampleRateHz;
         const size_t warmUpDurationFrames = (size_t) std::round (m_sampleRateHz * m_warmUpDurationSeconds);

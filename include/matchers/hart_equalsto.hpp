@@ -106,24 +106,24 @@ public:
         m_referenceSignal->prepareWithDSPChain (sampleRateHz, numChannels, maxBlockSizeFrames);
     }
 
-    bool match (const AudioBuffer<SampleType>& observedAudio) override
+    bool match (const AudioBuffer<SampleType>& /* inputAudio */, const AudioBuffer<SampleType>& observedOutputAudio) override
     {
-        auto referenceAudio = AudioBuffer<SampleType>::emptyLike (observedAudio);
-        m_referenceSignal->renderNextBlockWithDSPChain (referenceAudio);
+        auto referenceOutputAudio = AudioBuffer<SampleType>::emptyLike (observedOutputAudio);
+        m_referenceSignal->renderNextBlockWithDSPChain (referenceOutputAudio);
 
-        for (size_t channel = 0; channel < referenceAudio.getNumChannels(); ++channel)
+        for (size_t channel = 0; channel < referenceOutputAudio.getNumChannels(); ++channel)
         {
             if (! this->appliesToChannel (channel))
                 continue;
 
-            for (size_t frame = 0; frame < referenceAudio.getNumFrames(); ++frame)
+            for (size_t frame = 0; frame < referenceOutputAudio.getNumFrames(); ++frame)
             {
-                if (notEqual (observedAudio[channel][frame], referenceAudio[channel][frame]))
+                if (notEqual (observedOutputAudio[channel][frame], referenceOutputAudio[channel][frame]))
                 {
                     m_failedFrame = frame;
                     m_failedChannel = (int) channel;
-                    m_failedObservedValue = observedAudio[channel][frame];
-                    m_failedExpectedValue = referenceAudio[channel][frame];
+                    m_failedObservedValue = observedOutputAudio[channel][frame];
+                    m_failedExpectedValue = referenceOutputAudio[channel][frame];
                     return false;
                 }
             }

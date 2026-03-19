@@ -7,7 +7,7 @@
 #include "hart_channel_flags.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_matcher_failure_details.hpp"
-#include "hart_utils.hpp"  // make_unique()
+#include "hart_utils.hpp"  // make_unique(), HART_DEPRECATED()
 
 /// @defgroup Matchers Matchers
 /// @brief Check audio
@@ -43,7 +43,29 @@ public:
     /// audio to check. Otherwise, it may still get a full piece of audio, or get data on a block-by-block basis.
     /// @param observedAudio A piece of audio to check
     /// @returns true if the audio satisfies the Matcher's condition, false otherwise
-    virtual bool match (const AudioBuffer<SampleType>& observedAudio) = 0;
+    /// @deprecated This match() overload will be removed in HART 1.0.0, use `match (const AudioBuffer&, const AudioBuffer&)` instead
+    HART_DEPRECATED ("This match() overload will be removed in HART 1.0.0, use \"match (const AudioBuffer&, const AudioBuffer&)\" instead")
+    virtual bool match (const AudioBuffer<SampleType>& observedAudio)
+    {
+        (void) observedAudio;
+        return false;
+    }
+
+    /// @brief Tells the host if the piece of audio satisfies Matcher's condition or not
+    /// @details It is guaranteed to be called only after `prepare()`, or not be called at all.
+    /// It is guaranteed to be handed a pair of `AudioBuffer`s in line with values set by the last `prepare()` call.
+    /// If `canOperatePerBlock()` has returned `false`, this callback is guaranteed to be handed a full piece of
+    /// audio to check. Otherwise, it may still get a full piece of audio, or get data on a block-by-block basis.
+    /// @param inputAudio A piece of input audio. Some matchers may be based on a relationship between input and output,
+    /// rather than checking just the output audio. And in a lot of cases Matcher can ingore the input completely.
+    /// @param observedOutputAudio A piece of observed output audio to check
+    /// @returns `true` if the audio satisfies the Matcher's condition, `false` otherwise
+    virtual bool match (const AudioBuffer<SampleType>& inputAudio, const AudioBuffer<SampleType>& observedOutputAudio)
+    {
+        // TODO: Make this pure virtual in 1.0.0
+        (void) inputAudio;
+        return this->match (observedOutputAudio);
+    }
 
     /// @brief Tells the host if it can operate on a block-by-block basis
     /// @details Some types of conditions absolutely require having a full piece of audio

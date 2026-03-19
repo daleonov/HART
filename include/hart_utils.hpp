@@ -170,6 +170,13 @@ std::unique_ptr<ObjectType> make_unique (Args&&... args)
         stream << #ClassName "()"; \
     }
 
-/// @}
+/// @private
+#if defined(__GNUC__) || defined(__clang__)
+    #define HART_DEPRECATED(msg) __attribute__((deprecated(msg)))
+#elif defined(_MSC_VER)
+    #define HART_DEPRECATED(msg) __declspec(deprecated(msg))
+#else
+    #define HART_DEPRECATED(msg)
+#endif
 
 }  // namespace hart

@@ -37,16 +37,16 @@ public:
 
     void prepare (double /*sampleRateHz*/, size_t /* numChannels */, size_t /* maxBlockSizeFrames */) override {}
 
-    bool match (const AudioBuffer<SampleType>& observedAudio) override
+    bool match (const AudioBuffer<SampleType>& /* inputAudio */, const AudioBuffer<SampleType>& observedOutputAudio) override
     {
-        for (size_t channel = 0; channel < observedAudio.getNumChannels(); ++channel)
+        for (size_t channel = 0; channel < observedOutputAudio.getNumChannels(); ++channel)
         {
             if (! this->appliesToChannel (channel))
                 continue;
 
-            for (size_t frame = 0; frame < observedAudio.getNumFrames(); ++frame)
+            for (size_t frame = 0; frame < observedOutputAudio.getNumFrames(); ++frame)
             {
-                const SampleType observedPeakLinear = std::abs (observedAudio[channel][frame]);
+                const SampleType observedPeakLinear = std::abs (observedOutputAudio[channel][frame]);
 
                 if (observedPeakLinear > m_thresholdLinear)
                 {

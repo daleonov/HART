@@ -18,16 +18,16 @@ class NoDenormals:
     public Matcher<SampleType, NoDenormals<SampleType>>
 {
 public:
-    bool match (const AudioBuffer<SampleType>& observedAudio) override
+    bool match (const AudioBuffer<SampleType>& /* inputAudio */, const AudioBuffer<SampleType>& observedOutputAudio) override
     {
-        for (size_t channel = 0; channel < observedAudio.getNumChannels(); ++channel)
+        for (size_t channel = 0; channel < observedOutputAudio.getNumChannels(); ++channel)
         {
             if (! this->appliesToChannel (channel))
                 continue;
 
-            for (size_t frame = 0; frame < observedAudio.getNumFrames(); ++frame)
+            for (size_t frame = 0; frame < observedOutputAudio.getNumFrames(); ++frame)
             {
-                const SampleType sample = observedAudio[channel][frame];
+                const SampleType sample = observedOutputAudio[channel][frame];
                 const bool notZero = std::fabs (sample) > SampleType (0);
 
                 if (notZero && ! std::isnormal (sample) && ! std::isinf (sample) && ! std::isnan (sample))

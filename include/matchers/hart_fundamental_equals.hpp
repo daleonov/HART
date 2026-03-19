@@ -41,9 +41,9 @@ public:
         m_sampleRateHz = sampleRateHz;
     }
 
-    bool match (const AudioBuffer<SampleType>& observedAudio) override
+    bool match (const AudioBuffer<SampleType>& /* inputAudio */, const AudioBuffer<SampleType>& observedOutputAudio) override
     {
-        const size_t numFrames = observedAudio.getNumFrames();
+        const size_t numFrames = observedOutputAudio.getNumFrames();
 
         if (numFrames < 64)
             HART_THROW_OR_RETURN (hart::SizeError, "Audio is too short for fundamental detection", false);
@@ -56,13 +56,13 @@ public:
         std::vector<double> observedAudioMono (numFrames, 0.0);
         const double numChannelsSelected = static_cast<double> (this->m_channelsToMatch.numTrue());
 
-        for (size_t channel = 0; channel < observedAudio.getNumChannels(); ++channel)
+        for (size_t channel = 0; channel < observedOutputAudio.getNumChannels(); ++channel)
         {
             if (! this->appliesToChannel (channel))
                 continue;
 
             for (size_t frame = 0; frame < numFrames; ++frame)
-                observedAudioMono[frame] += static_cast<double> (observedAudio[channel][frame]) / numChannelsSelected;
+                observedAudioMono[frame] += static_cast<double> (observedOutputAudio[channel][frame]) / numChannelsSelected;
         }
 
         // Next power of 2 after numFrames
