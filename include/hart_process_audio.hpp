@@ -13,6 +13,7 @@
 #include "dsp/hart_dsp_all.hpp"
 #include "hart_expectation_failure_messages.hpp"
 #include "matchers/hart_matcher.hpp"
+#include "matchers/hart_matcher_function.hpp"
 #include "hart_plot.hpp"
 #include "hart_precision.hpp"
 #include "hart_wavwriter.hpp"
@@ -243,7 +244,7 @@ public:
         return this->withStereoInput().withStereoOutput();
     }
 
-    /// @brief Adds an "expect" check
+    /// @brief Adds an "expect" check using a Matcher object
     /// @param matcher Matcher to perform the check, see @ref Matchers
     template<typename MatcherType>
     AudioTestBuilder& expectTrue (MatcherType&& matcher)
@@ -252,7 +253,7 @@ public:
         return *this;
     }
 
-    /// @brief Adds a reversed "expect" check
+    /// @brief Adds a reversed "expect" check using a Matcher object
     /// @param matcher Matcher to perform the check, see @ref Matchers
     template<typename MatcherType>
     AudioTestBuilder& expectFalse (MatcherType&& matcher)
@@ -261,7 +262,7 @@ public:
         return *this;
     }
 
-    /// @brief Adds an "assert" check
+    /// @brief Adds an "assert" check using a Matcher object
     /// @param matcher Matcher to perform the check, see @ref Matchers
     template<typename MatcherType>
     AudioTestBuilder& assertTrue (MatcherType&& matcher)
@@ -270,13 +271,139 @@ public:
         return *this;
     }
 
-    /// @brief Adds a reversed "assert" check
+    /// @brief Adds a reversed "assert" check using a Matcher object
     /// @param matcher Matcher to perform the check, see @ref Matchers
     template<typename MatcherType>
     AudioTestBuilder& assertFalse (MatcherType&& matcher)
     {
         addCheck (std::forward<MatcherType> (matcher), SignalAssertionLevel::assert, false);
         return *this;
+    }
+
+    // TODO: Add expect/assert overloads for smart pointers as well
+
+    /// @brief Adds an "expect" check using a function matcher
+    /// @details Intended for simple inline expressions. For anything more than
+    /// that, consider making a custom hart::Matcher subclass and use it instead.
+    /// @see MatcherFunction
+    /// @param matcherFunction Function with signature:
+    /// @code
+    /// bool(const AudioBuffer<SampleType>& output)
+    /// @endcode
+    /// @param label Optional label used in failure reports
+    AudioTestBuilder& expectTrue (std::function<bool (const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    {
+        return expectTrue (MatcherFunction<SampleType> (std::move (matcherFunction), label));
+    }
+
+    /// @brief Adds an "expect" check using a function matcher
+    /// @details Intended for simple inline expressions. For anything more than
+    /// that, consider making a custom hart::Matcher subclass and use it instead.
+    /// @see MatcherFunction
+    /// @param matcherFunction Function with signature:
+    /// @code
+    /// bool(const AudioBuffer<SampleType>& input,
+    ///      const AudioBuffer<SampleType>& output)
+    /// @endcode
+    /// @param label Optional label used in failure reports
+    /// @note If your matcher function only cares about the output, and not the input,
+    /// just use the overload that takes `bool(const AudioBuffer<SampleType>& output)`.
+    AudioTestBuilder& expectTrue (std::function<bool (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    {
+        return expectTrue (MatcherFunction<SampleType> (std::move (matcherFunction), label));
+    }
+
+    /// @brief Adds a reversed "expect" check using a function matcher
+    /// @details Intended for simple inline expressions. For anything more than
+    /// that, consider making a custom hart::Matcher subclass and use it instead.
+    /// @see MatcherFunction
+    /// @param matcherFunction Function with signature:
+    /// @code
+    /// bool(const AudioBuffer<SampleType>& output)
+    /// @endcode
+    /// @param label Optional label used in failure reports
+    AudioTestBuilder& expectFalse (std::function<bool (const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    {
+        return expectFalse (MatcherFunction<SampleType> (std::move (matcherFunction), label));
+    }
+
+    /// @brief Adds a reversed "expect" check using a function matcher
+    /// @details Intended for simple inline expressions. For anything more than
+    /// that, consider making a custom hart::Matcher subclass and use it instead.
+    /// @see MatcherFunction
+    /// @param matcherFunction Function with signature:
+    /// @code
+    /// bool(const AudioBuffer<SampleType>& input,
+    ///      const AudioBuffer<SampleType>& output)
+    /// @endcode
+    /// @param label Optional label used in failure reports
+    /// @note If your matcher function only cares about the output, and not the input,
+    /// just use the overload that takes `bool(const AudioBuffer<SampleType>& output)`.
+    AudioTestBuilder& expectFalse (std::function<bool (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    {
+        return expectFalse (MatcherFunction<SampleType> (std::move (matcherFunction), label));
+    }
+
+    /// @brief Adds an "assert" check using a function matcher
+    /// @details Intended for simple inline expressions. For anything more than
+    /// that, consider making a custom hart::Matcher subclass and use it instead.
+    /// @see MatcherFunction
+    /// @param matcherFunction Function with signature:
+    /// @code
+    /// bool(const AudioBuffer<SampleType>& output)
+    /// @endcode
+    /// @param label Optional label used in failure reports
+    AudioTestBuilder& assertTrue (std::function<bool (const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    {
+        return assertTrue (MatcherFunction<SampleType> (std::move (matcherFunction), label));
+    }
+
+    /// @brief Adds an "assert" check using a function matcher
+    /// @details Intended for simple inline expressions. For anything more than
+    /// that, consider making a custom hart::Matcher subclass and use it instead.
+    /// @see MatcherFunction
+    /// @param matcherFunction Function with signature:
+    /// @code
+    /// bool(const AudioBuffer<SampleType>& input,
+    ///      const AudioBuffer<SampleType>& output)
+    /// @endcode
+    /// @param label Optional label used in failure reports
+    /// @note If your matcher function only cares about the output, and not the input,
+    /// just use the overload that takes `bool(const AudioBuffer<SampleType>& output)`.
+    AudioTestBuilder& assertTrue (std::function<bool (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    {
+        return assertTrue (MatcherFunction<SampleType> (std::move (matcherFunction), label));
+    }
+
+    /// @brief Adds a reversed "assert" check using a function matcher
+    /// @details Intended for simple inline expressions. For anything more than
+    /// that, consider making a custom hart::Matcher subclass and use it instead.
+    /// @see MatcherFunction
+    /// @param matcherFunction Function with signature:
+    /// @code
+    /// bool(const AudioBuffer<SampleType>& output)
+    /// @endcode
+    /// @param label Optional label used in failure reports
+    AudioTestBuilder& assertFalse (std::function<bool (const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    {
+        return assertFalse (MatcherFunction<SampleType> (std::move (matcherFunction), label));
+    }
+
+    /// @brief Adds a reversed "assert" check using a function matcher
+    /// @details Intended for simple inline expressions. For anything more than
+    /// that, consider making a custom hart::Matcher subclass and use it instead.
+    /// @see MatcherFunction
+    /// @param matcherFunction Function with signature:
+    /// @code
+    /// bool(const AudioBuffer<SampleType>& input,
+    ///      const AudioBuffer<SampleType>& output)
+    /// @endcode
+    /// @param label Optional label used in failure reports
+    /// @note If your matcher function only cares about the output, and not the input,
+    /// just use the overload that takes `bool(const AudioBuffer<SampleType>& output)`.
+    AudioTestBuilder& assertFalse (std::function<bool (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    {
+        return assertFalse (MatcherFunction<SampleType> (std::move (matcherFunction), label));
     }
 
     /// @brief Enables saving output audio to a wav file
