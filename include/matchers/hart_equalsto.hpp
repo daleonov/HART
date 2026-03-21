@@ -132,7 +132,7 @@ public:
         return true;
     }
 
-    bool canOperatePerBlock() override
+    bool canOperatePerBlock() const override
     {
         return true;
     }

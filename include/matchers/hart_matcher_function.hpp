@@ -78,9 +78,8 @@ public:
         stream << "MatcherFunction (<function>, \"" << m_label << "\")";
     }
 
-    bool canOperatePerBlock() override { return false;}
+    bool canOperatePerBlock() const override { return false;}
     void prepare (double /* sampleRateHz */, size_t /* numChannels */, size_t /* maxBlockSizeFrames */) override {}
-    void reset() override {}
 
 private:
     const std::function <bool (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> m_matcherFunctionForInputAndOutput = nullptr;

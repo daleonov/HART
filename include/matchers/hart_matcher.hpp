@@ -74,10 +74,10 @@ public:
     /// Matcher is guaranteed to receive a full piece of audio if this callback has
     /// returned \c false. Otherwise, it may receive audio either block-by-block
     /// basis, or still get a full piece of audio, if the host decides to do so.
-    virtual bool canOperatePerBlock() = 0;
+    virtual bool canOperatePerBlock() const = 0;
 
     /// @brief Resets the matcher to its initial state
-    virtual void reset() = 0;
+    virtual void reset() {}
 
     /// @brief Returns a description of why the match has failed
     /// @details It is guaranteed to be called strictly after calling match(), or not called at all

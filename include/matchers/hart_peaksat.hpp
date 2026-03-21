@@ -73,12 +73,10 @@ public:
         return true;
     }
 
-    bool canOperatePerBlock() override
+    bool canOperatePerBlock() const override
     {
         return false;
     }
-
-    void reset() override {}
 
     virtual MatcherFailureDetails getFailureDetails() const override
     {

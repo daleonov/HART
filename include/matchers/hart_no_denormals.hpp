@@ -60,12 +60,11 @@ public:
         return details;
     }
 
-    bool canOperatePerBlock() override
+    bool canOperatePerBlock() const override
     {
         return true;
     }
 
-    void reset() override {}
     void prepare (double /*sampleRateHz*/, size_t /* numChannels */, size_t /* maxBlockSizeFrames */) override {}
 
     HART_DEFINE_GENERIC_REPRESENT (NoDenormals);
