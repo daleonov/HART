@@ -37,3 +37,27 @@ HART_TEST ("Detecting denormals")
         .expectTrue (EqualsTo (Silence(), 1e-36))
         .process();
 }
+
+HART_TEST ("Matcher function - For output buffer")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+
+    processAudioWith (GainDb())
+        .withLabel ("Creating MatcherFunction explicitly")
+        .withInputSignal (SineWave())
+        .expectTrue (MatcherFunction ([] (const AudioBuffer&) { return true; }))
+        .expectFalse (MatcherFunction ([] (const AudioBuffer&) { return false; }))
+        .process();
+}
+
+HART_TEST ("Matcher function - For input and output buffers")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+
+    processAudioWith (GainDb())
+        .withLabel ("Creating MatcherFunction explicitly")
+        .withInputSignal (SineWave())
+        .expectTrue (MatcherFunction ([] (const AudioBuffer&, const AudioBuffer&) { return true; }))
+        .expectFalse (MatcherFunction ([] (const AudioBuffer&, const AudioBuffer&) { return false; }))
+        .process();
+}
