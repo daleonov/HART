@@ -1,6 +1,7 @@
 #include "hart.hpp"
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
+using hart::Loop;
 
 HART_TEST ("SineSweep - Normal Use")
 {
@@ -48,9 +49,9 @@ HART_TEST ("SineSweep - Loop")
     processAudioWith (GainDb (0_dB))
         .withLabel ("Actually loops if requested")
         .withDuration (350_ms)
-        .withInputSignal (SineSweep (300_ms).withLoop (SineSweep::Loop::yes))
+        .withInputSignal (SineSweep (300_ms).withLoop (Loop::yes))
         .expectTrue (PeaksAt (0_dB))
-        .expectFalse (EqualsTo (SineSweep (300_ms).withLoop (SineSweep::Loop::no)))
+        .expectFalse (EqualsTo (SineSweep (300_ms).withLoop (Loop::no)))
         .process();
 }
 
@@ -58,13 +59,13 @@ HART_TEST ("SineSweep - Fixed Frequency")
 {
     processAudioWith (GainDb (0_dB))
         .withDuration (350_ms)
-        .withInputSignal (SineSweep (300_ms, 1234_Hz, 1234_Hz, SineSweep::SweepType::log, SineSweep::Loop::yes))
+        .withInputSignal (SineSweep (300_ms, 1234_Hz, 1234_Hz, SineSweep::SweepType::log, Loop::yes))
         .expectTrue (EqualsTo (SineWave (1234_Hz)))
         .process();
 
     processAudioWith (GainDb (0_dB))
         .withDuration (350_ms)
-        .withInputSignal (SineSweep (300_ms, 1234_Hz, 1234_Hz, SineSweep::SweepType::linear, SineSweep::Loop::yes))
+        .withInputSignal (SineSweep (300_ms, 1234_Hz, 1234_Hz, SineSweep::SweepType::linear, Loop::yes))
         .expectTrue (EqualsTo (SineWave (1234_Hz)))
         .process();
 }

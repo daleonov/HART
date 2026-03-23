@@ -5,7 +5,7 @@
 #include "hart_exceptions.hpp"
 #include "hart_precision.hpp"
 #include "signals/hart_signal.hpp"
-#include "hart_utils.hpp"
+#include "hart_utils.hpp"  // wrapPhase(), floatsEqual(), roundToSizeT(), Loop
 
 namespace hart {
 
@@ -20,13 +20,6 @@ class SineSweep:
     public Signal<SampleType, SineSweep<SampleType>>
 {
 public:
-    /// @brief Determines what to do after frequency sweep is done
-    enum class Loop
-    {
-        no,  ///< Stop after finishing one sweep
-        yes  ///< Keep on sweeping back and forth
-    };
-
     /// @brief Determines how to change the frequency
     enum class SweepType
     {
@@ -42,6 +35,7 @@ public:
     /// @param loop If Loop::no is selected, the Signal will produce silence after duration;
     /// if Loop::yes is selected, the signal will keep on going back and forth between
     /// start and end frequencies (up and down) indefinitely.
+    /// @see hart::Loop
     /// @param initialPhaseRadians Initial phase of the signal
     SineSweep (
     	double durationSeconds = 1.0,
@@ -110,6 +104,7 @@ public:
     /// @param loop If Loop::no is selected, the Signal will produce silence after duration;
     /// if Loop::yes is selected, the signal will keep on going back and forth between
     /// start and end frequencies (up and down) indefinitely.
+    /// @see hart::Loop
     /// @return A new SineSweep instance with a specified parameter
     SineSweep withLoop (Loop loop)
     {

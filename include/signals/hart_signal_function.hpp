@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "signals/hart_signal.hpp"
-#include "hart_utils.hpp"  // floatsEqual()
+#include "hart_utils.hpp"  // floatsEqual(), Loop
 
 // TODO: Allow user buffer mismatch, if it's mono, and do multiplexing?
 
@@ -60,12 +60,6 @@ class SignalFunction:
     public Signal<SampleType, SignalFunction<SampleType>>
 {
 public:
-    enum class Loop
-    {
-        yes,
-        no
-    };
-
     /// @brief Constructs a signal from a user-defined function.
     /// @details
     /// The provided function is guaranteed to be called with an empty

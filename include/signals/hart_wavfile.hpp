@@ -9,7 +9,7 @@
 
 #include "hart_exceptions.hpp"
 #include "signals/hart_signal.hpp"
-#include "hart_utils.hpp"  // toAbsolutePath(), floatsNotEqual()
+#include "hart_utils.hpp"  // toAbsolutePath(), floatsNotEqual(), Loop
 
 namespace hart
 {
@@ -25,12 +25,6 @@ class WavFile:
     public Signal<SampleType, WavFile<SampleType>>
 {
 public:
-    enum class Loop
-    {
-        yes,
-        no
-    };
-
     /// @brief Creates a Signal that produces audio from a wav file
     /// @param filePath Path to a wav file
     /// Can be absolute or relative. If a relative path is used, it will resolve

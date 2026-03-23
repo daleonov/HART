@@ -46,6 +46,13 @@ enum MidSideChannel
     side = 1
 };
 
+/// @brief Helper values for something that could loop, like a Signal
+enum class Loop
+{
+    no,
+    yes
+};
+
 /// @brief Returns a quiet NaN value for the given floating-point type.
 template<typename FloatType>
 inline FloatType nan()

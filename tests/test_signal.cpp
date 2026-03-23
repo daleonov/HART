@@ -1,6 +1,7 @@
 #include "hart.hpp"
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
+using hart::Loop;
 
 HART_TEST ("Signal - Fast Forward via skipTo()")
 {
@@ -72,7 +73,7 @@ HART_TEST ("Signal - Fast Forward via skipTo()")
 
     processAudioWith (GainDb())
         .withLabel ("Skip to the end of signal")
-        .withInputSignal (SineSweep (200_ms).withLoop (SineSweep::Loop::no).skipTo (201_ms))
+        .withInputSignal (SineSweep (200_ms).withLoop (Loop::no).skipTo (201_ms))
         .expectTrue (PeaksAt (-oo_dB))
         .process();
 
@@ -299,6 +300,7 @@ HART_TEST ("Signal - AudioBufferSignal")
 HART_TEST ("Signal - SignalFunction")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::Loop;
 
     // 1. Looping signal
     auto nyquistSignal = SignalFunction (
@@ -312,7 +314,7 @@ HART_TEST ("Signal - SignalFunction")
             }
         },
         "Nyquist Signal",
-        SignalFunction::Loop::yes
+        Loop::yes
     );
 
     constexpr double sampleRateHz = 44.1_kHz;
@@ -340,7 +342,7 @@ HART_TEST ("Signal - SignalFunction")
             }
         },
         "Impulse Signal",
-        SignalFunction::Loop::no
+        Loop::no
     );
 
     processAudioWith (GainDb (0_dB))
