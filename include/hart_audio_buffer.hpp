@@ -125,6 +125,44 @@ public:
     /// @return Number of allocated frames (samples) in every channel
     size_t getNumFrames() const { return m_numFrames; }
 
+    /// @brief Resizes the buffer to hold a new number of frames per channel
+    /// @details Resizing behaviour:
+    ///   - If newNumFrames == current size, it won't do anything.
+    ///   - If newNumFrames > current size, it will append silence (zeros) at the end.
+    ///   - If newNumFrames < current size: it will jsut truncate, discarding samples from the end.
+    /// Will always preserve existing channels and sample-rate metadata.
+    /// @attention May cause reallocation, thus invalidating previous raw pointers!
+    /// @param newNumFrames New number of frames per channel
+    void setNumFrames (size_t newNumFrames)
+    {
+        if (newNumFrames == m_numFrames)
+            return;
+
+        const size_t oldTotalSamples = m_frames.size();
+        const size_t newTotalSamples = m_numChannels * newNumFrames;
+
+        if (newNumFrames < m_numFrames)
+        {
+            m_frames.resize (newTotalSamples);
+            m_numFrames = newNumFrames;
+            updateChannelPointers();
+            return;
+        }
+
+        if (newTotalSamples > oldTotalSamples)
+        {
+            m_frames.resize (newTotalSamples);
+            std::fill (
+                m_frames.begin() + oldTotalSamples,
+                m_frames.end(),
+                SampleType (0)
+            );
+        }
+
+        m_numFrames = newNumFrames;
+        updateChannelPointers();
+    }
+
     /// @brief Check if a specific sample rate was assigned to the audio buffer
     /// @note Unititialized buffers, as well as some specific Signal types, will not have a specific sample rate.
     /// @return `true` if there is a specific sample rate value, `false` otherwise
