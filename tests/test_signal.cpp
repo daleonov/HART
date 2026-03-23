@@ -2,6 +2,7 @@
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
 using hart::Loop;
+using hart::decibelsToRatio;
 
 HART_TEST ("Signal - Fast Forward via skipTo()")
 {
@@ -359,5 +360,14 @@ HART_TEST ("Signal - SignalFunction")
         .withSampleRate (sampleRateHz)
         .inStereo()
         .expectTrue (EqualsTo (Silence()))
+        .process();
+
+    // 3. Inline lambda
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Impulse defined inline")
+        .withInputSignal ([] (AudioBuffer& buffer) { buffer.setNumFrames (2); buffer[0][0] = decibelsToRatio (-10_dB); buffer[0][1] = -buffer[0][0];}, "BLIP at -10dB", Loop::no)
+        .withSampleRate (sampleRateHz)
+        .inMono()
+        .expectTrue (PeaksAt (-10_dB))
         .process();
 }

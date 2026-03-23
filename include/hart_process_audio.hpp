@@ -176,6 +176,38 @@ public:
         return *this;
     }
 
+    /// @brief Sets the input signal using a function-based signal definition
+    /// @param signalFunction Function that generates the signal buffer. It will moved to a Signal object. 
+    /// @param label Human-readable label for the signal to use in the test error output
+    /// @param loop Determines whether the generated buffer should loop
+    /// @details
+    /// This overload constructs a @ref SignalFunction internally, allowing inline
+    /// definition of signals without explicitly creating a Signal object, for slightly
+    /// less verbose syntax.
+    ///
+    /// The function must have the signature:
+    /// `void (AudioBuffer<SampleType>&)`
+    ///
+    /// This method echoes the ctor of the hart::SignalFunction class, so see its
+    /// documentaion for more detailed description.
+    ///
+    /// @note To re-use the signal made with your function, you can use `saveInputSignalTo()`.
+    /// @see SignalFunction
+    AudioTestBuilder& withInputSignal (
+        std::function<void (AudioBuffer<SampleType>&)> signalFunction,
+        const std::string& label = {},
+        Loop loop = Loop::yes)
+    {
+        m_inputSignal = hart::make_unique<SignalFunction<SampleType>>(
+            std::move (signalFunction),
+            label,
+            loop
+        );
+
+        m_resetSignalBeforeProcessing = false;  // It gets constructed from scratch here anyway
+        return *this;
+    }
+
     /// @brief Sets arbitrary number of input channels
     /// @details For common mono and stereo cases, you may use dedicated methods like @ref inStereo() or
     /// @ref withMonoInput() instead of this one for better readability.
@@ -773,6 +805,7 @@ private:
         const SampleType outputSampleValue = observedOutputAudio[details.channel][details.frame];
 
         stream << std::endl
+            << "Input signal: " << *m_inputSignal << std::endl
             << "Channel: " << details.channel << std::endl;
 
         if (warmUpDurationFrames == 0)
