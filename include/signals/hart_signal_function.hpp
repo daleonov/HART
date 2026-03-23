@@ -7,12 +7,53 @@
 #include "signals/hart_signal.hpp"
 #include "hart_utils.hpp"  // floatsEqual()
 
-// TODO: Add docs
 // TODO: Allow user buffer mismatch, if it's mono, and do multiplexing?
 
 namespace hart
 {
 
+/// @brief Signal defined by a user-provided function
+/// @ingroup Signals
+///
+/// @details
+/// This Signal allows defining input signals using a lambda or function object,
+///  instead of creating a dedicated Signal subclass.
+///
+/// The provided function is called during @ref prepare() and is expected to fill an
+/// initially empty @ref AudioBuffer with audio data. This buffer is then used as a
+/// source and streamed block-by-block during processing.
+///
+/// The generated buffer can either:
+/// - loop continuously (SignalFunction::Loop::yes), or
+/// - play once and output silence afterwards (SignalFunction::Loop::no)
+///
+/// `SignalFunction` can be suitable for:
+/// - Procedural signal generation (e.g. waveforms, noise)
+/// - Defining short repeating patterns (e.g. one-cycle signals)
+/// - Creating custom test signals inline in test cases
+///
+/// @par Example
+/// @code
+// auto nyquistSignal = SignalFunction (
+///     [] (AudioBuffer& buffer)
+///     {
+///         buffer.setNumFrames (2);
+///         for (size_t channel = 0; channel < buffer.getNumChannels(); ++channel)
+///         {
+///             buffer[channel][0] = -1.0f;
+///             buffer[channel][0] = 1.0f;
+///         }
+///     },
+///     "Nyquist Signal",
+///     SignalFunction::Loop::yes
+/// );
+/// @endcode
+///
+/// @throws hart::NullPointerError if `signalFunction` is empty
+/// @throws hart::ChannelLayoutError if the function changes buffer's channel count
+/// @throws hart::SampleRateError if the function changes buffer's sample rate
+/// @throws hart::SizeError if the function does not allocate any frames
+///
 /// @ingroup Signals
 template<typename SampleType>
 class SignalFunction:
@@ -25,6 +66,32 @@ public:
         no
     };
 
+    /// @brief Constructs a signal from a user-defined function.
+    /// @details
+    /// The provided function is guaranteed to be called with an empty
+    /// @ref AudioBuffer, i.e. AudioBuffer::getNumFrames() will return zero.
+    /// The function must allocate and fill the buffer with audio data.
+    /// The provided buffer is guaranteed to contain valid metadata on required
+    /// number of channels (see @ref AudioBuffer::getNumChannels()) and
+    /// sample rate (see @ref AudioBuffer::getSampleRateHz()).
+    ///
+    /// The buffer is owned internally and reused during processing.
+    ///
+    /// @param signalFunction A callable with signature:
+    /// `void (AudioBuffer<SampleType>&)`
+    ///
+    /// For the provided buffer, the function must:
+    /// - Allocate number of frames necessary for your Signal
+    /// - Fill the buffer with valid audio data
+    /// - Preserve the number of channels and sample rate
+    /// Failure to meet these requirements will result in a runtime error.
+    ///
+    /// @param label A human-readable description of the signal, used in logs
+    /// and failure reports. Can be empty.
+    ///
+    /// @param loop If set to Loop::yes, the generated buffer will repeat
+    /// continuously. If set to Loop::no, the signal will output silence
+    /// (zeros) after the buffer is exhausted.
     SignalFunction (std::function <void (AudioBuffer<SampleType>&)> signalFunction, const std::string& label = {}, Loop loop = Loop::yes) :
         m_signalFunction (std::move (signalFunction)),
         m_label (label),
