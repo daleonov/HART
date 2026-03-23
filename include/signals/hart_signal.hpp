@@ -331,7 +331,7 @@ private:
         while (fastForwardFramesLeft != 0)
         {
             const size_t blockSizeFrames = fastForwardFramesLeft >= maxBlockSizeFrames ? maxBlockSizeFrames : fastForwardFramesLeft;
-            AudioBuffer<SampleType> dummyAudioBlock (numOutputChannels, blockSizeFrames);
+            AudioBuffer<SampleType> dummyAudioBlock (numOutputChannels, blockSizeFrames, sampleRateHz);
             renderNextBlockWithDSPChain (dummyAudioBlock);
             fastForwardFramesLeft -= blockSizeFrames;
         }
