@@ -295,3 +295,67 @@ HART_TEST ("Signal - AudioBufferSignal")
     // Construct a signal via move semantics, play 1 ms, just check it's not silence (EqualsTo (Silence()))
     // HART_ASSERT_TRUE (buffer was actually moved)
 }
+
+HART_TEST ("Signal - SignalFunction")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+
+    // 1. Looping signal
+    auto nyquistSignal = SignalFunction (
+        [] (AudioBuffer& buffer)
+        {
+            buffer.setNumFrames (2);
+            for (size_t channel = 0; channel < buffer.getNumChannels(); ++channel)
+            {
+                buffer[channel][0] = -1.0f;
+                buffer[channel][0] = 1.0f;
+            }
+        },
+        "Nyquist Signal",
+        SignalFunction::Loop::yes
+    );
+
+    constexpr double sampleRateHz = 44.1_kHz;
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Nyquist signal")
+        .withInputSignal (nyquistSignal)
+        .withSampleRate (sampleRateHz)
+        .inStereo()
+        .expectTrue (PeaksAt (0_dB))
+        .expectTrue (FundamentalEquals (sampleRateHz / 2, 5_cents))
+        .process();
+
+    // 2. Non-looping signal
+    auto impulse = SignalFunction (
+        [] (AudioBuffer& buffer)
+        {
+            buffer.setNumFrames (64);
+
+            for (size_t channel = 0; channel < buffer.getNumChannels(); ++channel)
+            {
+                buffer[channel][0] = 1.0f;
+
+                for (size_t i = 1; i < buffer.getNumFrames(); ++i)
+                    buffer[channel][i] = 0.0f;
+            }
+        },
+        "Impulse Signal",
+        SignalFunction::Loop::no
+    );
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Impulse played from the beginning")
+        .withInputSignal (impulse)
+        .withSampleRate (sampleRateHz)
+        .inStereo()
+        .expectTrue (PeaksAt (0_dB))
+        .process();
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Impulse fast-forwarded beyond user's buffer")
+        .withInputSignal (impulse.skipTo (100_ms))
+        .withSampleRate (sampleRateHz)
+        .inStereo()
+        .expectTrue (EqualsTo (Silence()))
+        .process();
+}
