@@ -1,8 +1,13 @@
+#include <cmath>  // tanh()
+
 #include "hart.hpp"
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
+using AudioBuffer = hart::AudioBuffer<float>;
 using hart::Channel;
 using hart::MidSideChannel;
+using hart::ratioToDecibels;
+using std::tanh;
 
 HART_TEST ("GainDb - GainDb Values")
 {
@@ -270,5 +275,56 @@ HART_TEST ("StereoToMidSide")
         .inStereo()
         .expectFalse (EqualsTo (Silence()).atChannel (MidSideChannel::mid))
         .expectFalse (EqualsTo (Silence()).atChannel (MidSideChannel::side))
+        .process();
+}
+
+HART_TEST ("DSPFucntion")
+{
+    const float expectedSamplePeakDb = ratioToDecibels (tanh (1.0f));
+
+    auto dspSampleWise = DSPFunction (
+        [] (float x) { return tanh (x); },
+        "Soft Clipper A"
+        );
+
+    auto dspBlockWiseReplacing = DSPFunction (
+        [] (AudioBuffer& buffer)
+        {
+            for (size_t channel = 0; channel < buffer.getNumChannels(); ++channel)
+            {
+                float* channelData = buffer[channel];
+
+                for (size_t frame = 0; frame < buffer.getNumFrames(); ++frame)
+                    channelData[frame] = tanh (channelData[frame]);
+            }
+        },
+        "Soft Clipper B"
+        );
+
+    auto dspBlockWiseNonReplacing = DSPFunction (
+        [] (const AudioBuffer& input, AudioBuffer& output)
+        {
+            if (input.getNumChannels() != output.getNumChannels())
+                return;
+
+            for (size_t channel = 0; channel < input.getNumChannels(); ++channel)
+            {
+                const float* inputChannelData = input[channel];
+                float* outputChannelData = output[channel];
+
+                for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
+                    outputChannelData[frame] = tanh (inputChannelData[frame]);
+            }
+        },
+        "Soft Clipper C"
+        );
+
+    processAudioWith (std::move (dspSampleWise))
+        .withLabel ("Sample-wise named DSP")
+        .withInputSignal (SineWave())
+        .inStereo()
+        .expectTrue (PeaksAt (expectedSamplePeakDb))
+        .expectTrue (PeaksAt (expectedSamplePeakDb).atChannel (Channel::left))
+        .expectTrue (PeaksAt (expectedSamplePeakDb).atChannel (Channel::right))
         .process();
 }
