@@ -10,22 +10,151 @@
 namespace hart
 {
 
+/// @brief A DSP processor defined by a user-provided function
+///
+/// @details
+/// It allows defining audio processing logic using a lambda or
+/// function object, without defining a dedicated DSP subclass.
+///
+/// Three function styles are supported:
+///
+/// @par 1. Sample-wise processing
+/// @code
+/// SampleType (SampleType value)
+/// @endcode
+/// Processes each sample independently.
+///
+/// @par 2. Block-wise replacing (in-place) processing
+/// @code
+/// void (AudioBuffer<SampleType>& buffer)
+/// @endcode
+/// Processes the buffer in-place. The buffer is pre-filled with input data.
+///
+/// @par 3. Block-wise non-replacing processing
+/// @code
+/// void (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
+/// @endcode
+/// Provides separate input and output buffers.
+///
+/// @par Buffer invariants
+/// For mutable buffers in block-wise replacing and non-replacing modes:
+/// - Number of frames must not be changed
+/// - Number of channels must not be changed
+/// - Sample rate must not be changed
+///
+/// Disobeying those constraints will result in a runtime error.
+///
+/// @par Example
+/// @code
+/// auto myDsp = DSPFunction<float> (
+///     [] (float x) { return x * 0.5f; },
+///     "Gain"
+/// );
+/// @endcode
+///
+/// @note This class is primarily intended for simple and expressive DSP
+/// definitions in tests. For more complex or stateful processors, it's
+/// encouraged to implement a dedicated DSP subclass.
 /// @ingroup DSP
 template<typename SampleType>
 class DSPFunction :
     public DSP<SampleType, DSPFunction<SampleType>>
 {
 public:
+    /// @brief Creates a DSP instance based on a sample-wise DSP function
+    /// @note If you need to be aware of sample rate value, or what channel
+    /// a given sample is from, use block-wise function signature instead
+    /// (see other ctors of this class for details). Or define a full-featured
+    /// DSP subclass for your DSP, instead of a simple function-based one.
+    /// @details
+    /// This is the simplest form of a custom DSP. The function is applied
+    /// independently to each sample in the input signal.
+    ///
+    /// @par Example
+    /// @code
+    /// auto myDsp = DSPFunction<float> (
+    ///     [] (float x) { return x * 0.5f; },
+    ///     "Gain"
+    /// );
+    /// @endcode
+    /// @param dspFunction Function with signature:
+    /// @code
+    /// SampleType (SampleType value)
+    /// @endcode
+    /// Will be called to process each sample, expected to return a processed value.
+    /// @param label Optional human-readable label to use in test error reporting.
     DSPFunction (std::function<SampleType (SampleType)> dspFunction, const std::string& label = {}):
         m_dspFunctionSampleWise (std::move (dspFunction)), m_label (label)
     {
     }
 
+    /// @brief Creates a DSP instance based on a block-wise replacing (in-place) DSP function.
+    /// @details The provided function will be called for each block of input audio.
+    /// It will receive a buffer pre-filled with input audio data. The function is expected
+    /// to modify the buffer directly. The provided buffer is guaranteed to have:
+    /// - A number of channels equal to `max (inputChannels, outputChannels)`
+    /// - Input channels populated with input data
+    /// - Additional channels (if any) initialized to zero
+    /// - Number of frames equal to the block size specified in the test case,
+    ///   or less than that in case of partial blocks.
+    /// - Correct sample rate value in its metadata (see AudioBuffer::getSampleRateHz())
+    ///
+    /// For the provided buffer, the function must not change:
+    /// - Number of channels
+    /// - Number of frames
+    /// - Sample rate
+    ///
+    /// Disobeying those constraints will result in a runtime error.
+    /// @par Example
+    /// @code
+    /// auto myDsp = DSPFunction<float> (
+    ///     [] (auto& buffer)
+    ///     {
+    ///         // Process buffer in-place
+    ///     },
+    ///     "My DSP function"
+    /// );
+    /// @endcode
+    /// @param dspFunction Function with signature:
+    /// @code
+    /// void (AudioBuffer<SampleType>& buffer)
+    /// @endcode
+    /// Expected to read the input samples in the buffer and replace them with processed data.
+    /// @param label Optional human-readable label to use in test error reporting.
     DSPFunction (std::function<void (AudioBuffer<SampleType>&)> dspFunction, const std::string& label = {}):
         m_dspFunctionBlockWiseReplacing (std::move (dspFunction)), m_label (label)
     {
     }
 
+    /// @brief Creates a DSP instance based on a block-wise non-replacing (separate input and output buffers) DSP function.
+    /// @details
+    /// This form provides full control over how output is generated from input.
+    /// The output buffer is pre-allocated with the expected size.
+    ///
+    /// For the output buffer, the function must not change:
+    /// - Number of channels
+    /// - Number of frames
+    /// - Sample rate
+    ///
+    /// Disobeying those constraints will result in a runtime error.
+    ///
+    /// @par Example
+    /// @code
+    /// auto myDsp = DSPFunction<float> (
+    ///     [] (const auto& in, auto& out)
+    ///     {
+    ///         // Fill output using input
+    ///     },
+    ///     "My DSP function"
+    /// );
+    /// @endcode
+    /// @param dspFunction Function with signature:
+    /// @code
+    /// void (const AudioBuffer<SampleType>& input,
+    ///       AudioBuffer<SampleType>& output)
+    /// @endcode
+    /// Expected to fill the output buffer with processed data from the input buffer.
+    /// @param label Optional human-readable label to use in test error reporting.
     DSPFunction (std::function<void (const AudioBuffer<SampleType>&, AudioBuffer<SampleType>&)> dspFunction, const std::string& label = {}):
         m_dspFunctionBlockWiseNonReplacing (std::move (dspFunction)), m_label (label)
     {
@@ -60,7 +189,7 @@ public:
             return;
         }
 
-        HART_THROW_OR_RETURN_VOID (hart::NullPointerError, "DSP function is null");
+        HART_THROW_OR_RETURN_VOID (hart::NullPointerError, "DSP function is nullptr");
     }
 
     void represent (std::ostream& stream) const override
@@ -70,17 +199,29 @@ public:
 
     void reset() override {}
     void setValue (int /*paramId*/, double /*value*/) override {}
-    bool supportsChannelLayout (size_t /*inChannels*/, size_t /*outChannels*/) const override { return true; }
     bool supportsSampleRate (double /*sampleRateHz*/) const override { return true; }
     bool supportsEnvelopeFor (int /*paramId*/) const override { return false; }
+
+    bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const override
+    {
+        // TODO: Add a check for "sample wise with SR" as well, once it's there
+
+        // There's no graceful way to handle non-matching channel numbers with sample-wise
+        // function (other than perhaps mono-to-many), hence refusing to render those.
+        if (m_dspFunctionSampleWise != nullptr)
+            return numInputChannels == numOutputChannels;
+
+        return true;
+    }
 
 private:
     void processSampleWise (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
     {
+        // supportsChannelLayout() should reject non-matching channel numbers for sample-wise function
+        hassert (input.getNumChannels() == output.getNumChannels());
+
         const size_t numChannels = input.getNumChannels();
         const size_t numFrames = input.getNumFrames();
-
-        hassert (numChannels == output.getNumChannels());
 
         for (size_t channel = 0; channel < numChannels; ++channel)
             for (size_t i = 0; i < numFrames; ++i)
@@ -90,13 +231,14 @@ private:
     void processBlockWiseReplacing (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)
     {
         const size_t numFrames = input.getNumFrames();
-        const size_t maxChannels = std::max (input.getNumChannels(), input.getNumChannels());
-        m_inputOutputBuffer.setNumFrames (numFrames);
+
+        if (m_inputOutputBuffer.getNumFrames() != numFrames)
+            m_inputOutputBuffer.setNumFrames (numFrames);  // Assuming it's a switch to a partial block, or back from it
 
         for (size_t channel = 0; channel < input.getNumChannels(); ++channel)
             m_inputOutputBuffer.copyFrom (channel, 0, input, channel, 0, numFrames);
 
-        for (size_t channel = input.getNumChannels(); channel < maxChannels; ++channel)
+        for (size_t channel = input.getNumChannels(); channel < m_inputOutputBuffer.getNumChannels(); ++channel)
             m_inputOutputBuffer.clear (channel, 0, numFrames);
 
         const size_t originalNumChannels = m_inputOutputBuffer.getNumChannels();
@@ -128,13 +270,13 @@ private:
 
         // User's function is only allowed to modify the actual frames, and nothing else
 
-        if (output.getNumFrames() != originalNumChannels)
+        if (output.getNumChannels() != originalNumChannels)
             HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "DSP must not change number of channels in the output buffer");
 
         if (output.getNumFrames() != originalNumFrames)
             HART_THROW_OR_RETURN_VOID (hart::SizeError, "DSP must not change the output buffer length");
 
-        if (!floatsEqual (output.getSampleRateHz(), originalSampleRateHz))
+        if (! floatsEqual (output.getSampleRateHz(), originalSampleRateHz))
             HART_THROW_OR_RETURN_VOID (hart::SampleRateError, "DSP must not change sample rate of the output buffer");
     }
 
