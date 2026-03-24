@@ -320,7 +320,25 @@ HART_TEST ("DSPFunction - Explicit class instantiation")
         );
 
     processAudioWith (std::move (dspSampleWise))
-        .withLabel ("Sample-wise named DSP")
+        .withLabel ("Sample-wise DSP")
+        .withInputSignal (SineWave())
+        .inStereo()
+        .expectTrue (PeaksAt (expectedSamplePeakDb))
+        .expectTrue (PeaksAt (expectedSamplePeakDb).atChannel (Channel::left))
+        .expectTrue (PeaksAt (expectedSamplePeakDb).atChannel (Channel::right))
+        .process();
+
+    processAudioWith (std::move (dspBlockWiseReplacing))
+        .withLabel ("Block-wise replacing DSP")
+        .withInputSignal (SineWave())
+        .inStereo()
+        .expectTrue (PeaksAt (expectedSamplePeakDb))
+        .expectTrue (PeaksAt (expectedSamplePeakDb).atChannel (Channel::left))
+        .expectTrue (PeaksAt (expectedSamplePeakDb).atChannel (Channel::right))
+        .process();
+
+    processAudioWith (std::move (dspBlockWiseNonReplacing))
+        .withLabel ("Block-wise non-replacing DSP")
         .withInputSignal (SineWave())
         .inStereo()
         .expectTrue (PeaksAt (expectedSamplePeakDb))
