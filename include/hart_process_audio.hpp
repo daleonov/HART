@@ -11,6 +11,7 @@
 
 #include "hart_audio_buffer.hpp"
 #include "dsp/hart_dsp_all.hpp"
+#include "dsp/hart_dsp_function.hpp"
 #include "hart_expectation_failure_messages.hpp"
 #include "matchers/hart_matcher.hpp"
 #include "matchers/hart_matcher_function.hpp"
@@ -835,23 +836,21 @@ private:
     }
 };
 
-/// @brief Call this to start building your test
+/// @brief Call this to start building your test using a DSP object
 /// @param dsp Instance of your DSP effect
 /// @return @ref AudioTestBuilder instance - you can chain a bunch of test parameters with it.
 /// @ingroup TestRunner
-/// @relates AudioTestBuilder
 template <typename DSPType>
 AudioTestBuilder<typename std::decay<DSPType>::type::SampleTypePublicAlias> processAudioWith (DSPType&& dsp)
 {
     return AudioTestBuilder<typename std::decay<DSPType>::type::SampleTypePublicAlias> (std::forward<DSPType>(dsp));
 }
 
-/// @brief Call this to start building your test
+/// @brief Call this to start building your test using a smart pointer to a DSP object
 /// @details Call this for DSP objects that do not support moving or copying
 /// @param dsp Instance of your DSP effect wrapped in a smart pointer
 /// @return @ref AudioTestBuilder instance - you can chain a bunch of test parameters with it.
 /// @ingroup TestRunner
-/// @relates AudioTestBuilder
 template <typename DSPType>
 AudioTestBuilder<typename DSPType::SampleTypePublicAlias> processAudioWith (std::unique_ptr<DSPType>&& dsp)
 {
@@ -861,11 +860,119 @@ AudioTestBuilder<typename DSPType::SampleTypePublicAlias> processAudioWith (std:
 
 namespace aliases_float
 {
-    using hart::processAudioWith;
+/// @brief Call this to start building your test using a sample-wise function
+/// @details
+/// This overload allows defining a DSP processor using a function or lambda
+/// that operates on individual samples.
+///
+/// @par Function signature
+/// @code
+/// float (float value)
+/// @endcode
+///
+/// The function is applied independently to each sample.
+///
+/// For more details, see `DSPFunction` documentation, as it merely forwards
+/// the arguments to its constructor.
+///
+/// @note
+/// If your DSP requires access to sample rate or channel context,
+/// consider using one of the block-wise overloads instead.
+///
+/// @param dspFunction Function to process each sample.
+/// @param label Optional human-readable label for error reporting.
+/// @return @ref AudioTestBuilder instance - you can chain a bunch of test parameters with it.
+/// @ingroup TestRunner
+inline AudioTestBuilder<float> processAudioWith (std::function<float (float)> dspFunction, const std::string& label = {})
+{
+    return AudioTestBuilder<float> (hart::make_unique<hart::DSPFunction<float>> (std::move (dspFunction), label));
 }
+
+/// @brief Call this to start building your test using a block-wise in-place function
+/// @details
+/// The provided function processes audio in-place. The buffer is pre-filled
+/// with input data and must be modified directly.
+///
+/// @par Function signature
+/// @code
+/// void (AudioBuffer<float>& buffer)
+/// @endcode
+///
+/// @par Buffer invariants
+/// The function must not change:
+/// - Number of channels
+/// - Number of frames
+/// - Sample rate
+///
+/// For more details, see `DSPFunction` documentation, as it merely forwards
+/// the arguments to its constructor.
+///
+/// @param dspFunction Function that processes the buffer in-place.
+/// @param label Optional human-readable label for error reporting.
+/// @return @ref AudioTestBuilder instance - you can chain a bunch of test parameters with it.
+/// @ingroup TestRunner
+inline AudioTestBuilder<float> processAudioWith (std::function<void (AudioBuffer<float>&)> dspFunction, const std::string& label = {})
+{
+    return AudioTestBuilder<float> (hart::make_unique<hart::DSPFunction<float>> (std::move (dspFunction), label));
+}
+
+/// @brief Call this to start building your test using a block-wise non-replacing function
+/// @details This overload provides separate input and output buffers for processing.
+///
+/// @par Function signature
+/// @code
+/// void (const AudioBuffer<float>& input,
+///       AudioBuffer<float>& output)
+/// @endcode
+///
+/// @par Buffer invariants
+/// The function must not change:
+/// - Number of channels
+/// - Number of frames
+/// - Sample rate
+///
+/// For more details, see `DSPFunction` documentation, as it merely forwards
+/// the arguments to its constructor.
+///
+/// @param dspFunction Function that generates output from input.
+/// @param label Optional human-readable label for error reporting.
+/// @return @ref AudioTestBuilder instance - you can chain a bunch of test parameters with it.
+/// @ingroup TestRunner
+inline AudioTestBuilder<float> processAudioWith (std::function<void (const AudioBuffer<float>&, AudioBuffer<float>&)> dspFunction, const std::string& label = {})
+{
+    return AudioTestBuilder<float> (hart::make_unique<hart::DSPFunction<float>> (std::move (dspFunction), label));
+}
+
+using hart::processAudioWith;
+
+}  // namespace aliases_float
+
 namespace aliases_double
 {
-    using hart::processAudioWith;
+
+/// @brief See the description of the `float` version of this function
+/// @ingroup TestRunner
+inline AudioTestBuilder<double> processAudioWith (std::function<double (double)> dspFunction, const std::string& label = {})
+{
+    return AudioTestBuilder<double> (hart::make_unique<hart::DSPFunction<double>> (std::move (dspFunction), label));
 }
+
+/// @brief See the description of the `float` version of this function
+/// @ingroup TestRunner
+inline AudioTestBuilder<double> processAudioWith (std::function<void (AudioBuffer<double>&)> dspFunction, const std::string& label = {})
+{
+    return AudioTestBuilder<double> (hart::make_unique<hart::DSPFunction<double>> (std::move (dspFunction), label));
+}
+
+/// @brief See the description of the `float` version of this function
+/// @ingroup TestRunner
+inline AudioTestBuilder<double> processAudioWith (std::function<void (const AudioBuffer<double>&, AudioBuffer<double>&)> dspFunction, const std::string& label = {})
+{
+    return AudioTestBuilder<double> (hart::make_unique<hart::DSPFunction<double>> (std::move (dspFunction), label));
+}
+
+using hart::processAudioWith;
+
+}  // namespace aliases_double
 
 }  // namespace hart

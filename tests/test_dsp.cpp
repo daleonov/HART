@@ -278,7 +278,7 @@ HART_TEST ("StereoToMidSide")
         .process();
 }
 
-HART_TEST ("DSPFucntion")
+HART_TEST ("DSPFunction - Explicit class instantiation")
 {
     const float expectedSamplePeakDb = ratioToDecibels (tanh (1.0f));
 
@@ -326,5 +326,88 @@ HART_TEST ("DSPFucntion")
         .expectTrue (PeaksAt (expectedSamplePeakDb))
         .expectTrue (PeaksAt (expectedSamplePeakDb).atChannel (Channel::left))
         .expectTrue (PeaksAt (expectedSamplePeakDb).atChannel (Channel::right))
+        .process();
+}
+
+HART_TEST ("DSPFunction - Implicit class instantiation")
+{
+    const float expectedSamplePeakDb = ratioToDecibels (tanh (1.0f));
+
+    processAudioWith (
+        [] (float x) { return tanh (x); },
+        "Soft Clipper A"
+        )
+        .withLabel ("Sample-wise DSP with label")
+        .withInputSignal (SineWave())
+        .inStereo()
+        .expectTrue (PeaksAt (expectedSamplePeakDb))
+        .expectTrue (PeaksAt (expectedSamplePeakDb).atChannel (Channel::left))
+        .expectTrue (PeaksAt (expectedSamplePeakDb).atChannel (Channel::right))
+        .process();
+
+
+    processAudioWith (
+        [] (AudioBuffer& buffer)
+        {
+            for (size_t channel = 0; channel < buffer.getNumChannels(); ++channel)
+            {
+                float* channelData = buffer[channel];
+
+                for (size_t frame = 0; frame < buffer.getNumFrames(); ++frame)
+                    channelData[frame] = tanh (channelData[frame]);
+            }
+        },
+        "Soft Clipper B"
+        )
+        .withLabel ("Block-wise replacing DSP with label")
+        .withInputSignal (SineWave())
+        .inStereo()
+        .expectTrue (PeaksAt (expectedSamplePeakDb))
+        .expectTrue (PeaksAt (expectedSamplePeakDb).atChannel (Channel::left))
+        .expectTrue (PeaksAt (expectedSamplePeakDb).atChannel (Channel::right))
+        .process();
+
+
+    processAudioWith (
+        [] (const AudioBuffer& input, AudioBuffer& output)
+        {
+            if (input.getNumChannels() != output.getNumChannels())
+                return;
+
+            for (size_t channel = 0; channel < input.getNumChannels(); ++channel)
+            {
+                const float* inputChannelData = input[channel];
+                float* outputChannelData = output[channel];
+
+                for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
+                    outputChannelData[frame] = tanh (inputChannelData[frame]);
+            }
+        },
+        "Soft Clipper C"
+        )
+        .withLabel ("Block-wise non-replacing DSP with label")
+        .withInputSignal (SineWave())
+        .inStereo()
+        .expectTrue (PeaksAt (expectedSamplePeakDb))
+        .expectTrue (PeaksAt (expectedSamplePeakDb).atChannel (Channel::left))
+        .expectTrue (PeaksAt (expectedSamplePeakDb).atChannel (Channel::right))
+        .process();
+
+
+    // Same function signatures, but not labels.
+    // Just checking if it builds and runs here.
+    processAudioWith ([] (float x) { return x; })
+        .withLabel ("Sample-wise DSP with no label")
+        .withInputSignal (SineWave())
+        .process();
+
+    processAudioWith ([] (AudioBuffer& buffer) {})
+        .withLabel ("Block-wise replacing DSP with nolabel")
+        .withInputSignal (SineWave())
+        .process();
+
+    processAudioWith ([] (const AudioBuffer& input, AudioBuffer& output) {})
+        .withLabel ("Block-wise non-replacing DSP with label")
+        .withInputSignal (SineWave())
         .process();
 }
