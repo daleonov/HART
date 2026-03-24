@@ -2,6 +2,10 @@
 
 @tableofcontents
 
+# Setting up your project
+
+To set up your project to use HART, see this page: @ref SettingUpYourProjectToUseHART
+
 # Wrapping your algorithm
 
 In order to get HART to play audio through your DSP algorithm, you need to wrap it into a DSP class. @ref DSP @ref hart::DSP
