@@ -8,9 +8,123 @@ To set up your project to use HART, see this page: @ref SettingUpYourProjectToUs
 
 # Wrapping your algorithm
 
-In order to get HART to play audio through your DSP algorithm, you need to wrap it into a DSP class. @ref DSP @ref hart::DSP
+In order to get HART to play audio through your DSP algorithm, you need to help HART to interface with it. There are two ways of doing this:
 
-To do it, make a subclass of @ref hart::DSP and put your class inside of it. You'll have to implement a few methods for it. A minimal setup can look like this:
+1. Providing a function - a light-weight option for simple inline processing
+2. Defining a `hart::DSP` subclass - a more structured approach, suitable for complex or reusable processors
+
+Both approaches let HART render audio through your algorithm. You'll get less capabilities with function-based approach, but it's often faster and easier to implement. HART doesn't force you into writing custom subclasses if you just need something simple that can be expressed with a lambda one-liner. You can always start with a lambda-based DSP, and later upgrade it by creating a full-featured `hart::DSP` subclass. If you're testing a more advanced processor (e.g. a plugin or a stateful effect), starting with a custom subclass right away is usually a better idea.
+
+## Using function-based DSP
+
+Providing a function that describes how your audio should be processed is often the quickest way to get started. HART supports three forms of function-based DSP:
+
+1. `SampleType myDspFunction (SampleType value)` - Sample-wise processing
+2. `void myDspFunction (AudioBuffer<SampleType>& buffer)` - Block-wise replacing (in-place) processing
+3. `void myDspFunction (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output)` - Block-wise non-replacing processing
+
+`SampleType` is the type of your audio samples, typically `float` or `double`. `AudioBuffer` is a HART container for audio data. For more details, see `DSPFunction` documentation. The function can be a lambda, a regular function, or a functor.
+
+### Examples
+
+#### Simple sample-wise function
+
+Handy for very basic DSP transformations. Keep in mind, that with this type of callback, you won't be aware of what channel does this sample come from, or what the current sample rate is.
+
+```cpp
+// Uses sample-wise function signature
+processAudioWith (
+    [] (float x) { return std::tanh (x); },
+    "Waveshaper"
+    )
+    .withInputSignal (SineWave())
+    .expectTrue (PeaksBelow (0_dB))
+    .process();
+```
+
+**Note:** In order to use `processAudioWith (function, label)` helper function, you need to have `HART_DECLARE_ALIASES_FOR_FLOAT` or `HART_DECLARE_ALIASES_FOR_DOUBLE` macro defined at the top of your cpp file. Otherwise, you'll have to use it with a slightly more verbose syntax: `processAudioWith (DSPFunction<SampleType> (function, label))`.
+
+#### Wrapping existing C-style code
+
+If your DSP operates on raw buffers, you can easily wrap it using a block-based function. The `in` and `out` arguments will be `hart::AudioBuffer` references. Among other things, they contain metadata on what sample rate they're supposed to be in, number of channels and frames. See `hart::AudioBuffer` documentation for more details.
+
+```cpp
+void myDspFunction (float** inputs, float** outputs, size_t numFrames, double sampleRateHz);
+
+// ...
+
+// Uses block-wise non-replacing function signature
+processAudioWith (
+    [&] (const auto& in, auto& out)
+    {
+        myDspFunction (
+            (float**) in.getArrayOfReadPointers(),
+            out.getArrayOfWritePointers(),
+            in.getNumFrames(),
+            in.getSampleRateHz()
+            );
+    },
+    "My DSP Function"
+    )
+    .withInputSignal (SineWave())
+    .inStereo()
+    .expectFalse (EqualsTo (SineWave()))
+    .expectFalse (EqualsTo (Silence()))
+    .process();
+```
+
+#### Wrapping a JUCE AudioProcessor subclass
+
+You can also use this approach to test existing processors without writing a dedicated wrapper. Frankly speaking, at this point it's best to consider creating a custom `hart::DSP` subclass instead, but it's still possible with functional approach, although a bit clunky.
+
+```cpp
+juce::AudioBuffer<float> juceAudioBuffer (1, 1024);
+MyJuceAudioProcessor processor;
+processor.prepareToPlay (44100.0, 1024);
+
+// Uses block-wise replacing function signature
+processAudioWith (
+    [&processor] (auto& hartAudioBuffer)
+    {
+        const auto numFrames = hartAudioBuffer.getNumFrames();
+        juceAudioBuffer.setSize (1, numFrames, true, false, true);
+        juceAudioBuffer.copyFrom (0, 0, hartAudioBuffer[0], numFrames);
+        juce::MidiBuffer dummyMidiBuffer;
+        processor.processBlock (juceAudioBuffer, dummyMidiBuffer);
+        hartAudioBuffer.copyFrom (0, 0, juceAudioBuffer.getReadPointer (0), numFrames);
+    },
+    "JUCE processor"
+    )
+    .withInputSignal (SineWave())
+    .inMono()
+    .expectFalse (EqualsTo (SineWave()))
+    .expectFalse (EqualsTo (Silence()))
+    .process();
+```
+
+### Using DSPFunction explicitly
+
+Under the hood, `processAudioWith()` wraps your function into a `hart::DSPFunction` object. You can also construct it directly, and use as a regular DSP object:
+
+```cpp
+auto polarityFlip = DSPFunction<float> (
+    [] (float x) { return -x; },
+    "Polarity Flip"
+);
+
+processAudioWith (std::move (polarityFlip))
+    .withInputSignal (SineWave())
+    .expectTrue (EqualsTo (SineWave (hart::pi)))
+    .process();
+```
+
+Function-based DSPs have limited capabilities: for instance, they won't support setting parameters via `AudioTestBuilder::setValue()`, or parameter automation, but they're a great choice for defining quick inline transformations, without having to create a custom subclass.
+
+If your DSP is more complex (e.g. requires internal state, multiple parameters, or to be re-used across tests), it's often more convenient to define it as a dedicated DSP class, which will be described below.
+
+## Using a DSP class
+
+Making your own custom hart::DSP subclass gives you access to all the HART features. To make it happen, make a subclass of @ref hart::DSP and put your class inside of it. You'll have to implement a few methods for it. A minimal setup can look like this:
 
 ```cpp
 class MyDSPWrapper :
@@ -25,7 +139,6 @@ public:
     };
 
     MyDSPWrapper();
-    // Also, move and copy ctors and assignements are optional, but encouraged
 
     void prepare (
         double sampleRateHz,
@@ -56,22 +169,6 @@ private:
 It may look like a lot, but you probably already have similar methods implemented in your effect, so it won't take too much work. Check the hart::DSP reference for details about each of those methods.
 
 HART supports processing in both ```float``` and ```double``` when it comes to audio data - everything that has to do with audio buffers is templated. Everything that has to do with parameters (like gains, compressor thresholds etc) is always ```double``` - keeps thigs way simpler! 
-
-# Your main file
-
-Like most automated tests, they're designed to run as a separate executable. So, if you're making an audio plugin or something similar, just make a separate target (project) that builds into a basic console application. Keep your non-audio tests (done with Catch2, gtest etc) as another separate target. Your main function should look something like this:
-
-```cpp
-#define HART_IMPLEMENTATION  // It's a header-only library, so this is required
-#include "hart.hpp"  // Just one header
-
-int main (int argc, char** argv)
-{
-    return HART_RUN_ALL_TESTS (argc, argv);
-}
-```
-
-This is it!
 
 # Your first test
 
@@ -133,13 +230,13 @@ reUseMe = processAudioWith (std::move (reUseMe))./*...*/.process()  // Re-using 
 
 You feed some audio into your effect, to check what comes out. This is the core purpose of this framework. In the future, I'll probably add support for synths and virtual instruments - I need that too - but audio effects is a priority.
 
-"Signal" is one of the core concepts of this framework. It  can be as simple as a sine wave. It can be something more complex: with a chain of effects with automation envelopes to shape it. Or it can be just a wav file - I know a lot of people just want to play some pre-rendered audio through it, you can do it too, easily!
+"Signal" is one of the core concepts of this framework. It  can be as simple as a sine wave. It can be something more complex: with a chain of effects with automation envelopes to shape it. Or it can be just a wav file - I know a lot of people just want to play some pre-rendered audio through it, you can do it too, easily! And you can, of course, create your own signals as well, via a simple function (see `hart::SignalFunction`), or by creating a custom `hart::Signal` subclass.
 
 If you ever need to re-use the signal instance, you can get it via `AudioTestBuilder::saveInputSignalTo()`. For example, there are some cases, where you want to put your DSP instance into a signal's DSP chain (yes, you can do it too!), and this way you can eventually get your DSP instance back.
 
 ## [3] Setting some values
 
-Obviously, you want to put your effect in some state first, in most cases. In most cases, you just want to set a few fixed values - just chain a few withValue() statements - they will call DSP::setValue() that you've implemented earlier. Of course, you can not do those statements at all, and it will keep your effect in its default state.
+Obviously, you want to put your effect in some state first, in most cases. In most cases, you just want to set a few fixed values - just chain a few withValue() statements - they will call `hart::DSP::setValue()`` that you've implemented earlier. Of course, you can choose to not do those statements at all, and it will keep your effect in its default state.
 
 If your DSP has internal value smoothing, or needs some time to settle for any other reason, you might want to call `AudioTestBuilder::withWarmUp (timeInSeconds)` as well - it will run the audio through it for requested duration, but will not do any matcher checks (your `expectTrue()`, `assertFalse()` etc - see the next section). And only after that, it will run the test with the matchers.
 
@@ -147,9 +244,9 @@ You can also do something more fancy with the parameters - think automation curv
 
 ## [4] Checking the audio produced by your effect
 
-This is what this framework is for, after all. `PeaksAt` is something called "matcher" (totally stole this term from Catch2). If receives audio from your effect's output and checks it. This one, as the name implies, checks if the signal peaks at 3dB. By the way, you get a bunch of handy constants and literals for better readability, like `_dB` or `_kHz` - you're welcome to use them. See `hart_units.hpp` header for the full list.
+This is what this framework is for, after all. `PeaksAt` is something called "Matcher" (may ring a bell, if you've ever used Catch2). If receives audio from your effect's output and checks it. This one, as the name implies, checks if the signal peaks at 3dB. By the way, you get a bunch of handy constants and literals for better readability, like `_dB` or `_kHz` - you're welcome to use them. See `hart_units.hpp` header for the full list.
 
-Other matchers can, for example, compare your output with some other signal or a wav file. And they're passed in as objects - it means you make your own and use them, just like the stock ones. So, if you need, say, check LUFS values, inter-sample peaks, or check something fancy in frequency domain, just subclass a Matcher, and pass it to the test runner.
+Other matchers can, for example, compare your output with some other signal or a wav file. And they're passed in as objects or functions - it means you make your own and use them, just like the stock ones. So, if you need, say, check LUFS values, inter-sample peaks, or check something fancy in frequency domain, just subclass a Matcher, and pass it to the test runner. And if you want to write a simple lambda instead of creating a custom subclass, you can do it too - check `hart::MatcherFunction` for details.
 
 You can do two levels of assertions: "expect" and "assert". Like in other test frameworks, "assert" will stop the test immediately if it fails, but "expect" will report the failure and carry on with other tests. And there are inverted versions for both, so you get:
     * `expectTrue()`
