@@ -429,3 +429,24 @@ HART_TEST ("DSPFunction - Implicit class instantiation")
         .withInputSignal (SineWave())
         .process();
 }
+
+HART_TEST ("TimeShift")
+{
+    // TODO: Do a more robust test when latency-related matcher is introduced
+
+    using hart::hzPrecision;
+    using hart::pi;
+
+    constexpr double signalFrequencyHz = 100_Hz;
+    constexpr double signalPeriodSeconds = 1.0 / signalFrequencyHz;
+
+    for (double sampleRateHz : {44.1_kHz, 48_kHz, 96_kHz})
+    {
+        processAudioWith (TimeShift (signalPeriodSeconds))
+            .withLabel (HART_STR ("TimeShift for one cycle at " << hzPrecision << " Hz"))
+            .withInputSignal (SineWave (signalFrequencyHz))
+            .expectFalse (EqualsTo (SineWave (signalFrequencyHz)))
+            .expectTrue (PeaksAt (0_dB))
+            .process();
+    }
+}
