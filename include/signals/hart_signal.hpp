@@ -154,9 +154,7 @@ public:
     virtual void prepare (double sampleRateHz, size_t numOutputChannels, size_t maxBlockSizeFrames) = 0;
 
     /// @brief Renders next block audio for the signal
-    /// @details Depending on circumstances, this callback will either be called once to generate an entire piece of audio from
-    /// start to finish, or called repeatedly, one block at a time.
-    /// This method is guaranteed to be called strictly after @ref prepare(), or not called at all.
+    /// @details This method is guaranteed to be called strictly after @ref prepare(), or not called at all.
     /// Number of channels and max block size are guaranteed to be in line with the ones set by prepare() callback.
     /// Assume sample rate to always be equal to the one received in the last @ref prepare() callback.
     /// All audio blocks except the last one are guaranteed to be equal to ```maxBlockSizeFrames``` set in @ref prepare() callback.
@@ -196,6 +194,8 @@ public:
     /// @attention If you're not making a custom host, you probably don't need to call this method.
     void prepareWithDSPChain (double sampleRateHz, size_t numOutputChannels, size_t maxBlockSizeFrames)
     {
+        m_maxBlockSizeFrames = maxBlockSizeFrames;
+
         prepare (sampleRateHz, numOutputChannels, maxBlockSizeFrames);
         const size_t numInputChannels = numOutputChannels;
 
@@ -222,6 +222,19 @@ public:
     /// @attention If you're not making a custom host, you probably don't need to call this method.
     void renderNextBlockWithDSPChain (AudioBuffer<SampleType>& output)
     {
+        // Make sure prepareWithDSPChain() was called by the host first!
+        hassert (m_maxBlockSizeFrames != 0);
+
+        // If you've triggerred this, you're probably trying to skip block-by block rendering,
+        // by rendering the whole piece of audio at once, or just accidentally got a block size
+        // larger than the onse set in prepareWithDSPChain().
+        // While is could be fine in certain cases, remember that there can be some DSP effects
+        // in the signal chain that rely in a block size set in the prepare() callback, so HART
+        // guarantees that the size of AudioBuffer for process() will never be larger than the
+        // block size set in prepare() callback.
+        // TLDR: Make sure you always render audio block-wise, obeying the size set in prepare().
+        hassert (output.getNumFrames() <= m_maxBlockSizeFrames);
+
         renderNextBlock (output);
         AudioBuffer<SampleType>& inputReplacing = output;
 
@@ -317,6 +330,7 @@ protected:
         return m_numChannels;
     }
 
+    size_t m_maxBlockSizeFrames = 0;
     size_t m_numChannels = 1;
     double m_startTimestampSeconds = 0.0;
     std::vector<std::unique_ptr<DSPBase<SampleType>>> m_dspChain;

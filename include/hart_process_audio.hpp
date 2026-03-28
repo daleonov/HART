@@ -604,6 +604,7 @@ public:
         while (offsetFrames < totalDurationFrames)
         {
             // TODO: Do not continue if there are no checks, or all checks should skip and there's no input and output file to write
+            // TODO: Avoid re-allocating inputBlock and outputBlock in every iteration of this loop
 
             const size_t blockSizeFrames = std::min (m_blockSizeFrames, totalDurationFrames - offsetFrames);
 

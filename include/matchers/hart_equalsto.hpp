@@ -7,7 +7,7 @@
 #include "matchers/hart_matcher.hpp"
 #include "hart_precision.hpp"
 #include "signals/hart_signal.hpp"
-#include "hart_utils.hpp"
+#include "hart_utils.hpp"  // floatsEqual(), ratioToDecibels()
 
 namespace hart
 {
@@ -103,27 +103,68 @@ public:
 
     void prepare (double sampleRateHz, size_t numChannels, size_t maxBlockSizeFrames) override
     {
+        m_maxBlockSizeFrames = maxBlockSizeFrames;
+        m_referenceOutputAudio = AudioBuffer<SampleType> (numChannels, maxBlockSizeFrames, sampleRateHz);
         m_referenceSignal->prepareWithDSPChain (sampleRateHz, numChannels, maxBlockSizeFrames);
     }
 
     bool match (const AudioBuffer<SampleType>& /* inputAudio */, const AudioBuffer<SampleType>& observedOutputAudio) override
     {
-        auto referenceOutputAudio = AudioBuffer<SampleType>::emptyLike (observedOutputAudio);
-        m_referenceSignal->renderNextBlockWithDSPChain (referenceOutputAudio);
+        if (observedOutputAudio.getNumFrames() <= m_maxBlockSizeFrames)
+        {
+            // Usual block-wise rendering
 
-        for (size_t channel = 0; channel < referenceOutputAudio.getNumChannels(); ++channel)
+            if (m_referenceOutputAudio.getNumFrames() != observedOutputAudio.getNumFrames())
+                m_referenceOutputAudio.setNumFrames (observedOutputAudio.getNumFrames());  // To partial block and back
+
+            m_referenceSignal->renderNextBlockWithDSPChain (m_referenceOutputAudio);
+        }
+        else
+        {
+            // Matcher was given a full piece of audio, instead of block-by-block rendering.
+            // HART guarantees to the Signal instances that the renderNextBlock() will be called
+            // with audio buffer sizes that are in line with max block size set in prepare().
+            // Since this matcher is a "host" for the reference signal, it has to obey those
+            // rules as well, by slicing the full audio buffer into properly sized blocks.
+
+            AudioBuffer<SampleType> fullOutputBuffer (observedOutputAudio.getNumChannels(), 0, observedOutputAudio.getSampleRateHz());
+            const size_t totalDurationFrames = observedOutputAudio.getNumFrames();
+            size_t offsetFrames = 0;
+
+            while (offsetFrames < totalDurationFrames)
+            {
+                const size_t blockSizeFrames = std::min (m_maxBlockSizeFrames, totalDurationFrames - offsetFrames);
+
+                if (m_referenceOutputAudio.getNumFrames() != blockSizeFrames)
+                    m_referenceOutputAudio.setNumFrames (blockSizeFrames);  // To partial block and back
+
+                m_referenceSignal->renderNextBlockWithDSPChain (m_referenceOutputAudio);
+                fullOutputBuffer.appendFrom (m_referenceOutputAudio);
+
+                offsetFrames += blockSizeFrames;
+            }
+
+            m_referenceOutputAudio = std::move (fullOutputBuffer);
+        }
+
+        // Sanity checks
+        hassert (m_referenceOutputAudio.getNumFrames() == observedOutputAudio.getNumFrames());
+        hassert (m_referenceOutputAudio.getNumChannels() == observedOutputAudio.getNumChannels());
+        hassert (floatsEqual (m_referenceOutputAudio.getSampleRateHz(), observedOutputAudio.getSampleRateHz()));
+
+        for (size_t channel = 0; channel < m_referenceOutputAudio.getNumChannels(); ++channel)
         {
             if (! this->appliesToChannel (channel))
                 continue;
 
-            for (size_t frame = 0; frame < referenceOutputAudio.getNumFrames(); ++frame)
+            for (size_t frame = 0; frame < m_referenceOutputAudio.getNumFrames(); ++frame)
             {
-                if (notEqual (observedOutputAudio[channel][frame], referenceOutputAudio[channel][frame]))
+                if (notEqual (observedOutputAudio[channel][frame], m_referenceOutputAudio[channel][frame]))
                 {
                     m_failedFrame = frame;
                     m_failedChannel = (int) channel;
                     m_failedObservedValue = observedOutputAudio[channel][frame];
-                    m_failedExpectedValue = referenceOutputAudio[channel][frame];
+                    m_failedExpectedValue = m_referenceOutputAudio[channel][frame];
                     return false;
                 }
             }
@@ -167,6 +208,9 @@ public:
 private:
     std::unique_ptr<SignalBase<SampleType>> m_referenceSignal;
     const SampleType m_toleranceLinear;
+
+    size_t m_maxBlockSizeFrames = 0;
+    AudioBuffer<SampleType> m_referenceOutputAudio;
 
     size_t m_failedFrame = 0;
     size_t m_failedChannel = 0;
