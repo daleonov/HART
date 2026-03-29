@@ -113,8 +113,10 @@ HART_TEST ("LatencyBelow")
 
     using hart::roundToSizeT;
     using hart::Loop;
+    using AudioBuffer = hart::AudioBuffer<float>;
+
     SignalFunction delayedImpulse (
-        [] (auto& buffer) {
+        [] (AudioBuffer& buffer) {
             constexpr double impulseTimingSeconds = 0.05_s;
             const size_t impulseTimingFrames =
                 1 + roundToSizeT (impulseTimingSeconds * buffer.getSampleRateHz());
