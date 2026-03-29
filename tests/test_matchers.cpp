@@ -86,3 +86,54 @@ HART_TEST ("Matcher function - For input and output buffers")
         .expectFalse ([] (const AudioBuffer&, const AudioBuffer&) { return false; }, "Always false")
         .process();
 }
+
+HART_TEST ("LatencyBelow")
+{
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("No latency")
+        .withInputSignal (SineWave())
+        .expectTrue (LatencyBelow (100_us))
+        .process();
+
+    processAudioWith (TimeShift (5_ms))
+        .withLabel ("Impulse into TimeShift - mono")
+        .withInputSignal (Impulse())
+        .expectTrue (LatencyBelow (5.1_ms))
+        .expectFalse (LatencyBelow (4.9_ms))
+        .process();
+
+    processAudioWith (TimeShift (5_ms))
+        .withLabel ("Impulse into TimeShift - 5 channels")
+        .withInputChannels (5)
+        .withOutputChannels (5)
+        .withInputSignal (Impulse())
+        .expectTrue (LatencyBelow (5.1_ms))
+        .expectFalse (LatencyBelow (4.9_ms))
+        .process();
+
+    using hart::roundToSizeT;
+    using hart::Loop;
+    SignalFunction delayedImpulse (
+        [] (auto& buffer) {
+            constexpr double impulseTimingSeconds = 0.05_s;
+            const size_t impulseTimingFrames =
+                1 + roundToSizeT (impulseTimingSeconds * buffer.getSampleRateHz());
+
+            buffer.setNumFrames (impulseTimingFrames);
+            buffer.clear();
+
+            for (size_t channel = 0; channel < buffer.getNumChannels(); ++channel)
+                buffer[channel][buffer.getNumFrames() - 1] = 1.0f;
+        },
+        "Delayed impulse",
+        Loop::no
+        );
+
+    processAudioWith (TimeShift (5_ms))
+        .withLabel ("Delayed impulse into TimeShift")
+        .withInputSignal (std::move (delayedImpulse))
+        .withDuration (70_ms)  // Delayed impulse timing + expected latency + a little bit on top
+        .expectTrue (LatencyBelow (5.1_ms))
+        .expectFalse (LatencyBelow (4.9_ms))
+        .process();
+}
