@@ -1,23 +1,37 @@
 #pragma once
 
 #include <vector>
-#include <cmath>
-#include <stdexcept>
 
 #include "hart_dsp.hpp"
 #include "hart_precision.hpp"  // secPrecision
 #include "hart_utils.hpp"  // roundToSizeT()
 
-// TODO: Add documentation
-
 namespace hart
 {
 
+/// @brief Shifts an audio signal forward in time by a fixed amount
+/// @details Delays the input signal by a specified duration, expressed in seconds.
+/// Internally, the delay is converted to an integer number of frames based on the
+/// current sample rate, so it soesn't do sub-frame (fractional) elays.
+/// This DSP is a low-level utility intended for testing and signal alignment purposes,
+/// such as compensating for latency in other processors. It performs a pure time shift
+/// with no feedback or dry/wet mixing. The output is zero-filled until the internal
+/// buffer is primed. Delay time is fixed and cannot be changed after construction or
+/// copy/move assignment. The delay is identical across all channels, and processing
+/// is only supported when the number of input and output channels matches.
+/// @throws hart::ValueError for negative or zero delay (in seconds or frames)
+/// @tparam SampleType Floating point sample type, typecally `float` or `double`.
+/// @ingroup DSP
 template <typename SampleType>
 class TimeShift :
     public DSP<SampleType, TimeShift<SampleType>>
 {
 public:
+    /// @brief Creates a TimeShift processor with a fixed delay.
+    /// @param delaySeconds Delay duration in seconds. Must be greater than zero.
+    /// The delay value is converted to an integer number of frames during prepare(),
+    /// based on the provided sample rate. Values that resolve to zero frames are rejected.
+    /// @throws hart::ValueError for negative or zero delay (in seconds or frames)
     TimeShift (double delaySeconds):
         m_delaySeconds (delaySeconds)
     {
@@ -25,6 +39,9 @@ public:
             HART_THROW_OR_RETURN_VOID (hart::ValueError, "TimeShift: delaySeconds must be > 0");
     }
 
+    /// @brief Creates a TimeShift processor by copying other one
+    /// @details The entire state, included internal delay byffers' content is copied as well
+    /// @param other TimeShift to copy from
     TimeShift (const TimeShift& other):
         DSP<SampleType, TimeShift<SampleType>> (other),
         m_delaySeconds (other.m_delaySeconds),
@@ -35,6 +52,9 @@ public:
     {
     }
 
+    /// @brief Creates a TimeShift processor by moving other one
+    /// @details The entire state, included internal delay byffers' content is moved as well
+    /// @param other TimeShift to move from
     TimeShift (TimeShift&& other) noexcept:
         DSP<SampleType, TimeShift<SampleType>> (std::move (other)),
         m_delaySeconds (other.m_delaySeconds),
@@ -48,6 +68,9 @@ public:
         other.m_writeIndex = 0;
     }
 
+    /// @brief Creates a TimeShift processor by copying other one
+    /// @details The entire state, included internal delay byffers' content is copied as well
+    /// @param other TimeShift to copy from
     TimeShift& operator= (const TimeShift& other)
     {
         if (this == &other)
@@ -64,6 +87,9 @@ public:
         return *this;
     }
 
+    /// @brief Creates a TimeShift processor by moving other one
+    /// @details The entire state, included internal delay byffers' content is moved as well
+    /// @param other TimeShift to move from
     TimeShift& operator= (TimeShift&& other) noexcept
     {
         if (this == &other)
@@ -104,7 +130,7 @@ public:
         if (m_delayFrames == 0)
             HART_THROW_OR_RETURN_VOID (hart::ValueError, "TimeShift: Delay time resolved to 0 frames!");
 
-        m_bufferSizeFrames = m_delayFrames;
+        m_bufferSizeFrames = m_delayFrames + 1;
         m_writeIndex = 0;
 
         m_buffers.clear();
