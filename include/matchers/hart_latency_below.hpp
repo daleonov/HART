@@ -7,22 +7,34 @@
 #include "hart_precision.hpp"  // secPrecision, linPrecision
 #include "hart_str.hpp"
 
-// TODO: Add docs
-
 namespace hart
 {
 
+/// @brief Checks whether the output signal has a latency under a specified amount, compared to the input
+/// @details The latency is determined as a difference between an input signal's onset and the output's
+/// onset. And onset is the point where absolute value of the sample crosses the threshold upwards for
+/// the first time. In a multi-channel setup, it keeps tracks of latencies on each individual channel, and
+/// takes the largest one into account.
+/// tparam SampleType Type of audio samples, typically `float` or `double`
+/// @ingroup Matchers
 template <typename SampleType>
 class LatencyBelow :
     public Matcher<SampleType, LatencyBelow<SampleType>>
 {
 public:
+    /// @brief Defines behaviour when onset cannot be detected on one of the channels
     enum class SilencePolicy
     {
-        Strict,
-        Relaxed
+        Strict,  ///< Matcher reports failure if even one of the channels does not have an onset
+        Relaxed  ///< Matcher ignores the channels that do not have an onset
     };
 
+    /// @brief Creates a matcher that expects a latency between input and output under a specified value
+    /// @param maxLatencySeconds The latency value above which the matcher shoul report a failure
+    /// @param silencePolicy What to do if some of the input or output channels are silent, and therefore
+    /// the latency there cannot be measured. See `SilencePolicy` for details.
+    /// @param thresholdLinear This value determines a threshold the signal has to pass to be detected as onset.
+    /// The difference between input and output onset timings is the observed latency in this Matcher.
     LatencyBelow (double maxLatencySeconds, SilencePolicy silencePolicy = SilencePolicy::Strict, SampleType thresholdLinear = (SampleType) 1e-6):
         m_maxLatencySeconds (maxLatencySeconds),
         m_silencePolicy (silencePolicy),

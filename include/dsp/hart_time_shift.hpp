@@ -19,6 +19,8 @@ namespace hart
 /// buffer is primed. Delay time is fixed and cannot be changed after construction or
 /// copy/move assignment. The delay is identical across all channels, and processing
 /// is only supported when the number of input and output channels matches.
+/// It is encouraged to use it in conjunction with `hart::Impulse` signal,
+/// although other signal types may also be appropriate.
 /// @throws hart::ValueError for negative or zero delay (in seconds or frames)
 /// @tparam SampleType Floating point sample type, typecally `float` or `double`.
 /// @ingroup DSP
