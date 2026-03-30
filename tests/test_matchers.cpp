@@ -1,3 +1,5 @@
+#include <cstdlib>  // rand()
+
 #include "hart.hpp"
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
@@ -137,5 +139,72 @@ HART_TEST ("LatencyBelow")
         .withDuration (70_ms)  // Delayed impulse timing + expected latency + a little bit on top
         .expectTrue (LatencyBelow (5.1_ms))
         .expectFalse (LatencyBelow (4.9_ms))
+        .process();
+}
+
+HART_TEST ("CorrelationAbove")
+{
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Identical signal")
+        .withInputSignal (SineWave())
+        .expectTrue (CorrelationAbove (0.999))
+        .process();
+
+    processAudioWith (GainDb (-6_dB))
+        .withLabel ("Level difference doesn't matter")
+        .withInputSignal (SineWave())
+        .expectTrue (CorrelationAbove (0.999))
+        .process();
+
+    processAudioWith (TimeShift (10_ms))
+        .withLabel ("Time shift within expected lag is fine")
+        .withInputSignal (SineSweep())
+        .expectTrue (CorrelationAbove (0.999, 100_ms))
+        .process();
+
+    processAudioWith (TimeShift (10_ms))
+        .withLabel ("Time shift beyond expected lag results in a failure")
+        .withInputSignal (SineSweep())
+        .expectFalse (CorrelationAbove (0.999, 5_ms))
+        .process();
+
+    processAudioWith (GainLinear (-1.0))
+        .withLabel ("Flipped polarity does not matter")
+        .withInputSignal (SineWave())
+        .expectTrue (CorrelationAbove (0.999))
+        .process();
+
+    processAudioWith ([] (float x) { return x + 0.5; })
+        .withLabel ("DC offset matters")
+        .withInputSignal (SineWave())
+        .expectTrue (CorrelationAbove (0.8))
+        .expectFalse (CorrelationAbove (0.85))
+        .process();
+
+    processAudioWith (HardClip (-6_dB))
+        .withLabel ("Moderately distorted")
+        .withInputSignal (SineWave())
+        .expectTrue (CorrelationAbove (0.97))
+        .expectFalse (CorrelationAbove (0.999))
+        .process();
+
+    processAudioWith (HardClip (-30_dB))
+        .withLabel ("Heavily distorted")
+        .withInputSignal (SineWave())
+        .expectTrue (CorrelationAbove (0.9))
+        .expectFalse (CorrelationAbove (0.95))
+        .process();
+
+    processAudioWith ([] (float x) { return 0.01 * x + (std::rand() / RAND_MAX * 2 - 1);})
+        .withLabel ("Very noisy")
+        .withInputSignal (SineWave())
+        .expectTrue (CorrelationAbove (0.01))
+        .expectFalse (CorrelationAbove (0.1))
+        .process();
+
+    processAudioWith ([] (float) { return std::rand() / RAND_MAX; })
+        .withLabel ("Completely uncorrelated")
+        .withInputSignal (SineWave())
+        .expectFalse (CorrelationAbove (0.001))
         .process();
 }

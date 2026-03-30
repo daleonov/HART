@@ -1,0 +1,214 @@
+#pragma once
+
+#include <cmath>  // round()
+#include <iomanip>
+#include <vector>
+#include <sstream>
+
+#include "hart_exceptions.hpp"
+#include "hart_matcher.hpp"
+#include "hart_precision.hpp"
+#include "hart_str.hpp"
+#include "hart_utils.hpp"  // inf, floatsEqual()
+
+namespace hart
+{
+
+template <typename SampleType>
+class CorrelationAbove :
+    public Matcher<SampleType, CorrelationAbove<SampleType>>
+{
+public:
+    CorrelationAbove (double minCorrelation, double maxLagSeconds = 0.01):
+        m_minCorrelation (minCorrelation),
+        m_maxLagSeconds (maxLagSeconds)
+    {
+        if (m_minCorrelation < 0 || m_minCorrelation > 1.0)
+            HART_THROW_OR_RETURN (hart::ValueError, "Correlation should be in 0..1 range", false);
+
+        if (m_maxLagSeconds < 0)
+            HART_THROW_OR_RETURN (hart::ValueError, "Max lag should be a non-negative number in seconds", false);
+    }
+
+    void prepare (double sampleRateHz, size_t /* numChannels */, size_t /*maxBlockSizeFrames*/) override
+    {
+        m_sampleRateHz = sampleRateHz;
+        m_maxLagFrames = static_cast<long long int> (std::round (m_maxLagSeconds * m_sampleRateHz));
+    }
+
+    bool canOperatePerBlock() const override
+    {
+        return false;
+    }
+
+    void reset() override
+    {
+        m_failureChannel = 0;
+        m_failureFrame = 0;
+        m_bestCorrelation = 0.0;
+        m_bestLagFrames = 0;
+        m_hadValidData = false;
+    }
+
+    bool match (const AudioBuffer<SampleType>& inputAudio, const AudioBuffer<SampleType>& observedOutputAudio) override
+    {
+        hassert (inputAudio.getNumChannels() == observedOutputAudio.getNumChannels());
+        hassert (inputAudio.getNumFrames() == observedOutputAudio.getNumFrames());
+        hassert (inputAudio.getSampleRateHz() == observedOutputAudio.getSampleRateHz());
+
+        const size_t numChannels = inputAudio.getNumChannels();
+        const long long int numFrames = static_cast<long long int> (inputAudio.getNumFrames());
+
+        double worstChannelCorrelation = hart::inf;
+        size_t worstChannel = 0;
+        bool anyValidChannel = false;
+
+        for (size_t channel = 0; channel < numChannels; ++channel)
+        {
+            if (! this->appliesToChannel (channel))
+                continue;
+
+            double bestCorrelation = -hart::inf;
+            long long int bestLag = 0;
+            bool channelValid = false;
+
+            const SampleType* x = inputAudio[channel];
+            const SampleType* y = observedOutputAudio[channel];
+
+            // Formula:
+            // sum (x[n] * y[n+k]) / sqrt (sum (x[n]^2) * sum (y[n+k]^2))
+
+            for (long long int lag = -m_maxLagFrames; lag <= m_maxLagFrames; ++lag)
+            {
+                SampleType dotProduct = 0.0;
+                SampleType sumSqX = 0.0;  // TODO: Sliding algorithm for sum (x[n]^2)
+                SampleType sumSqY = 0.0;
+                size_t overlapCount = 0;
+
+                for (long long int n = 0; n < numFrames; ++n)
+                {
+                    const long long int yn = n + lag;
+
+                    if (yn < 0 || yn >= numFrames)
+                        continue;
+
+                    const SampleType xnVal = x[n];
+                    const SampleType ynVal = y[yn];
+
+                    // TODO: Kahan summation for those 3 sums
+                    dotProduct += xnVal * ynVal;
+                    sumSqX += xnVal * xnVal;
+                    sumSqY += ynVal * ynVal;
+
+                    ++overlapCount;
+                }
+
+                if (overlapCount == 0 || floatsEqual (sumSqX, (SampleType) 0) || floatsEqual (sumSqY, (SampleType) 0))
+                    continue;
+
+                channelValid = true;
+                const double corr = static_cast<double> (dotProduct) / std::sqrt (static_cast<double> (sumSqX * sumSqY));
+                const double absCorr = std::abs (corr);
+
+                if (absCorr > bestCorrelation)
+                {
+                    bestCorrelation = absCorr;
+                    bestLag = lag;
+                }
+
+                if (floatsEqual (absCorr, 1.0))
+                {
+                    bestCorrelation = absCorr;
+                    bestLag = lag;
+                    break;
+                }
+            }
+
+            if (! channelValid)
+                continue;
+
+            anyValidChannel = true;
+
+            if (bestCorrelation < worstChannelCorrelation)
+            {
+                worstChannelCorrelation = bestCorrelation;
+                worstChannel = channel;
+                m_bestCorrelation = bestCorrelation;
+                m_bestLagFrames = bestLag;
+            }
+        }
+
+        if (! anyValidChannel)
+        {
+            m_hadValidData = false;
+            m_failureChannel = 0;
+            m_failureFrame = 0;
+            return false;
+        }
+
+        m_hadValidData = true;
+
+        if (worstChannelCorrelation >= m_minCorrelation)
+            return true;
+
+        m_failureChannel = worstChannel;
+        m_failureFrame = 0; // no specific frame failure
+
+        return false;
+    }
+
+    MatcherFailureDetails getFailureDetails() const override
+    {
+        MatcherFailureDetails details;
+        details.channel = m_failureChannel;
+        details.frame = m_failureFrame;
+
+        if (! m_hadValidData)
+        {
+            details.description = "Correlation could not be computed (no valid signal overlap)";
+            return details;
+        }
+
+        const double lagSeconds = m_bestLagFrames / m_sampleRateHz;
+        std::stringstream stream;
+
+        stream
+            << "Best correlation: " << correlationPrecision << m_bestCorrelation
+            << " at lag " << m_bestLagFrames << " frames ("
+            << secPrecision << lagSeconds << " seconds)";
+
+        details.description = stream.str();
+        return details;
+    }
+
+    void represent (std::ostream& stream) const override
+    {
+        stream
+            << "CorrelationAbove ("
+            << correlationPrecision << m_minCorrelation << ", "
+            << secPrecision << m_maxLagSeconds << "_s)";
+    }
+
+private:
+    const double m_minCorrelation;
+    const double m_maxLagSeconds;
+
+    double m_sampleRateHz = 0.0;
+    long long int m_maxLagFrames = 0;
+
+    double m_bestCorrelation = 0.0;
+    long long m_bestLagFrames = 0;
+
+    size_t m_failureChannel = 0;
+    size_t m_failureFrame = 0;
+    bool m_hadValidData = false;
+
+    static inline std::ostream& correlationPrecision (std::ostream& stream)
+    {
+        return stream << std::fixed << std::setprecision (3);
+    }
+};
+
+HART_MATCHER_DECLARE_ALIASES_FOR (CorrelationAbove)
+
+} // namespace hart

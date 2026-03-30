@@ -1,5 +1,6 @@
 #pragma once
 
+#include "matchers/hart_correlation_above.hpp"
 #include "matchers/hart_equalsto.hpp"
 #include "matchers/hart_fundamental_equals.hpp"
 #include "matchers/hart_latency_below.hpp"
