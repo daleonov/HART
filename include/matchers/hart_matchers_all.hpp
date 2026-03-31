@@ -8,3 +8,4 @@
 #include "matchers/hart_no_denormals.hpp"
 #include "matchers/hart_peaksat.hpp"
 #include "matchers/hart_peaksbelow.hpp"
+#include "matchers/hart_polarity_preserved.hpp"

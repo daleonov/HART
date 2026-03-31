@@ -208,3 +208,102 @@ HART_TEST ("CorrelationAbove")
         .expectFalse (CorrelationAbove (0.001))
         .process();
 }
+
+HART_TEST ("PolarityPreserved")
+{
+    const unsigned int randomSeed = static_cast<unsigned int> (hart::CLIConfig::getInstance().getRandomSeed());
+    std::srand (randomSeed);
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Identical signal")
+        .withInputSignal (SineSweep())
+        .expectTrue (PolarityPreserved())
+        .process();
+
+    processAudioWith (TimeShift (10_ms))
+        .withLabel ("Time shift within expected lag is fine")
+        .withInputSignal (SineSweep())
+        .expectTrue (PolarityPreserved (0.5, 100_ms))
+        .process();
+
+    processAudioWith (TimeShift (10_ms))
+        .withLabel ("Time shift beyond expected lag results in a failure")
+        .withInputSignal (SineSweep())
+        .expectFalse (PolarityPreserved (0.5, 5_ms))
+        .process();
+
+    processAudioWith (GainLinear (-0.5))
+        .withLabel ("Negative linear gain")
+        .withInputSignal (SineSweep())
+        .expectFalse (PolarityPreserved())
+        .process();
+
+    // Even if just one channel is flipped, the matcher should report a failure
+    processAudioWith (GainLinear (-1.0).atChannel (hart::Channel::right))
+        .withLabel ("One channel is in phase, other one is flipped")
+        .withInputSignal (SineSweep())
+        .inStereo()
+        .expectFalse (PolarityPreserved())
+        .process();
+
+    // Heavy clipping brings correlation down to 0.9 ish
+    processAudioWith (HardClip (-40_dB))
+        .withLabel ("Correlation thresholds - Distortion")
+        .withInputSignal (SineSweep())
+        .expectTrue (PolarityPreserved (0.5))  // Relaxed threshold
+        .expectFalse (PolarityPreserved (0.95))  // Pretty strict threshold
+        .process();
+
+    auto additiveNoise = DSPFunction (
+        [] (hart::AudioBuffer<float>& buffer) {
+            for (size_t channel = 0; channel < buffer.getNumChannels(); ++channel)
+                for (size_t i = 0; i < buffer.getNumFrames(); ++i)
+                    buffer[channel][i] = 0.75f * buffer[channel][i] + (std::rand() / RAND_MAX * 2 - 1);
+        },
+        "Additive noise"
+        );
+
+    // Additive noise brings correlation down to 0.4 ish
+    processAudioWith (std::move (additiveNoise))
+        .withLabel ("Correlation thresholds - Additive noise")
+        .withInputSignal (SineSweep())
+        .expectTrue (PolarityPreserved (0.4))  // Relaxed threshold
+        .expectFalse (PolarityPreserved (0.9))  // Pretty strict threshold
+        .process();
+
+    processAudioWith (GainLinear (0.0).atChannel (1))
+        .withLabel ("Silence policies - One of the channels is muted")
+        .withInputSignal (SineSweep())
+        .inStereo()
+        .expectTrue (PolarityPreserved (0.5, 10_ms, PolarityPreserved::SilencePolicy::Relaxed))
+        .expectFalse (PolarityPreserved (0.5, 10_ms, PolarityPreserved::SilencePolicy::Strict))
+        .process();
+
+    auto drownRightChannelInNoise = DSPFunction (
+        [] (hart::AudioBuffer<float>& buffer) {
+            float* rightChannelSamples = buffer[hart::Channel::right];
+
+            for (size_t i = 0; i < buffer.getNumFrames(); ++i)
+                rightChannelSamples[i] = 0.001f * rightChannelSamples[i] + (std::rand() / RAND_MAX * 2 - 1);
+        },
+        "Drown right channel in noise"
+        );
+
+    // Very low correlation results in a failure, if it's not caused by silence
+    processAudioWith (std::move (drownRightChannelInNoise))
+        .withLabel ("Silence policies - One of the channels is weakly correlated, but not silent")
+        .withInputSignal (SineSweep())
+        .inStereo()
+        .expectFalse (PolarityPreserved (0.5, 10_ms, PolarityPreserved::SilencePolicy::Relaxed))
+        .expectFalse (PolarityPreserved (0.5, 10_ms, PolarityPreserved::SilencePolicy::Strict))
+        .process();
+
+    // If all channels are silent, the matcher should report a failure in any policy setting
+    processAudioWith (GainLinear (0.0))
+        .withLabel ("Silence policies - All the output channels are silent")
+        .withInputSignal (SineSweep())
+        .inStereo()
+        .expectFalse (PolarityPreserved (0.5, 10_ms, PolarityPreserved::SilencePolicy::Relaxed))
+        .expectFalse (PolarityPreserved (0.5, 10_ms, PolarityPreserved::SilencePolicy::Strict))
+        .process();
+}
