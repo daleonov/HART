@@ -60,6 +60,13 @@ inline std::ostream& centsPrecision (std::ostream& stream)
     return stream << std::fixed << std::setprecision (CLIConfig::getInstance().getCentsDecimals());
 }
 
+/// @brief Sets number of decimal places for correlation values
+/// @note Currently is not controllev via CLI arguments
+static inline std::ostream& correlationPrecision (std::ostream& stream)
+{
+    return stream << std::fixed << std::setprecision (4);
+}
+
 /// @}
 
 }  // namespace hart

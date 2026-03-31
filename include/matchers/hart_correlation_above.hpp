@@ -9,7 +9,6 @@
 #include "hart_exceptions.hpp"
 #include "hart_matcher.hpp"
 #include "hart_precision.hpp"
-#include "hart_str.hpp"
 #include "hart_utils.hpp"  // inf, floatsEqual()
 
 namespace hart
@@ -234,11 +233,6 @@ private:
     size_t m_failureChannel = 0;
     size_t m_failureFrame = 0;
     bool m_hadValidData = false;
-
-    static inline std::ostream& correlationPrecision (std::ostream& stream)
-    {
-        return stream << std::fixed << std::setprecision (4);
-    }
 };
 
 HART_MATCHER_DECLARE_ALIASES_FOR (CorrelationAbove)
