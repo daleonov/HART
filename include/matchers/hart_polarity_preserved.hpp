@@ -12,17 +12,70 @@
 namespace hart
 {
 
+/// @brief Checks whether the output signal preserves the polarity of the input signal
+/// @details
+/// Uses normalized cross-correlation in the time domain to compare input and output audio,
+/// while searching for the best match within a configurable lag range.
+/// Correlation is calculated independently for every applicable channel using the formula:
+/// @f[
+/// \frac{\sum_n x[n]\,y[n+k]}
+///      {\sqrt{\left(\sum_n x[n]^2\right)\left(\sum_n y[n+k]^2\right)}}
+/// @f]
+///
+/// (`sum (x[n] * y[n+k]) / sqrt (sum (x[n]^2) * sum (y[n+k]^2))`),
+///
+/// where `x` is input signal and `y` is observed output signal.
+///
+/// The lag with the highest absolute correlation is used to compensate for latency,
+/// and the signed correlation at this lag is then checked against a minimum signed
+/// correlation threshold.
+///
+/// For multi-channel audio, all applicable channels must preserve polarity.
+/// If at least one applicable channel exceeds the negative threshold, the match fails.
+///
+/// This matcher is useful for detecting accidental polarity inversions while remaining
+/// robust to latency and gain differences.
+///
+/// Notes:
+/// - Gain differences do not affect the result due to normalization.
+/// - Constant DC offset may bias the signed correlation.
+/// - Heavy nonlinear processing may reduce confidence in polarity detection.
+/// - Unlike @ref hart::CorrelationAbove, the sign of correlation is preserved.
+/// @tparam SampleType Floating point sample type, typically `float` or `double`
+/// @ingroup Matchers
 template <typename SampleType>
 class PolarityPreserved :
     public Matcher<SampleType, PolarityPreserved<SampleType>>
 {
 public:
+    /// @brief Defines how channels with silence or very low signal are handled
     enum class SilencePolicy
     {
-        Strict,
-        Relaxed
+        Strict, ///< Fails if any applicable channel is silent
+        Relaxed ///< Ignores silent channels, as long as at least one channel not silent
     };
 
+    /// @brief Creates a polarity matcher with a minimum signed correlation threshold
+    /// @details
+    /// The matcher scans lags in the range `[-maxLagSeconds, +maxLagSeconds]`
+    /// and finds the lag with the strongest absolute normalized cross-correlation.
+    ///
+    /// Polarity is considered preserved only if the signed correlation at the best lag
+    /// is greater than or equal to `minimumSignedCorrelation`.
+    ///
+    /// Lower values make polarity detection more tolerant to distortion, noise,
+    /// or other waveform changes, while higher values require a cleaner match.
+    ///
+    /// @param minimumSignedCorrelation Minimum required correlation between input
+    /// and the output signal. If the observed correlation is in
+    /// `(minimumSignedCorrelation, minimumSignedCorrelation)` range, the matcher will
+    /// fail due to the signals being weakly correlated. If correlation is in
+    /// [-1, -minimumSignedCorrelation] range, the phase is considered flipped.
+    /// If it falls into [minimumSignedCorrelation, 1] range, it is considered
+    /// preserved, and this is where the matcher will pass.
+    /// @param maxLagSeconds Maximum absolute lag to search in seconds
+    /// @param silencePolicy Defines how channels with silence (zeros or almost zeros)
+    /// are handled
     PolarityPreserved (double minimumSignedCorrelation = 0.5, double maxLagSeconds = 0.01, SilencePolicy silencePolicy = SilencePolicy::Strict):
         m_minimumSignedCorrelation (minimumSignedCorrelation),
         m_maxLagSeconds (maxLagSeconds),
