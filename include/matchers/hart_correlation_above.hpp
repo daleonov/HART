@@ -15,11 +15,43 @@
 namespace hart
 {
 
+/// @brief Checks whether the output signal is sufficiently correlated with the input signal
+/// @details
+/// Uses normalized cross-correlation in the time domain to compare input and output audio,
+/// while searching for the best match within a configurable lag range.
+/// Correlation is calculated independently for every applicable channel using the formula:
+/// @f[
+/// \frac{\sum_n x[n]\,y[n+k]}
+///      {\sqrt{\left(\sum_n x[n]^2\right)\left(\sum_n y[n+k]^2\right)}}
+/// @f]
+///
+/// (`sum (x[n] * y[n+k]) / sqrt (sum (x[n]^2) * sum (y[n+k]^2))`),
+///
+/// where `x` is input signal and `y` is observed output signal.
+///
+/// For multi-channel audio, the lowest correlation value across all applicable channels is used.
+/// This matcher is useful for verifying transparent DSP, latency compensation, bypass paths,
+/// or processors that preserve waveform shape while introducing delay or mild coloration.
+/// Notes:
+/// - Gain differences do not affect the result due to normalization.
+/// - Constant DC offset reduces correlation.
+/// - Heavy nonlinear processing may significantly reduce correlation.
+/// - The absolute value of correlation is used, so polarity inversions do not affect the result.
+/// @tparam SampleType Floating point sample type, typically `float` or `double`
+/// @ingroup Matchers
 template <typename SampleType>
 class CorrelationAbove :
     public Matcher<SampleType, CorrelationAbove<SampleType>>
 {
 public:
+
+    /// @brief Creates a correlation matcher with a minimum accepted correlation threshold
+    /// @details The matcher scans lags in the range `[-maxLagSeconds, +maxLagSeconds]`
+    /// and finds the best normalized cross-correlation value.
+    /// A value of `1.0` requires a perfect waveform match (ignoring polarity and latency),
+    /// while lower values allow progressively more waveform deviation.
+    /// @param minCorrelation Minimum allowed absolute correlation in the range `[0, 1]`
+    /// @param maxLagSeconds Maximum absolute lag to search in seconds
     CorrelationAbove (double minCorrelation, double maxLagSeconds = 0.01):
         m_minCorrelation (minCorrelation),
         m_maxLagSeconds (maxLagSeconds)
