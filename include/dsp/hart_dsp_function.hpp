@@ -162,7 +162,13 @@ public:
 
     void prepare (double sampleRateHz, size_t numInputChannels, size_t numOutputChannels, size_t maxBlockSizeFrames) override
     {
-        if (m_dspFunctionBlockWiseReplacing)
+        // Make sure you've passed one of the correct function signatures to the DSP ctor!
+        hassert (
+            m_dspFunctionBlockWiseNonReplacing != nullptr
+            || m_dspFunctionBlockWiseReplacing != nullptr
+            || m_dspFunctionSampleWise != nullptr);
+
+        if (m_dspFunctionBlockWiseReplacing != nullptr)
         {
             const size_t maxChannels = std::max (numInputChannels, numOutputChannels);
             m_inputOutputBuffer = AudioBuffer<SampleType> (maxChannels, maxBlockSizeFrames, sampleRateHz);
