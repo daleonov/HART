@@ -48,6 +48,7 @@ class PolarityPreserved :
     public Matcher<SampleType, PolarityPreserved<SampleType>>
 {
 public:
+    // TODO: Switch to using SilencePolicy from a common namespace, update the docs accordingly
     /// @brief Defines how channels with silence or very low signal are handled
     enum class SilencePolicy
     {
