@@ -419,12 +419,12 @@ HART_TEST ("DSPFunction - Implicit class instantiation")
         .withInputSignal (SineWave())
         .process();
 
-    processAudioWith ([] (AudioBuffer& buffer) {})
+    processAudioWith ([] (AudioBuffer& /* buffer */) {})
         .withLabel ("Block-wise replacing DSP with nolabel")
         .withInputSignal (SineWave())
         .process();
 
-    processAudioWith ([] (const AudioBuffer& input, AudioBuffer& output) {})
+    processAudioWith ([] (const AudioBuffer& /* input */, AudioBuffer& /* output */) {})
         .withLabel ("Block-wise non-replacing DSP with label")
         .withInputSignal (SineWave())
         .process();
@@ -445,6 +445,7 @@ HART_TEST ("TimeShift")
         processAudioWith (TimeShift (signalPeriodSeconds))
             .withLabel (HART_STR ("TimeShift for one cycle at " << hzPrecision << " Hz"))
             .withInputSignal (SineWave (signalFrequencyHz))
+            .withSampleRate (sampleRateHz)
             .expectFalse (EqualsTo (SineWave (signalFrequencyHz)))
             .expectTrue (PeaksAt (0_dB))
             .process();

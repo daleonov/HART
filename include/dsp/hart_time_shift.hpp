@@ -125,8 +125,6 @@ public:
         const size_t numChannels = numInputChannels;
 
         hassert (sampleRateHz > 0.0);
-        sampleRateHz = sampleRateHz;
-
         m_delayFrames = roundToSizeT (m_delaySeconds * sampleRateHz);
 
         if (m_delayFrames == 0)
@@ -186,7 +184,7 @@ public:
         stream << "TimeShift (" << secPrecision << m_delaySeconds << ")";
     }
 
-    void setValue (int /*id*/, double /*value*/) {}
+    void setValue (int /*id*/, double /*value*/) override {}
 
     HART_DSP_COPYABLE (TimeShift);
     HART_DSP_MOVABLE (TimeShift);

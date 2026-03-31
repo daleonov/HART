@@ -71,8 +71,6 @@ public:
     bool match (const AudioBuffer<SampleType>& inputAudio, const AudioBuffer<SampleType>& observedOutputAudio) override
     {
         const size_t numChannels = inputAudio.getNumChannels();
-        const size_t numFrames = inputAudio.getNumFrames();
-
         std::vector<long long int> validLatenciesFrames;
         std::vector<size_t> usedChannels;
         std::vector<size_t> ignoredChannels;
