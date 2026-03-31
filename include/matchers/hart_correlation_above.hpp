@@ -5,6 +5,7 @@
 #include <vector>
 #include <sstream>
 
+#include "hart_accurate_sum.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_matcher.hpp"
 #include "hart_precision.hpp"
@@ -80,9 +81,9 @@ public:
 
             for (long long int lag = -m_maxLagFrames; lag <= m_maxLagFrames; ++lag)
             {
-                SampleType dotProduct = 0.0;
-                SampleType sumSqX = 0.0;  // TODO: Sliding algorithm for sum (x[n]^2)
-                SampleType sumSqY = 0.0;
+                AccurateSum<SampleType> dotProduct = 0.0;
+                AccurateSum<SampleType> sumSqX = 0.0;
+                AccurateSum<SampleType> sumSqY = 0.0;
                 size_t overlapCount = 0;
 
                 for (long long int n = 0; n < numFrames; ++n)
@@ -95,7 +96,6 @@ public:
                     const SampleType xnVal = x[n];
                     const SampleType ynVal = y[yn];
 
-                    // TODO: Kahan summation for those 3 sums
                     dotProduct += xnVal * ynVal;
                     sumSqX += xnVal * xnVal;
                     sumSqY += ynVal * ynVal;
@@ -103,7 +103,7 @@ public:
                     ++overlapCount;
                 }
 
-                if (overlapCount == 0 || floatsEqual (sumSqX, (SampleType) 0) || floatsEqual (sumSqY, (SampleType) 0))
+                if (overlapCount == 0 || floatsEqual<SampleType> (sumSqX, 0) || floatsEqual<SampleType> (sumSqY, 0))
                     continue;
 
                 channelValid = true;
@@ -205,7 +205,7 @@ private:
 
     static inline std::ostream& correlationPrecision (std::ostream& stream)
     {
-        return stream << std::fixed << std::setprecision (3);
+        return stream << std::fixed << std::setprecision (4);
     }
 };
 
