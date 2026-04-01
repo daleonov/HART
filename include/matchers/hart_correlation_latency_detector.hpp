@@ -109,7 +109,7 @@ public:
 
             if (! channelValid || bestAbsCorrelation < m_absCorrelationThreshold)
             {
-                if (m_silencePolicy == SilencePolicy::Strict)
+                if (m_silencePolicy == SilencePolicy::strict)
                 {
                     m_hadValidData = false;
                     m_failureChannel = channel;

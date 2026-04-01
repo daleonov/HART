@@ -30,7 +30,7 @@ public:
         double maxLatencySeconds,
         Method method = Method::onset,
         double threshold = 0.0,
-        SilencePolicy silencePolicy = SilencePolicy::Strict
+        SilencePolicy silencePolicy = SilencePolicy::strict
         ) :
         m_maxLatencySeconds (maxLatencySeconds),
         m_silencePolicy (silencePolicy),
@@ -142,7 +142,7 @@ public:
         stream
             << "LatencyBelow ("
             << secPrecision << m_maxLatencySeconds << "_s, "
-            << "SilencePolicy::" << (m_silencePolicy == SilencePolicy::Strict ? "Strict, " : "Relaxed, ")
+            << "SilencePolicy::" << (m_silencePolicy == SilencePolicy::strict ? "strict, " : "relaxed, ")
             << (m_method == Method::onset ? linPrecision : correlationPrecision)
             << m_threshold << ", "
             << "Method::" << (m_method == Method::onset ? "onset" : "correlation")

@@ -82,7 +82,7 @@ public:
             {
                 ignoredChannels.push_back (channel);
 
-                if (m_silencePolicy == SilencePolicy::Strict)
+                if (m_silencePolicy == SilencePolicy::strict)
                 {
                     m_noOnsetsDetected = true;
                     m_allChannelsFailed = false;

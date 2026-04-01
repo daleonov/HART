@@ -8,8 +8,8 @@ namespace hart
 ///@ingroup Utilities
 enum class SilencePolicy
 {
-    Strict,
-    Relaxed
+    strict,
+    relaxed
 };
 
 }  // namespace hart

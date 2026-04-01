@@ -168,8 +168,8 @@ HART_TEST ("LatencyBelow - Onset method")
         .withLabel ("Silence policy option")
         .withInputSignal (Impulse() >> GainLinear (0).atChannel (hart::Channel::left))
         .inStereo()
-        .expectTrue (LatencyBelow (5.1_ms, Method::onset, 1e-6, SilencePolicy::Relaxed))
-        .expectFalse (LatencyBelow (5.1_ms, Method::onset, 1e-6, SilencePolicy::Strict))
+        .expectTrue (LatencyBelow (5.1_ms, Method::onset, 1e-6, SilencePolicy::relaxed))
+        .expectFalse (LatencyBelow (5.1_ms, Method::onset, 1e-6, SilencePolicy::strict))
         .process();
 }
 
@@ -255,8 +255,8 @@ HART_TEST ("LatencyBelow - Correlation method")
         .withLabel ("Silence policy option")
         .withInputSignal (Impulse() >> GainLinear (0).atChannel (hart::Channel::left))
         .inStereo()
-        .expectTrue (LatencyBelow (5.1_ms, Method::correlation, 0.5, SilencePolicy::Relaxed))
-        .expectFalse (LatencyBelow (5.1_ms, Method::correlation, 0.5, SilencePolicy::Strict))
+        .expectTrue (LatencyBelow (5.1_ms, Method::correlation, 0.5, SilencePolicy::relaxed))
+        .expectFalse (LatencyBelow (5.1_ms, Method::correlation, 0.5, SilencePolicy::strict))
         .process();
 
     // TODO: Test correlation threshold once DSP chaining is introduced
