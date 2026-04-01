@@ -10,22 +10,57 @@
 #include "hart_silence_policy.hpp"
 #include "hart_utils.hpp"  // make_unique()
 
-// TODO: Add docs for both methods
+// Note: It's also a good idea to use "NaN" for threshold values instead of negatives.
+// But that would involve changing onset detector's internal threshold to double,
+// and casting every segnal sample to double as well, which is okay ish.
+// But it will also allow negative threshold values in dB, which is nice.
 
 namespace hart
 {
-
+/// @brief Checks whether the output signal latency is below a specified amount
+/// @details
+/// Compares input and output audio and measures the observed latency between them.
+/// In a multi-channel setup, latency is measured independently for every applicable
+/// channel, and the largest detected latency is used.
+///
+/// The latency detection method is selected via `Method`:
+/// - `Method::onset` detects latency as a difference between the first threshold crossing
+///   in the input and output signals.
+/// - `Method::correlation` uses normalized cross-correlation and finds the lag that best
+///   aligns the output waveform to the input.
+///
+/// `SilencePolicy` defines how the matcher behaves when latency cannot be reliably
+/// determined on one or more channels.
+///
+/// @tparam SampleType Type of audio samples, typically `float` or `double`
+/// @ingroup Matchers
 template <typename SampleType>
 class LatencyBelow :
     public Matcher<SampleType, LatencyBelow<SampleType>>
 {
 public:
+    /// @brief Selects the method used to detect latency
     enum class Method
     {
-        onset,
-        correlation
+        onset,  ///< Detect latency from the first threshold crossing in input and output
+        correlation  ///< Detect latency using best waveform alignment via cross-correlation
     };
 
+    /// @brief Creates a matcher that expects latency between input and output below a specified value
+    /// @param maxLatencySeconds Maximum allowed detected latency in seconds
+    /// @param method Latency detection method. See `Method` for details.
+    /// @param threshold Method-specific detection threshold:
+    /// - for `Method::onset`, this is the linear absolute signal level required to detect onset.
+    ///   You can use `hart::ratioToDecibels()` for converting decibel values.
+    /// - for `Method::correlation`, this is the minimum absolute correlation required for latency
+    ///   detection to be considered valid
+    ///
+    /// Values less than or equal to zero trigger a sensible method-specific default, namely:
+    /// - `0.000001` as absolute linear sample value threshold for onset-based detection
+    /// - `0.5` as absolute normalized cross-correlation value threshold for correlation-based detection
+    /// @param silencePolicy Defines how channels with insufficient measurable signal are handled:
+    /// - `SilencePolicy::strict` fails if any applicable channel cannot produce a valid latency estimate
+    /// - `SilencePolicy::relaxed` ignores such channels and uses valid ones only
     LatencyBelow (
         double maxLatencySeconds,
         Method method = Method::onset,
