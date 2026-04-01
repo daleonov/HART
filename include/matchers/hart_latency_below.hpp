@@ -2,9 +2,10 @@
 
 #include <memory>
 
-#include "matchers/hart_onset_latency_detector.hpp"
+#include "matchers/hart_correlation_latency_detector.hpp"
 #include "matchers/hart_latency_detector.hpp"
 #include "matchers/hart_matcher.hpp"
+#include "matchers/hart_onset_latency_detector.hpp"
 #include "hart_precision.hpp"
 #include "hart_silence_policy.hpp"
 #include "hart_utils.hpp"  // make_unique()
@@ -19,17 +20,46 @@ class LatencyBelow :
     public Matcher<SampleType, LatencyBelow<SampleType>>
 {
 public:
-    LatencyBelow (double maxLatencySeconds, SilencePolicy silencePolicy = SilencePolicy::Strict, SampleType threshold = (SampleType) 1e-6) :
+    enum class Method
+    {
+        onset,
+        correlation
+    };
+
+    LatencyBelow (
+        double maxLatencySeconds,
+        Method method = Method::onset,
+        double threshold = 0.0,
+        SilencePolicy silencePolicy = SilencePolicy::Strict
+        ) :
         m_maxLatencySeconds (maxLatencySeconds),
         m_silencePolicy (silencePolicy),
-        m_threshold (threshold),
-        m_latencyDetector (
-            hart::make_unique<OnsetLatencyDetector<SampleType>> (
+        m_method (method)
+    {
+        const bool thresholdDefaultValueRequested = threshold <= 0.0;
+
+        if (method == Method::onset)
+        {
+            m_threshold = thresholdDefaultValueRequested ? 1e-6 : threshold;
+            m_latencyDetector = hart::make_unique<OnsetLatencyDetector<SampleType>> (
                 maxLatencySeconds,
                 silencePolicy,
-                threshold
-            ))
-    {
+                m_threshold
+                );
+        }
+        else
+        {
+            m_threshold = thresholdDefaultValueRequested ? 0.5 : threshold;
+            m_latencyDetector = hart::make_unique<CorrelationLatencyDetector<SampleType>> (
+                maxLatencySeconds,
+                silencePolicy,
+                static_cast<SampleType> (m_threshold)
+                );
+        }
+
+        // Sanity checks
+        hassert (m_latencyDetector != nullptr);
+        hassert (m_threshold > 0.0);
     }
 
     LatencyBelow (const LatencyBelow& other):
@@ -113,8 +143,9 @@ public:
             << "LatencyBelow ("
             << secPrecision << m_maxLatencySeconds << "_s, "
             << "SilencePolicy::" << (m_silencePolicy == SilencePolicy::Strict ? "Strict, " : "Relaxed, ")
-            << linPrecision  // TODO: method-dependent precision
-            << m_threshold
+            << (m_method == Method::onset ? linPrecision : correlationPrecision)
+            << m_threshold << ", "
+            << "Method::" << (m_method == Method::onset ? "onset" : "correlation")
             << ')';
     }
 
@@ -122,6 +153,7 @@ private:
     double m_maxLatencySeconds;
     SilencePolicy m_silencePolicy;
     SampleType m_threshold;
+    Method m_method;
 
     std::unique_ptr<LatencyDetector<SampleType>> m_latencyDetector;
 };
