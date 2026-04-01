@@ -89,19 +89,21 @@ HART_TEST ("Matcher function - For input and output buffers")
         .process();
 }
 
-HART_TEST ("LatencyBelow")
+HART_TEST ("LatencyBelow - Onset method")
 {
+    using Method = LatencyBelow::Method;
+
     processAudioWith (GainDb (0_dB))
         .withLabel ("No latency")
         .withInputSignal (SineWave())
-        .expectTrue (LatencyBelow (100_us))
+        .expectTrue (LatencyBelow (100_us, Method::onset))
         .process();
 
     processAudioWith (TimeShift (5_ms))
         .withLabel ("Impulse into TimeShift - mono")
         .withInputSignal (Impulse())
-        .expectTrue (LatencyBelow (5.1_ms))
-        .expectFalse (LatencyBelow (4.9_ms))
+        .expectTrue (LatencyBelow (5.1_ms, Method::onset))
+        .expectFalse (LatencyBelow (4.9_ms, Method::onset))
         .process();
 
     processAudioWith (TimeShift (5_ms))
@@ -109,8 +111,8 @@ HART_TEST ("LatencyBelow")
         .withInputChannels (5)
         .withOutputChannels (5)
         .withInputSignal (Impulse())
-        .expectTrue (LatencyBelow (5.1_ms))
-        .expectFalse (LatencyBelow (4.9_ms))
+        .expectTrue (LatencyBelow (5.1_ms, Method::onset))
+        .expectFalse (LatencyBelow (4.9_ms, Method::onset))
         .process();
 
     using hart::roundToSizeT;
@@ -137,8 +139,96 @@ HART_TEST ("LatencyBelow")
         .withLabel ("Delayed impulse into TimeShift")
         .withInputSignal (std::move (delayedImpulse))
         .withDuration (70_ms)  // Delayed impulse timing + expected latency + a little bit on top
-        .expectTrue (LatencyBelow (5.1_ms))
-        .expectFalse (LatencyBelow (4.9_ms))
+        .expectTrue (LatencyBelow (5.1_ms, Method::onset))
+        .expectFalse (LatencyBelow (4.9_ms, Method::onset))
+        .process();
+
+    auto percussiveBurstEnvelope = SegmentedEnvelope (-60_dB)
+        .hold (10_ms)
+        .rampTo (0_dB, 1_ms)
+        .hold (30_ms)
+        .rampTo (0_dB, 20_ms);
+
+    processAudioWith (TimeShift (5_ms))
+        .withLabel ("WhiteNoise burst into TimeShift")
+        .withInputSignal (WhiteNoise() >> GainDb().withEnvelope (GainDb::gainDb, percussiveBurstEnvelope))
+        .expectTrue (LatencyBelow (5.1_ms, Method::onset))
+        .expectFalse (LatencyBelow (4.9_ms, Method::onset))
+        .process();
+}
+
+HART_TEST ("LatencyBelow - Correlation method")
+{
+    using Method = LatencyBelow::Method;
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("No latency")
+        .withInputSignal (SineSweep())
+        .expectTrue (LatencyBelow (100_us, Method::correlation))
+        .process();
+
+    processAudioWith (TimeShift (5_ms))
+        .withLabel ("SineSweep into TimeShift - mono")
+        .withInputSignal (SineSweep())
+        .expectTrue (LatencyBelow (5.1_ms, Method::correlation))
+        .expectFalse (LatencyBelow (4.9_ms, Method::correlation))
+        .process();
+
+    processAudioWith (TimeShift (5_ms))
+        .withLabel ("SineSweep into TimeShift - 5 channels")
+        .withInputChannels (5)
+        .withOutputChannels (5)
+        .withInputSignal (SineSweep())
+        .expectTrue (LatencyBelow (5.1_ms, Method::correlation))
+        .expectFalse (LatencyBelow (4.9_ms, Method::correlation))
+        .process();
+
+    processAudioWith (TimeShift (5_ms))
+        .withLabel ("Impulse into TimeShift - mono")
+        .withInputSignal (Impulse())
+        .expectTrue (LatencyBelow (5.1_ms, Method::correlation))
+        .expectFalse (LatencyBelow (4.9_ms, Method::correlation))
+        .process();
+
+    using hart::roundToSizeT;
+    using hart::Loop;
+    using AudioBuffer = hart::AudioBuffer<float>;
+
+    SignalFunction delayedImpulse (
+        [] (AudioBuffer& buffer) {
+            constexpr double impulseTimingSeconds = 0.05_s;
+            const size_t impulseTimingFrames =
+                1 + roundToSizeT (impulseTimingSeconds * buffer.getSampleRateHz());
+
+            buffer.setNumFrames (impulseTimingFrames);
+            buffer.clear();
+
+            for (size_t channel = 0; channel < buffer.getNumChannels(); ++channel)
+                buffer[channel][buffer.getNumFrames() - 1] = 1.0f;
+        },
+        "Delayed impulse",
+        Loop::no
+        );
+
+    processAudioWith (TimeShift (5_ms))
+        .withLabel ("Delayed impulse into TimeShift")
+        .withInputSignal (std::move (delayedImpulse))
+        .withDuration (70_ms)  // Delayed impulse timing + expected latency + a little bit on top
+        .expectTrue (LatencyBelow (5.1_ms, Method::correlation))
+        .expectFalse (LatencyBelow (4.9_ms, Method::correlation))
+        .process();
+
+    auto percussiveBurstEnvelope = SegmentedEnvelope (-60_dB)
+        .hold (10_ms)
+        .rampTo (0_dB, 1_ms)
+        .hold (30_ms)
+        .rampTo (0_dB, 20_ms);
+
+    processAudioWith (TimeShift (5_ms))
+        .withLabel ("WhiteNoise burst into TimeShift")
+        .withInputSignal (WhiteNoise() >> GainDb().withEnvelope (GainDb::gainDb, percussiveBurstEnvelope))
+        .expectTrue (LatencyBelow (5.1_ms, Method::correlation))
+        .expectFalse (LatencyBelow (4.9_ms, Method::correlation))
         .process();
 }
 
