@@ -18,7 +18,7 @@ class OnsetLatencyDetector :
     public LatencyDetector<SampleType>
 {
 public:
-    OnsetLatencyDetector (double maxLatencySeconds, SilencePolicy silencePolicy, SampleType absThresholdLinear):
+    OnsetLatencyDetector (double maxLatencySeconds, SilencePolicy silencePolicy, double absThresholdLinear):
         m_maxLatencySeconds (maxLatencySeconds),
         m_silencePolicy (silencePolicy),
         m_absThresholdLinear (absThresholdLinear)
@@ -192,7 +192,7 @@ private:
 
     const double m_maxLatencySeconds;
     const SilencePolicy m_silencePolicy;
-    const SampleType m_absThresholdLinear;
+    const double m_absThresholdLinear;
 
     double m_sampleRateHz = 0.0;
     size_t m_numChannels = 0;
@@ -210,7 +210,7 @@ private:
         const size_t numFrames = buffer.getNumFrames();
 
         for (size_t frame = 0; frame < numFrames; ++frame)
-            if (std::abs (buffer[channel][frame]) > m_absThresholdLinear)
+            if (std::abs (static_cast<double> (buffer[channel][frame])) > m_absThresholdLinear)
                 return { true, frame };
 
         // TODO: Put "non applicable" frame value here

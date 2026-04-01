@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>  // isnan()
 #include <memory>
 
 #include "matchers/hart_correlation_latency_detector.hpp"
@@ -8,12 +9,7 @@
 #include "matchers/hart_onset_latency_detector.hpp"
 #include "hart_precision.hpp"
 #include "hart_silence_policy.hpp"
-#include "hart_utils.hpp"  // make_unique()
-
-// Note: It's also a good idea to use "NaN" for threshold values instead of negatives.
-// But that would involve changing onset detector's internal threshold to double,
-// and casting every segnal sample to double as well, which is okay ish.
-// But it will also allow negative threshold values in dB, which is nice.
+#include "hart_utils.hpp"  // make_unique(), nan()
 
 namespace hart
 {
@@ -55,7 +51,7 @@ public:
     /// - for `Method::correlation`, this is the minimum absolute correlation required for latency
     ///   detection to be considered valid
     ///
-    /// Values less than or equal to zero trigger a sensible method-specific default, namely:
+    /// NaN value will trigger a sensible method-specific default, namely:
     /// - `0.000001` as absolute linear sample value threshold for onset-based detection
     /// - `0.5` as absolute normalized cross-correlation value threshold for correlation-based detection
     /// @param silencePolicy Defines how channels with insufficient measurable signal are handled:
@@ -64,14 +60,14 @@ public:
     LatencyBelow (
         double maxLatencySeconds,
         Method method = Method::onset,
-        double threshold = 0.0,
+        double threshold = hart::nan<double>(),
         SilencePolicy silencePolicy = SilencePolicy::strict
         ) :
         m_maxLatencySeconds (maxLatencySeconds),
         m_method (method),
         m_silencePolicy (silencePolicy)
     {
-        const bool thresholdDefaultValueRequested = threshold <= 0.0;
+        const bool thresholdDefaultValueRequested = std::isnan (threshold);
 
         if (method == Method::onset)
         {
@@ -88,13 +84,14 @@ public:
             m_latencyDetector = hart::make_unique<CorrelationLatencyDetector<SampleType>> (
                 maxLatencySeconds,
                 silencePolicy,
-                static_cast<SampleType> (m_threshold)
+                m_threshold
                 );
         }
 
         // Sanity checks
         hassert (m_latencyDetector != nullptr);
         hassert (m_threshold > 0.0);
+        hassert (! std::isnan (m_threshold));
     }
 
     LatencyBelow (const LatencyBelow& other):
