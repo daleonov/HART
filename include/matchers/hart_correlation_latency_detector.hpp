@@ -4,10 +4,11 @@
 #include <vector>
 
 #include "hart_accurate_sum.hpp"
+#include "hart_exceptions.hpp"
 #include "hart_latency_detector.hpp"
 #include "hart_precision.hpp"
 #include "hart_silence_policy.hpp"
-#include "hart_utils.hpp"  // make_unique(), roundToSizeT(), inf
+#include "hart_utils.hpp"  // make_unique(), roundToSizeT(), inf, floatsEqual()
 
 namespace hart
 {
@@ -24,8 +25,15 @@ public:
         m_silencePolicy (silencePolicy),
         m_absCorrelationThreshold (absCorrelationThreshold)
     {
-        // Values that are <= 0 are supposed to be treated as a "default value" sentinel, and get replaced with actual default value
-        hassert (absCorrelationThreshold > 0.0);
+        if (absCorrelationThreshold > 1.0)
+            HART_THROW_OR_RETURN_VOID (hart::ValueError, "Normalized correlation threshold can not be higher than 1");
+
+        if (absCorrelationThreshold < 0.0)
+            HART_THROW_OR_RETURN_VOID (hart::ValueError, "Correlation threshold is an absolute value, so should not be negative");
+
+        // Technically, zero correlation is okay, but a bit too weird...
+        if (floatsEqual (absCorrelationThreshold, 0.0))
+            HART_THROW_OR_RETURN_VOID (hart::ValueError, "Zero correlation threshold is not a meaningful value in latency detector context");
     }
 
     std::unique_ptr<LatencyDetector<SampleType>> copy() const override

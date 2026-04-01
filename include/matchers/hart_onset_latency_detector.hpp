@@ -6,7 +6,7 @@
 #include "hart_latency_detector.hpp"
 #include "hart_precision.hpp"
 #include "hart_silence_policy.hpp"
-#include "hart_utils.hpp"  // floatsEqual(), make_unique()
+#include "hart_utils.hpp"  // floatsEqual(), make_unique(), decibelsToRatio()
 
 namespace hart
 {
@@ -18,13 +18,11 @@ class OnsetLatencyDetector :
     public LatencyDetector<SampleType>
 {
 public:
-    OnsetLatencyDetector (double maxLatencySeconds, SilencePolicy silencePolicy, double absThresholdLinear):
+    OnsetLatencyDetector (double maxLatencySeconds, SilencePolicy silencePolicy, double absThresholdDb):
         m_maxLatencySeconds (maxLatencySeconds),
         m_silencePolicy (silencePolicy),
-        m_absThresholdLinear (absThresholdLinear)
+        m_absThresholdLinear (decibelsToRatio (absThresholdDb))
     {
-        // Values that are <= 0 are supposed to be treated as a "default value" sentinel, and get replaced with actual default value
-        hassert (absThresholdLinear > (SampleType) 0.0);
     }
 
     void prepare (

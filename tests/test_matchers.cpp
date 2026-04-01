@@ -159,8 +159,8 @@ HART_TEST ("LatencyBelow - Onset method")
     processAudioWith (TimeShift (5_ms))
         .withLabel ("Threshold option")
         .withInputSignal (Impulse() >> GainDb (-10_dB))
-        .expectTrue (LatencyBelow (5.1_ms, Method::onset, hart::decibelsToRatio (-30_dB)))
-        .expectFalse (LatencyBelow (5.1_ms, Method::onset, hart::decibelsToRatio (-3_dB)))
+        .expectTrue (LatencyBelow (5.1_ms, Method::onset, -30_dB))
+        .expectFalse (LatencyBelow (5.1_ms, Method::onset, -3_dB))
         .process();
 
     using SilencePolicy = hart::SilencePolicy;
@@ -168,8 +168,8 @@ HART_TEST ("LatencyBelow - Onset method")
         .withLabel ("Silence policy option")
         .withInputSignal (Impulse() >> GainLinear (0).atChannel (hart::Channel::left))
         .inStereo()
-        .expectTrue (LatencyBelow (5.1_ms, Method::onset, 1e-6, SilencePolicy::relaxed))
-        .expectFalse (LatencyBelow (5.1_ms, Method::onset, 1e-6, SilencePolicy::strict))
+        .expectTrue (LatencyBelow (5.1_ms, Method::onset, -120_dB, SilencePolicy::relaxed))
+        .expectFalse (LatencyBelow (5.1_ms, Method::onset, -120_dB, SilencePolicy::strict))
         .process();
 }
 

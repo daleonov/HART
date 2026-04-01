@@ -46,13 +46,12 @@ public:
     /// @param maxLatencySeconds Maximum allowed detected latency in seconds
     /// @param method Latency detection method. See `Method` for details.
     /// @param threshold Method-specific detection threshold:
-    /// - for `Method::onset`, this is the linear absolute signal level required to detect onset.
-    ///   You can use `hart::ratioToDecibels()` for converting decibel values.
+    /// - for `Method::onset`, this is the minimal sample level in dB required to detect onset.
     /// - for `Method::correlation`, this is the minimum absolute correlation required for latency
     ///   detection to be considered valid
     ///
     /// NaN value will trigger a sensible method-specific default, namely:
-    /// - `0.000001` as absolute linear sample value threshold for onset-based detection
+    /// - `-120` (in dB) as sample value threshold for onset-based detection
     /// - `0.5` as absolute normalized cross-correlation value threshold for correlation-based detection
     /// @param silencePolicy Defines how channels with insufficient measurable signal are handled:
     /// - `SilencePolicy::strict` fails if any applicable channel cannot produce a valid latency estimate
@@ -71,7 +70,7 @@ public:
 
         if (method == Method::onset)
         {
-            m_threshold = thresholdDefaultValueRequested ? 1e-6 : threshold;
+            m_threshold = thresholdDefaultValueRequested ? -120.0 : threshold;
             m_latencyDetector = hart::make_unique<OnsetLatencyDetector<SampleType>> (
                 maxLatencySeconds,
                 silencePolicy,
@@ -90,7 +89,6 @@ public:
 
         // Sanity checks
         hassert (m_latencyDetector != nullptr);
-        hassert (m_threshold > 0.0);
         hassert (! std::isnan (m_threshold));
     }
 
@@ -173,10 +171,21 @@ public:
     {
         stream
             << "LatencyBelow ("
-            << secPrecision << m_maxLatencySeconds << "_s, "
-            << "Method::" << (m_method == Method::onset ? "onset, " : "correlation, ")
-            << (m_method == Method::onset ? linPrecision : correlationPrecision)
-            << m_threshold << ", "
+            << secPrecision << m_maxLatencySeconds << "_s, ";
+
+        if (m_method == Method::onset)
+        {
+            stream
+                << "Method::onset, "
+                << dbPrecision << m_threshold << "_dB, ";
+        }
+        else {
+            stream
+                << "Method::correlation, "
+                << correlationPrecision << m_threshold << ", ";
+        }
+
+        stream
             << "SilencePolicy::" << (m_silencePolicy == SilencePolicy::strict ? "strict" : "relaxed")
             << ')';
     }
