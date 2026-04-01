@@ -68,8 +68,8 @@ public:
         SilencePolicy silencePolicy = SilencePolicy::strict
         ) :
         m_maxLatencySeconds (maxLatencySeconds),
-        m_silencePolicy (silencePolicy),
-        m_method (method)
+        m_method (method),
+        m_silencePolicy (silencePolicy)
     {
         const bool thresholdDefaultValueRequested = threshold <= 0.0;
 
@@ -177,18 +177,18 @@ public:
         stream
             << "LatencyBelow ("
             << secPrecision << m_maxLatencySeconds << "_s, "
-            << "SilencePolicy::" << (m_silencePolicy == SilencePolicy::strict ? "strict, " : "relaxed, ")
+            << "Method::" << (m_method == Method::onset ? "onset, " : "correlation, ")
             << (m_method == Method::onset ? linPrecision : correlationPrecision)
             << m_threshold << ", "
-            << "Method::" << (m_method == Method::onset ? "onset" : "correlation")
+            << "SilencePolicy::" << (m_silencePolicy == SilencePolicy::strict ? "strict" : "relaxed")
             << ')';
     }
 
 private:
     double m_maxLatencySeconds;
-    SilencePolicy m_silencePolicy;
-    SampleType m_threshold;
     Method m_method;
+    SampleType m_threshold;
+    SilencePolicy m_silencePolicy;
 
     std::unique_ptr<LatencyDetector<SampleType>> m_latencyDetector;
 };
