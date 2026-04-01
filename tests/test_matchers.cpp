@@ -155,11 +155,30 @@ HART_TEST ("LatencyBelow - Onset method")
         .expectTrue (LatencyBelow (5.1_ms, Method::onset))
         .expectFalse (LatencyBelow (4.9_ms, Method::onset))
         .process();
+
+    processAudioWith (TimeShift (5_ms))
+        .withLabel ("Threshold option")
+        .withInputSignal (Impulse() >> GainDb (-10_dB))
+        .expectTrue (LatencyBelow (5.1_ms, Method::onset, hart::decibelsToRatio (-30_dB)))
+        .expectFalse (LatencyBelow (5.1_ms, Method::onset, hart::decibelsToRatio (-3_dB)))
+        .process();
+
+    using SilencePolicy = hart::SilencePolicy;
+    processAudioWith (TimeShift (5_ms))
+        .withLabel ("Silence policy option")
+        .withInputSignal (Impulse() >> GainLinear (0).atChannel (hart::Channel::left))
+        .inStereo()
+        .expectTrue (LatencyBelow (5.1_ms, Method::onset, 1e-6, SilencePolicy::Relaxed))
+        .expectFalse (LatencyBelow (5.1_ms, Method::onset, 1e-6, SilencePolicy::Strict))
+        .process();
 }
 
 HART_TEST ("LatencyBelow - Correlation method")
 {
     using Method = LatencyBelow::Method;
+
+    const unsigned int randomSeed = static_cast<unsigned int> (hart::CLIConfig::getInstance().getRandomSeed());
+    std::srand (randomSeed);
 
     processAudioWith (GainDb (0_dB))
         .withLabel ("No latency")
@@ -230,6 +249,17 @@ HART_TEST ("LatencyBelow - Correlation method")
         .expectTrue (LatencyBelow (5.1_ms, Method::correlation))
         .expectFalse (LatencyBelow (4.9_ms, Method::correlation))
         .process();
+
+    using SilencePolicy = hart::SilencePolicy;
+    processAudioWith (TimeShift (5_ms))
+        .withLabel ("Silence policy option")
+        .withInputSignal (Impulse() >> GainLinear (0).atChannel (hart::Channel::left))
+        .inStereo()
+        .expectTrue (LatencyBelow (5.1_ms, Method::correlation, 0.5, SilencePolicy::Relaxed))
+        .expectFalse (LatencyBelow (5.1_ms, Method::correlation, 0.5, SilencePolicy::Strict))
+        .process();
+
+    // TODO: Test correlation threshold once DSP chaining is introduced
 }
 
 HART_TEST ("CorrelationAbove")
