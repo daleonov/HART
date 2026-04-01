@@ -6,7 +6,7 @@
 #include "hart_latency_detector.hpp"
 #include "hart_precision.hpp"
 #include "hart_silence_policy.hpp"
-#include "hart_utils.hpp"  // make_unique()
+#include "hart_utils.hpp"  // floatsEqual(), make_unique()
 
 namespace hart
 {
@@ -18,11 +18,13 @@ class OnsetLatencyDetector :
     public LatencyDetector<SampleType>
 {
 public:
-    OnsetLatencyDetector (double maxLatencySeconds, SilencePolicy silencePolicy, SampleType thresholdLinear):
+    OnsetLatencyDetector (double maxLatencySeconds, SilencePolicy silencePolicy, SampleType absThresholdLinear):
         m_maxLatencySeconds (maxLatencySeconds),
         m_silencePolicy (silencePolicy),
-        m_thresholdLinear (thresholdLinear)
+        m_absThresholdLinear (absThresholdLinear)
     {
+        // Values that are <= 0 are supposed to be treated as a "default value" sentinel, and get replaced with actual default value
+        hassert (absThresholdLinear > (SampleType) 0.0);
     }
 
     void prepare (
@@ -190,7 +192,7 @@ private:
 
     const double m_maxLatencySeconds;
     const SilencePolicy m_silencePolicy;
-    const SampleType m_thresholdLinear;
+    const SampleType m_absThresholdLinear;
 
     double m_sampleRateHz = 0.0;
     size_t m_numChannels = 0;
@@ -208,7 +210,7 @@ private:
         const size_t numFrames = buffer.getNumFrames();
 
         for (size_t frame = 0; frame < numFrames; ++frame)
-            if (std::abs (buffer[channel][frame]) > m_thresholdLinear)
+            if (std::abs (buffer[channel][frame]) > m_absThresholdLinear)
                 return { true, frame };
 
         // TODO: Put "non applicable" frame value here
