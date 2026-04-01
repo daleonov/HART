@@ -331,6 +331,8 @@ HART_TEST ("CorrelationAbove")
 
 HART_TEST ("PolarityPreserved")
 {
+    using SilencePolicy = hart::SilencePolicy;
+
     const unsigned int randomSeed = static_cast<unsigned int> (hart::CLIConfig::getInstance().getRandomSeed());
     std::srand (randomSeed);
 
@@ -395,8 +397,8 @@ HART_TEST ("PolarityPreserved")
         .withLabel ("Silence policies - One of the channels is muted")
         .withInputSignal (SineSweep())
         .inStereo()
-        .expectTrue (PolarityPreserved (0.5, 10_ms, PolarityPreserved::SilencePolicy::Relaxed))
-        .expectFalse (PolarityPreserved (0.5, 10_ms, PolarityPreserved::SilencePolicy::Strict))
+        .expectTrue (PolarityPreserved (0.5, 10_ms, SilencePolicy::relaxed))
+        .expectFalse (PolarityPreserved (0.5, 10_ms, SilencePolicy::strict))
         .process();
 
     auto drownRightChannelInNoise = DSPFunction (
@@ -414,8 +416,8 @@ HART_TEST ("PolarityPreserved")
         .withLabel ("Silence policies - One of the channels is weakly correlated, but not silent")
         .withInputSignal (SineSweep())
         .inStereo()
-        .expectFalse (PolarityPreserved (0.5, 10_ms, PolarityPreserved::SilencePolicy::Relaxed))
-        .expectFalse (PolarityPreserved (0.5, 10_ms, PolarityPreserved::SilencePolicy::Strict))
+        .expectFalse (PolarityPreserved (0.5, 10_ms, SilencePolicy::relaxed))
+        .expectFalse (PolarityPreserved (0.5, 10_ms, SilencePolicy::strict))
         .process();
 
     // If all channels are silent, the matcher should report a failure in any policy setting
@@ -423,7 +425,7 @@ HART_TEST ("PolarityPreserved")
         .withLabel ("Silence policies - All the output channels are silent")
         .withInputSignal (SineSweep())
         .inStereo()
-        .expectFalse (PolarityPreserved (0.5, 10_ms, PolarityPreserved::SilencePolicy::Relaxed))
-        .expectFalse (PolarityPreserved (0.5, 10_ms, PolarityPreserved::SilencePolicy::Strict))
+        .expectFalse (PolarityPreserved (0.5, 10_ms, SilencePolicy::relaxed))
+        .expectFalse (PolarityPreserved (0.5, 10_ms, SilencePolicy::strict))
         .process();
 }

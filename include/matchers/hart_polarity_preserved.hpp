@@ -7,6 +7,7 @@
 #include "hart_exceptions.hpp"
 #include "hart_matcher.hpp"
 #include "hart_precision.hpp"
+#include "hart_silence_policy.hpp"
 #include "hart_utils.hpp"
 
 namespace hart
@@ -48,13 +49,6 @@ class PolarityPreserved :
     public Matcher<SampleType, PolarityPreserved<SampleType>>
 {
 public:
-    // TODO: Switch to using SilencePolicy from a common namespace, update the docs accordingly
-    /// @brief Defines how channels with silence or very low signal are handled
-    enum class SilencePolicy
-    {
-        Strict, ///< Fails if any applicable channel is silent
-        Relaxed ///< Ignores silent channels, as long as at least one channel not silent
-    };
 
     /// @brief Creates a polarity matcher with a minimum signed correlation threshold
     /// @details
@@ -76,8 +70,12 @@ public:
     /// preserved, and this is where the matcher will pass.
     /// @param maxLagSeconds Maximum absolute lag to search in seconds
     /// @param silencePolicy Defines how channels with silence (zeros or almost zeros)
-    /// are handled
-    PolarityPreserved (double minimumSignedCorrelation = 0.5, double maxLagSeconds = 0.01, SilencePolicy silencePolicy = SilencePolicy::Strict):
+    /// are handled. Available options are:
+    ///   - `SilencePolicy::strict` - fails if any applicable channel is silent
+    ///   - `SilencePolicy::relaxed` - ignores silent channels, as long as at least one
+    ///     channel is not silent
+    /// @see hart::SilencePolicy
+    PolarityPreserved (double minimumSignedCorrelation = 0.5, double maxLagSeconds = 0.01, SilencePolicy silencePolicy = SilencePolicy::strict):
         m_minimumSignedCorrelation (minimumSignedCorrelation),
         m_maxLagSeconds (maxLagSeconds),
         m_silencePolicy (silencePolicy)
@@ -190,7 +188,7 @@ public:
 
             if (! channelValid)
             {
-                if (m_silencePolicy == SilencePolicy::Strict)
+                if (m_silencePolicy == SilencePolicy::strict)
                 {
                     m_hadValidData = false;
                     m_failureChannel = channel;
@@ -257,7 +255,7 @@ public:
             << correlationPrecision << m_minimumSignedCorrelation << ", "
             << secPrecision << m_maxLagSeconds << "_s, "
             << "SilencePolicy::"
-            << (m_silencePolicy == SilencePolicy::Strict ? "Strict" : "Relaxed")
+            << (m_silencePolicy == SilencePolicy::strict ? "strict" : "relaxed")
             << ")";
     }
 
