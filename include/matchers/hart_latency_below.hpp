@@ -193,8 +193,8 @@ public:
 private:
     double m_maxLatencySeconds;
     Method m_method;
-    SampleType m_threshold;
     SilencePolicy m_silencePolicy;
+    SampleType m_threshold;
 
     std::unique_ptr<LatencyDetector<SampleType>> m_latencyDetector;
 };
