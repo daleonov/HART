@@ -39,7 +39,9 @@ public:
     {
         if (m_dspChain.empty())
         {
-            // TODO: Bypass - copy input to the output
+            // No DSP - no audio. Bye.
+            // Bypass could also be appropriate, but too tricky with assymetrical channel layouts
+            output.clear();
             return;
         }
 
@@ -206,6 +208,7 @@ private:
     std::vector<std::unique_ptr<DSPBase<SampleType>>> m_dspChain;
 };
 
+HART_DSP_DECLARE_ALIASES_FOR (DSPSequence);
 HART_DSP_DECLARE_ALIASES_FOR (DSPSequenceBuilder);
 
 #define HART_DSP_SEQUENCE(...) \
