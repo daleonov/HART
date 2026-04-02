@@ -59,7 +59,7 @@ HART_TEST ("DSPSequence - Container properties")
     HART_EXPECT_TRUE (dspSequence.size() == 1);
 
     dspSequence.append (HardClip (0_dB));
-    dspSequence.append (std::make_unique<HardClip> (0_dB));
+    dspSequence.append (hart::make_unique<HardClip> (0_dB));
 
     HART_EXPECT_TRUE (dspSequence.size() == 3);
 
