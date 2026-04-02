@@ -21,6 +21,7 @@ set(HART_TEST_SOURCES
         tests/generate_data.cpp
         tests/test_dsp.cpp
         tests/test_dsp_chains.cpp
+        tests/test_dsp_sequence.cpp
         tests/test_envelope.cpp
         tests/test_host.cpp
         tests/test_main.cpp
