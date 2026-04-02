@@ -42,8 +42,6 @@ namespace hart
 /// @see `HART_DSP_SEQUENCE()`, `HART_DSP_SEQUENCE_T()`
 /// @ingroup DSP
 template <typename SampleType>
-class DSPSequence
-template <typename SampleType>
 class DSPSequence :
     public hart::DSP<SampleType, DSPSequence<SampleType>>
 {
