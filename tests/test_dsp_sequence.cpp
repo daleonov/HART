@@ -2,10 +2,8 @@
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
 
-HART_TEST ("DSP Sequence - Rendering")
+HART_TEST ("DSPSequence - Rendering")
 {
-    // TODO: Add "bypass on an empty sequence" test
-
     processAudioWith (HART_DSP_SEQUENCE (GainDb (-2_dB) >> GainDb (-4_dB)))
         .withLabel ("Gain accumulation - Short chain")
         .withInputSignal (SineWave())
@@ -47,12 +45,16 @@ HART_TEST ("DSP Sequence - Rendering")
         .expectTrue (PeaksAt (-16_dB))
         .expectTrue (EqualsTo (SineWave() >> GainDb (-16_dB)))
         .process();
+
+    processAudioWith (DSPSequence ({}))
+        .withLabel ("Empty chain - No audio output")
+        .withInputSignal (SineWave())
+        .expectTrue (EqualsTo (Silence()))
+        .process();
 }
 
-HART_TEST ("DSP Sequence - Container properties")
+HART_TEST ("DSPSequence - Container properties")
 {
-    // TODO: Deep copy test
-
     auto dspSequence = HART_DSP_SEQUENCE (GainDb (-2_dB));
     HART_EXPECT_TRUE (dspSequence.size() == 1);
 
@@ -106,4 +108,35 @@ HART_TEST ("DSP Sequence - Container properties")
     HART_EXPECT_TRUE (dspSomewhereInTheMiddleOfTheChainButNotAnymore != nullptr);
     HART_EXPECT_TRUE (dynamic_cast<HardClip*> (dspSomewhereInTheMiddleOfTheChainButNotAnymore.get()) != nullptr);
     HART_EXPECT_TRUE (floatsEqual (-6_dB, dspSomewhereInTheMiddleOfTheChainButNotAnymore->getValue (HardClip::thresholdDb)));
+}
+
+HART_TEST ("DSPSequence - Deep copy")
+{
+    auto nestedDspSequence = HART_DSP_SEQUENCE (GainDb (-2_dB) >> GainDb (-4_dB));
+
+    const DSPSequence originalDspSequence = HART_DSP_SEQUENCE (HardClip (-8_dB) >> nestedDspSequence.move() >> HardClip (-5_dB));
+    const std::unique_ptr<hart::DSPBase<float>> clonedDspSequence = originalDspSequence.copy();
+    const DSPSequence* clonedDspSequenceDerivedPtr = dynamic_cast<const DSPSequence*> (clonedDspSequence.get());
+    HART_ASSERT_TRUE (clonedDspSequenceDerivedPtr != nullptr);
+
+    const DSPSequence* dspSequenceNestedInOriginal = dynamic_cast<const DSPSequence*> (originalDspSequence[1]);
+    const DSPSequence* dspSequenceNestedInClone = dynamic_cast<const DSPSequence*> ((*clonedDspSequenceDerivedPtr)[1]);
+
+    HART_ASSERT_TRUE (dspSequenceNestedInOriginal != nullptr);
+    HART_ASSERT_TRUE (dspSequenceNestedInClone != nullptr);
+
+    HART_ASSERT_TRUE (dspSequenceNestedInOriginal->size() == 2);
+    HART_ASSERT_TRUE (dspSequenceNestedInClone->size() == dspSequenceNestedInOriginal->size());
+
+    const GainDb* originalNestedDsp = dynamic_cast<const GainDb*> ((*dspSequenceNestedInOriginal)[0]);
+    const GainDb* clonedNestedDsp = dynamic_cast<const GainDb*> ((*dspSequenceNestedInClone)[0]);
+
+    HART_ASSERT_TRUE (originalNestedDsp != nullptr);
+    HART_ASSERT_TRUE (clonedNestedDsp != nullptr);
+
+    HART_EXPECT_TRUE (originalNestedDsp != clonedNestedDsp);  // Most important thing! Expecting independent objects
+
+    using hart::floatsEqual;
+    HART_EXPECT_TRUE (floatsEqual (-2_dB, originalNestedDsp->getValue (GainDb::gainDb)));
+    HART_EXPECT_TRUE (floatsEqual (-2_dB, clonedNestedDsp->getValue (GainDb::gainDb)));
 }
