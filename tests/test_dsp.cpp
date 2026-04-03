@@ -451,3 +451,45 @@ HART_TEST ("TimeShift")
             .process();
     }
 }
+
+HART_TEST ("AdditiveNoise")
+{
+    processAudioWith (AdditiveNoise (ratioToDecibels (0.25)))
+        .withLabel ("Correct levels")
+        .withInputSignal (SineWave() >> GainLinear (0.75))
+        .expectTrue (PeaksBelow (0_dB))
+        .expectFalse (PeaksBelow (ratioToDecibels (0.75)))
+        .expectFalse (EqualsTo (SineWave() >> GainLinear (0.75)))
+        .expectFalse (EqualsTo (SineWave()))
+        .process();
+
+    processAudioWith (AdditiveNoise (-10_dB))
+        .withLabel ("Slightly noisy signal")
+        .withInputSignal (SineWave() >> GainDb (-6_dB))
+        .expectTrue (CorrelationAbove (0.85))
+        .expectFalse (CorrelationAbove (0.999))
+        .process();
+
+    processAudioWith (AdditiveNoise (-3_dB))
+        .withLabel ("Very noisy signal")
+        .withInputSignal (SineWave() >> GainDb (-6_dB))
+        .expectTrue (CorrelationAbove (0.5))
+        .expectFalse (CorrelationAbove (0.85))
+        .process();
+
+    processAudioWith (AdditiveNoise (-3_dB))
+        .withLabel ("Signal drowned in noise")
+        .withInputSignal (SineWave() >> GainDb (-20_dB))
+        .expectTrue (CorrelationAbove (0.1))
+        .expectFalse (CorrelationAbove (0.25))
+        .process();
+
+    processAudioWith (AdditiveNoise (-3_dB).atChannel (Channel::left))
+        .withLabel ("One of the channels drowned in noise")
+        .withInputSignal (SineWave() >> GainDb (-20_dB))
+        .inStereo()
+        .expectFalse (CorrelationAbove (0.25))
+        .expectFalse (CorrelationAbove (0.25).atChannel (Channel::left))
+        .expectTrue (CorrelationAbove (0.999).atChannel (Channel::right))
+        .process();
+}
