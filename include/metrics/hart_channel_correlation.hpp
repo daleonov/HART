@@ -8,6 +8,33 @@
 namespace hart
 {
 
+/// @brief Calculates zero-lag normalized cross-correlation between two channels of an audio buffer
+/// @details
+/// Uses the normalized cross-correlation formula:
+/// @f[
+/// \rho = \frac{\sum_n x[n]\,y[n]}
+///              {\sqrt{\left(\sum_n x[n]^2\right)\left(\sum_n y[n]^2\right)}}
+/// @f]
+///
+/// (`sum (x[n] * y[n]) / sqrt (sum (x[n]^2) * sum (y[n]^2))`)
+///
+/// where `x` and `y` are the selected channels of the same buffer.
+///
+/// The returned value is in the range `[-1, 1]`:
+/// - `1.0` means perfectly correlated channels
+/// - `0.0` means no linear correlation
+/// - `-1.0` means perfectly inverted polarity
+///
+/// The function returns `NaN` if correlation is undefined, such as when:
+/// - one of the selected channels is silent
+/// - the buffer contains zero frames
+///
+/// @param buffer Input audio buffer
+/// @param channelA Index of the first channel to compare. Defaults to `0` (left channel).
+/// @param channelB Index of the second channel to compare. Defaults to `1` (right channel).
+/// @returns Normalized correlation coefficient, or `NaN` if correlation is undefined
+/// @tparam SampleType Floating point sample type, typically `float` or `double`
+/// @throws hart::IndexError if either channel index is out of bounds
 /// @ingroup Metrics
 template <typename SampleType>
 double channelCorrelation (const AudioBuffer<SampleType>& buffer, size_t channelA = 0, size_t channelB = 1)
