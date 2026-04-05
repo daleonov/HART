@@ -45,6 +45,12 @@ public:
         return m_sum;
     }
 
+    /// @brief Value accumulated by the += operator
+    SampleType get() const
+    {
+        return m_sum;
+    }
+
 private:
     SampleType m_sum = (SampleType) 0;
     SampleType m_compensation = (SampleType) 0;
