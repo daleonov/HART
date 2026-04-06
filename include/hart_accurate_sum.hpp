@@ -45,10 +45,11 @@ public:
         return m_sum;
     }
 
-    /// @brief Value accumulated by the += operator
-    SampleType get() const
+    /// @brief Value accumulated by the += operator, converted to the requested type
+    template<typename RequestedType>
+    RequestedType get() const
     {
-        return m_sum;
+        return static_cast<RequestedType> (m_sum);
     }
 
 private:
