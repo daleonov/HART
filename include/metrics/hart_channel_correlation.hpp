@@ -54,29 +54,29 @@ double channelCorrelation (const AudioBuffer<SampleType>& buffer, size_t channel
     // as it can be either 1.0 or NaN depending on the contents
 
     const size_t numFrames = buffer.getNumFrames();
-    const SampleType* x = buffer[channelA];
-    const SampleType* y = buffer[channelB];
+    const SampleType* channelAData = buffer[channelA];
+    const SampleType* channelBData = buffer[channelB];
 
-    AccurateSum<SampleType> dotProduct = 0.0;
-    AccurateSum<SampleType> sumSqX = 0.0;
-    AccurateSum<SampleType> sumSqY = 0.0;
+    AccurateSum<double> dotProduct { 0.0 };
+    AccurateSum<double> sumSqChannelA { 0.0 };
+    AccurateSum<double> sumSqChannelB { 0.0 };
 
     for (size_t frame = 0; frame < numFrames; ++frame)
     {
-        const SampleType xVal = x[frame];
-        const SampleType yVal = y[frame];
+        const double channelAValue = static_cast<double> (channelAData[frame]);
+        const double channelBValue = static_cast<double> (channelBData[frame]);
 
-        dotProduct += xVal * yVal;
-        sumSqX += xVal * xVal;
-        sumSqY += yVal * yVal;
+        dotProduct += channelAValue * channelBValue;
+        sumSqChannelA += channelAValue * channelAValue;
+        sumSqChannelB += channelBValue * channelBValue;
     }
 
-    if (floatsEqual<SampleType> (sumSqX, 0) || floatsEqual<SampleType> (sumSqY, 0))
+    if (floatsEqual<double> (sumSqChannelA, 0.0) || floatsEqual<double> (sumSqChannelB, 0.0))
     {
         return nan;
     }
 
-    return static_cast<double> (dotProduct) / std::sqrt (static_cast<double> (sumSqX * sumSqY));
+    return dotProduct / std::sqrt (sumSqChannelA * sumSqChannelB);
 }
 
 }  // namespace hart
