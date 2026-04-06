@@ -3,7 +3,9 @@
 #include <cmath>
 #include <iomanip>
 #include <sstream>
+#include <vector>
 
+#include "hart_accurate_sum.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_matcher.hpp"
 #include "hart_precision.hpp"
@@ -125,9 +127,15 @@ public:
         hassert (inputAudio.getNumFrames() == observedOutputAudio.getNumFrames());
         hassert (inputAudio.getSampleRateHz() == observedOutputAudio.getSampleRateHz());
 
-        const size_t numChannels = inputAudio.getNumChannels();
-        const long long int numFrames = static_cast<long long int> (inputAudio.getNumFrames());
+        const size_t numFrames = inputAudio.getNumFrames();
 
+        if (numFrames == 0)
+        {
+            m_hadValidData = false;
+            return false;
+        }
+        
+        const size_t numChannels = inputAudio.getNumChannels();
         bool anyValidChannel = false;
 
         for (size_t channel = 0; channel < numChannels; ++channel)
@@ -137,6 +145,21 @@ public:
 
             const SampleType* x = inputAudio[channel];
             const SampleType* y = observedOutputAudio[channel];
+            std::vector<double> prefixSumsSqX (numFrames + 1, 0.0);
+            std::vector<double> prefixSumsSqY (numFrames + 1, 0.0);
+            AccurateSum<double> runningSumSqX { 0.0 };
+            AccurateSum<double> runningSumSqY { 0.0 };
+
+            for (size_t frame = 0; frame < numFrames; ++frame)
+            {
+                const double xVal = static_cast<double> (x[frame]);
+                const double yVal = static_cast<double> (y[frame]);
+
+                runningSumSqX += xVal * xVal;
+                runningSumSqY += yVal * yVal;
+                prefixSumsSqX[frame + 1] = runningSumSqX;
+                prefixSumsSqY[frame + 1] = runningSumSqY;
+            }
 
             double bestAbsCorrelation = -hart::inf;
             double bestSignedCorrelation = 0.0;
@@ -145,34 +168,35 @@ public:
 
             for (long long int lag = -m_maxLagFrames; lag <= m_maxLagFrames; ++lag)
             {
-                AccurateSum<SampleType> dotProduct = 0.0;
-                AccurateSum<SampleType> sumSqX = 0.0;
-                AccurateSum<SampleType> sumSqY = 0.0;
-                size_t overlapCount = 0;
+                AccurateSum<double> dotProduct { 0.0 };
+                const bool lagShiftsOutputToTheLeft = lag < 0;
+                const size_t lagAbsFrames = static_cast<size_t> (lagShiftsOutputToTheLeft ? -lag : lag);
 
-                for (long long int n = 0; n < numFrames; ++n)
+                if (lagAbsFrames >= numFrames)
+                    continue;
+
+                // For a given lag, correlate only the valid overlap interval:
+                // x[inputOverlapBeginFrame + offset] with y[outputOverlapBeginFrame + offset].
+                const size_t inputOverlapBeginFrame = lagShiftsOutputToTheLeft ? lagAbsFrames : 0;
+                const size_t outputOverlapBeginFrame = lagShiftsOutputToTheLeft ? 0 : lagAbsFrames;
+                const size_t overlapSizeFrames = numFrames - lagAbsFrames;
+                const size_t inputOverlapEndFrame = inputOverlapBeginFrame + overlapSizeFrames;
+                const size_t outputOverlapEndFrame = outputOverlapBeginFrame + overlapSizeFrames;
+                const double sumSqX = prefixSumsSqX[inputOverlapEndFrame] - prefixSumsSqX[inputOverlapBeginFrame];
+                const double sumSqY = prefixSumsSqY[outputOverlapEndFrame] - prefixSumsSqY[outputOverlapBeginFrame];
+
+                for (size_t overlapFrame = 0; overlapFrame < overlapSizeFrames; ++overlapFrame)
                 {
-                    const long long int yn = n + lag;
-
-                    if (yn < 0 || yn >= numFrames)
-                        continue;
-
-                    const SampleType xnVal = x[n];
-                    const SampleType ynVal = y[yn];
-
-                    dotProduct += xnVal * ynVal;
-                    sumSqX += xnVal * xnVal;
-                    sumSqY += ynVal * ynVal;
-
-                    ++overlapCount;
+                    const double inputValue = static_cast<double> (x[inputOverlapBeginFrame + overlapFrame]);
+                    const double outputValue = static_cast<double> (y[outputOverlapBeginFrame + overlapFrame]);
+                    dotProduct += inputValue * outputValue;
                 }
 
-                if (overlapCount == 0 || floatsEqual<SampleType> (sumSqX, 0) || floatsEqual<SampleType> (sumSqY, 0))
+                if (floatsEqual (sumSqX, 0.0) || floatsEqual (sumSqY, 0.0))
                     continue;
 
                 channelValid = true;
-
-                const double corr = static_cast<double> (dotProduct) / std::sqrt (static_cast<double> (sumSqX * sumSqY));
+                const double corr = dotProduct / std::sqrt (sumSqX * sumSqY);
                 const double absCorr = std::abs (corr);
 
                 if (absCorr > bestAbsCorrelation)
