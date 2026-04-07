@@ -27,6 +27,7 @@ set(HART_TEST_SOURCES
         tests/test_main.cpp
         tests/test_matchers.cpp
         tests/test_metrics.cpp
+        tests/test_reducers.cpp
         tests/test_signal.cpp
         tests/test_sine_sweep.cpp
     )

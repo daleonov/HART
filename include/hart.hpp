@@ -15,6 +15,7 @@
 #include "matchers/hart_matchers_all.hpp"
 #include "metrics/hart_metrics_all.hpp"
 #include "hart_process_audio.hpp"
+#include "hart_reducers.hpp"
 #include "signals/hart_signals_all.hpp"
 #include "hart_str.hpp"
 #include "hart_test_registry.hpp"
