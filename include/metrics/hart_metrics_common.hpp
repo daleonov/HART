@@ -3,6 +3,9 @@
 namespace hart
 {
 
+/// @defgroup Metrics Metrics
+/// @brief Common audio-related metrics
+
 /// @brief A helper to determine the return type of a reducer function
 /// @ingroup Metrics
 template <typename Reducer, typename Iterator>
