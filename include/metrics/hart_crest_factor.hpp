@@ -94,8 +94,8 @@ double crestFactorLinear (const AudioBuffer<SampleType>& buffer, size_t channel 
 /// @throws hart::IndexError if any channel index is out of bounds
 /// @ingroup Metrics
 template <typename SampleType, typename ReducerType>
-ReducerResultType<ReducerType, std::vector<double>::const_iterator>
-crestFactorLinear (ReducerType reducer, const AudioBuffer<SampleType>& buffer, std::initializer_list<size_t> channels = {})
+auto crestFactorLinear (ReducerType reducer, const AudioBuffer<SampleType>& buffer, std::initializer_list<size_t> channels = {})
+    -> ReducerResultType<ReducerType, std::vector<double>::const_iterator>
 {
     const auto channelIndicesToProcess = getChannelIndicesToProcess (buffer, channels);
     std::vector<double> perChannelValues;
@@ -163,8 +163,8 @@ double crestFactorDb (const AudioBuffer<SampleType>& buffer, size_t channel = 0)
 /// @throws hart::IndexError if any channel index is out of bounds
 /// @ingroup Metrics
 template <typename SampleType, typename ReducerType>
-ReducerResultType<ReducerType, std::vector<double>::const_iterator>
-crestFactorDb (ReducerType reducer, const AudioBuffer<SampleType>& buffer, std::initializer_list<size_t> channels = {})
+auto crestFactorDb (ReducerType reducer, const AudioBuffer<SampleType>& buffer, std::initializer_list<size_t> channels = {})
+    -> ReducerResultType<ReducerType, std::vector<double>::const_iterator>
 {
     const auto channelIndicesToProcess = getChannelIndicesToProcess (buffer, channels);
     std::vector<double> perChannelValues;
