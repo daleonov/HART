@@ -12,7 +12,7 @@ class AccurateSum
 public:
     ///@brief Inits AccurateSum with a specific value
     ///@param initialSum Initial sum value
-    AccurateSum (SampleType initialSum):
+    AccurateSum (SampleType initialSum = (SampleType) 0):
         m_sum (initialSum),
         m_compensation ((SampleType) 0)
     {
@@ -53,8 +53,8 @@ public:
     }
 
 private:
-    SampleType m_sum = (SampleType) 0;
-    SampleType m_compensation = (SampleType) 0;
+    SampleType m_sum;
+    SampleType m_compensation;
 };
 
 }  // namespace hart
