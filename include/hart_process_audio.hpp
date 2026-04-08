@@ -534,7 +534,7 @@ public:
         return *this;
     }
 
-    /// @brief Perfoems the test
+    /// @brief Performs the test
     /// @details Call this after setting all the test parameters
     std::unique_ptr<DSPBase<SampleType>> process()
     {
