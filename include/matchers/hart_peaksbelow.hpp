@@ -31,7 +31,8 @@ public:
     /// @param toleranceLinear Absolute tolerance for comparing frames, in linear domain (not decibels)
     PeaksBelow (double thresholdDb, double toleranceLinear = 1e-3):
         m_thresholdDb ((SampleType) thresholdDb),
-        m_thresholdLinear (static_cast<SampleType> (decibelsToRatio (thresholdDb) + toleranceLinear))
+        m_thresholdLinear (static_cast<SampleType> (decibelsToRatio (thresholdDb) + toleranceLinear)),
+        m_toleranceLinear (toleranceLinear)
     {
     }
 
@@ -83,12 +84,13 @@ public:
     {
         stream << "PeaksBelow ("
             << dbPrecision << m_thresholdDb << "_dB, "
-            << linPrecision << m_thresholdLinear << ')';
+            << linPrecision << m_toleranceLinear << ')';
     }
 
 private:
     const SampleType m_thresholdDb;
     const SampleType m_thresholdLinear;
+    const SampleType m_toleranceLinear;
 
     size_t m_failedFrame = 0;
     size_t m_failedChannel = 0;
