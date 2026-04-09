@@ -94,21 +94,23 @@ public:
     }
 
     /// @brief Gets a raw pointer to the read-only audio data
-    /// @return A pointer to the beginning of the audio data. Guaranteed to be a contiguous non-interleaved block of memory.
+    /// @return A pointer to an array of per-channel read pointers.
+    /// It is guaranteed that each channel points to a contiguous non-interleaved block of memory.
     const SampleType* const* getArrayOfReadPointers() const 
     {
         return static_cast<const SampleType* const*> (m_channelPointers.data());
     }
 
     /// @brief Gets a raw pointer to the mutable audio data
-    /// @return A pointer to the beginning of the audio data. Guaranteed to be a contiguous non-interleaved block of memory.
+    /// @return A pointer to an array of per-channel write pointers.
+    /// It is guaranteed that each channel points to a contiguous non-interleaved block of memory.
     SampleType* const* getArrayOfWritePointers() 
     {
         return m_channelPointers.data();
     }
 
     /// @brief Creates an empty audio buffer with the same number of channels, frames and sample rate as the `other` buffer.
-    /// @note The data from other buffer will not be copied, expect un-initialized values.
+    /// @note The data from the other buffer will not be copied. Newly allocated samples will be value-initialized.
     /// @param other Reference buffer
     static AudioBuffer emptyLike (const AudioBuffer& other)
     {
@@ -129,7 +131,7 @@ public:
     /// @details Resizing behaviour:
     ///   - If newNumFrames == current size, it won't do anything.
     ///   - If newNumFrames > current size, it will append silence (zeros) at the end.
-    ///   - If newNumFrames < current size: it will jsut truncate, discarding samples from the end.
+    ///   - If newNumFrames < current size: it will just truncate, discarding samples from the end.
     /// Will always preserve existing channels and sample-rate metadata.
     /// @attention May cause reallocation, thus invalidating previous raw pointers!
     /// @param newNumFrames New number of frames per channel
@@ -164,7 +166,7 @@ public:
     }
 
     /// @brief Check if a specific sample rate was assigned to the audio buffer
-    /// @note Unititialized buffers, as well as some specific Signal types, will not have a specific sample rate.
+    /// @note Uninitialized buffers, as well as some specific Signal types, will not have a specific sample rate.
     /// @return `true` if there is a specific sample rate value, `false` otherwise
     bool hasSampleRate() const 
     {
@@ -194,7 +196,7 @@ public:
     }
 
     /// @brief Get a raw pointer to a specific channel's mutable audio data
-    /// @note The data is guaranteed to have at least getNumFrames() amount of items, and guaranteed to be contiguus and non-interleaves block of memory
+    /// @note The data is guaranteed to have at least `getNumFrames()` items and to be a contiguous non-interleaved block of memory.
     /// @return Pointer to the audio data
     SampleType* operator[] (size_t channel)
     {
@@ -202,7 +204,7 @@ public:
     }
 
     /// @brief Get a raw pointer to a specific channel's read-only audio data
-    /// @note The data is guaranteed to have at least getNumFrames() amount of items, and guaranteed to be contiguus and non-interleaves block of memory
+    /// @note The data is guaranteed to have at least `getNumFrames()` items and to be a contiguous non-interleaved block of memory.
     /// @return Pointer to the audio data
     const SampleType* operator[] (size_t channel) const
     {
@@ -286,7 +288,7 @@ public:
     }
 
     /// @brief Clears the buffer
-    /// @details The number of frames after this operaion will be zero, but channel number will persist.
+    /// @details The number of frames after this operation will be zero, but channel number will persist.
     void erase()
     {
         // Keeping the sample rate though, just wiping the data
@@ -303,7 +305,7 @@ public:
 
     /// @brief Get the maximum absolute value in the buffer in a specific channel
     /// @param channel Channel of which the magnitude should be measured
-    /// @param startFrame The beginnig of the range of the frames to look for magnitude
+    /// @param startFrame The beginning of the range of the frames to look for magnitude
     /// @param numFrames Number of frames, beginning with startFrame, to look for the magnitude
     /// @return The maximum value, in linear domain (i.e. not decibels)
     SampleType getMagnitude (size_t channel, size_t startFrame, size_t numFrames) const
@@ -325,7 +327,7 @@ public:
     }
 
     /// @brief Get the maximum absolute value in the buffer across all channels
-    /// @param startFrame The beginnig of the range of the frames to look for magnitude
+    /// @param startFrame The beginning of the range of the frames to look for magnitude
     /// @param numFrames Number of frames, beginning with startFrame, to look for the magnitude
     /// @return The maximum value, in linear domain (i.e. not decibels)
     SampleType getMagnitude (size_t startFrame, size_t numFrames) const
@@ -401,7 +403,7 @@ public:
 
     /// @brief Clears a specific section of a given channel
     /// @details Overwrites a selected section of the channel with zeros
-    /// @param channel Cnannel in which to clear a frame range
+    /// @param channel Channel in which to clear a frame range
     /// @param startFrame Start of the frame range to clear (inclusive)
     /// @param numFrames Amount of frames to clear
     void clear (size_t channel, size_t startFrame, size_t numFrames)
