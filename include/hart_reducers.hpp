@@ -210,7 +210,7 @@ struct mean
             ++count;
         }
 
-        return accurateSum.get<IteratedValueType<IteratorType>>() / count;
+        return accurateSum.template get<IteratedValueType<IteratorType>>() / count;
     }
 };
 
