@@ -1,7 +1,7 @@
 #pragma once
 
 #include <algorithm>  // max_element(), copy(), fill()
-#include <cmath>  // isnan()
+#include <cmath>  // isnan(), abs()
 #include <vector>
 
 #include "hart_exceptions.hpp"
@@ -207,6 +207,52 @@ public:
     const SampleType* operator[] (size_t channel) const
     {
         return m_channelPointers[channel];
+    }
+
+    /// @brief Checks whether this buffer contains approximately the same audio as another buffer
+    /// @details The comparison is relaxed - each pair of corresponding samples must differ by
+    /// no more than `toleranceLinear`, but not bit-exact. Both buffers must have the same number
+    /// of channels and frames. Also, if both buffers have sample-rate metadata, the sample rates
+    /// must match. If both buffers have no sample-rate metadata assigned, they will still be
+    /// considered equal as long as their dimensions match, and sample values match within tolerance.
+    /// @param other Buffer to compare against
+    /// @param toleranceLinear Absolute sample tolerance in linear domain (not decibels)
+    /// @return `true` if the buffers are equal within the specified tolerance, `false` otherwise
+    bool equalsTo (const AudioBuffer& other, SampleType toleranceLinear = (SampleType) 1e-6) const
+    {
+        if (m_numChannels != other.m_numChannels || m_numFrames != other.m_numFrames)
+            return false;
+
+        if (hasSampleRate() && other.hasSampleRate() && ! floatsEqual (m_sampleRateHz, other.m_sampleRateHz))
+            return false;
+
+        const SampleType* thisRawData = m_frames.data();
+        const SampleType* otherRawData = other.m_frames.data();
+        const size_t numFlattenedSamples = m_frames.size();
+
+        for (size_t sample = 0; sample < numFlattenedSamples; ++sample)
+            if (std::abs (thisRawData[sample] - otherRawData[sample]) > toleranceLinear)
+                return false;
+
+        return true;
+    }
+
+    /// @brief Checks whether two buffers contain approximately the same audio
+    /// @details Equivalent to calling `AudioBuffer::equalsTo (other)` with the default tolerance
+    /// @param other Buffer to compare against
+    /// @return `true` if the buffers are equal within the default tolerance, `false` otherwise
+    bool operator== (const AudioBuffer& other) const
+    {
+        return equalsTo (other);
+    }
+
+    /// @brief Checks whether two buffers differ beyond the default comparison tolerance
+    /// @details Equivalent to `! AudioBuffer::equalsTo (other)`
+    /// @param other Buffer to compare against
+    /// @return `true` if the buffers are not equal within the default tolerance, `false` otherwise
+    bool operator!= (const AudioBuffer& other) const
+    {
+        return ! equalsTo (other);
     }
 
     /// @brief Appends data from another buffer
