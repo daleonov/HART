@@ -170,7 +170,7 @@ std::unique_ptr<ObjectType> make_unique (Args&&... args)
 /// @brief Returns `true` if an exception is currently being unwound
 inline static bool isExceptionUnwinding()
 {
-#if __cplusplus >= 201703L
+#if defined(__cpp_lib_uncaught_exceptions)
     return std::uncaught_exceptions() > 0;
 #else
     return std::uncaught_exception();
