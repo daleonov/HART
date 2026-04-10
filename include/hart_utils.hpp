@@ -3,6 +3,7 @@
 #include <algorithm>  // min(), max()
 #include <cctype>  // isalpha()
 #include <cmath>  // pow()
+#include <exception>
 #include <limits>  // infinity(), nan()
 #include <memory>
 #include <string>
@@ -164,6 +165,16 @@ template<typename ObjectType, typename... Args>
 std::unique_ptr<ObjectType> make_unique (Args&&... args)
 {
     return std::unique_ptr<ObjectType> (new ObjectType (std::forward<Args> (args)...));
+}
+
+/// @brief Returns `true` if an exception is currently being unwound
+inline static bool isExceptionUnwinding()
+{
+#if __cplusplus >= 201703L
+    return std::uncaught_exceptions() > 0;
+#else
+    return std::uncaught_exception();
+#endif
 }
 
 /// @brief Defines a basic string representation of your class
