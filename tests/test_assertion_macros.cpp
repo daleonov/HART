@@ -66,7 +66,7 @@ HART_TEST ("Assertion Macros - Expect Short")
     HART_EXPECT_LE (a, b);
     HART_EXPECT_GT (b, a);
     HART_EXPECT_GE (b, a);
-    HART_EXPECT_IN_RANGE (5, 100, 10);
+    HART_EXPECT_IN_RANGE (5, 1, 10);
 
     HART_EXPECT_LT (alpha, beta);
     HART_EXPECT_GE (beta, beta);
