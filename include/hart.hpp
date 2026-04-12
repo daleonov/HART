@@ -15,6 +15,7 @@
 #include "hart_expectation_failure_messages.hpp"
 #include "matchers/hart_matchers_all.hpp"
 #include "metrics/hart_metrics_all.hpp"
+#include "hart_preparation.hpp"
 #include "hart_process_audio.hpp"
 #include "hart_reducers.hpp"
 #include "signals/hart_signals_all.hpp"

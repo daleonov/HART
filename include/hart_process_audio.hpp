@@ -18,6 +18,7 @@
 #include "matchers/hart_matcher_function.hpp"
 #include "hart_plot.hpp"
 #include "hart_precision.hpp"
+#include "hart_preparation.hpp"
 #include "hart_wavwriter.hpp"
 #include "signals/hart_signals_all.hpp"
 #include "hart_utils.hpp"  // make_unique()
@@ -122,6 +123,26 @@ public:
         return *this;
     }
 
+    /// @brief Sets whether to call reset() and/or prepare() on DSP testee before rendering audio
+    /// @details It is useful when you re-use your DSP instance, to control whether you want to
+    /// preserve its pre-existing state. If you also request `withWarmUp()`, this call will only
+    /// affect pre-warp-up preparation. Post-warm-up preparaton is selected via `withWarmUp()` args.
+    AudioTestBuilder& withDspPreparation (Preparation dspPreparation)
+    {
+        m_dspPreparationBeforeWarmUp = dspPreparation;
+        return *this;
+    }
+
+    /// @brief Sets whether to call reset() and/or prepare() on the input Signal before rendering audio
+    /// @details It is useful when you re-use your Signal instance, to control whether you want to
+    /// preserve its pre-existing state. If you also request `withWarmUp()`, this call will only
+    /// affect pre-warp-up preparation. Post-warm-up preparaton is selected via `withWarmUp()` args.
+    AudioTestBuilder& withSignalPreparation (Preparation signalPreparation)
+    {
+        m_signalPreparationBeforeWarmUp = signalPreparation;
+        return *this;
+    }
+
     /// @brief Adds a warm‑up period before the main test.
     /// @details The signal will be processed for this time, but no matchers will be invoked.
     /// This can be useful if your DSP uses parameter smoothers internally, that need to settle
@@ -132,49 +153,47 @@ public:
     /// @note Calling `saveOutputTo()` (both for wav files and `AudioBuffer`s) and `savePlotTo()`
     /// will always output the entire rendered piece of audio, including this warm-up stage.
     /// @param warmUpDurationSeconds Duration of the warm‑up in seconds
-    /// @param resetSignalAfterWarmUp Whether to restart the input signal generator after the warm‑up stage,
-    /// see @ref hart::ResetSignal
-    AudioTestBuilder& withWarmUp (double warmUpDurationSeconds, ResetSignal resetSignalAfterWarmUp = ResetSignal::no)
+    /// @param signalPreparation Whether to call reset() and/or prepare() on an input signal
+    /// after the warm-up stage
+    /// @param dspPreparation Whether to call reset() and/or prepare() on the DSP testee
+    /// after the warm-up stage
+    AudioTestBuilder& withWarmUp (
+        double warmUpDurationSeconds,
+        Preparation signalPreparation = Preparation::none,
+        Preparation dspPreparation = Preparation::none
+        )
     {
         if (warmUpDurationSeconds < 0)
             HART_THROW_OR_RETURN (hart::ValueError, "Warm-up should be a non-negative value in seconds", *this);
 
         m_warmUpDurationSeconds = warmUpDurationSeconds;
-        m_resetSignalAfterWarmUp = resetSignalAfterWarmUp == ResetSignal::yes;
+        m_signalPreparationAfterWarmUp = signalPreparation;
+        m_dspPreparationAfterWarmUp = dspPreparation;
         return *this;
     }
 
     /// @brief Sets the input signal for the test by copying it
     /// @param signal Input signal, see @ref Signals
-    /// @param resetSignalBeforeProcessing Set to `ResetSignal::yes` if you want the runner to call
-    /// Signal::reset() before rendering audio, or to `ResetSignal::no` to keep its pre-existing state
-    AudioTestBuilder& withInputSignal (const SignalBase<SampleType>& signal, ResetSignal resetSignalBeforeProcessing = ResetSignal::no)
+    AudioTestBuilder& withInputSignal (const SignalBase<SampleType>& signal)
     {
         m_inputSignal = std::move (signal.copy());
-        m_resetSignalBeforeProcessing = resetSignalBeforeProcessing == ResetSignal::yes;
         return *this;
     }
 
     /// @brief Sets the input signal for the test by moving it
     /// @param signal Input signal, see @ref Signals
-    /// @param resetSignalBeforeProcessing Set to `ResetSignal::yes` if you want the runner to call
-    /// Signal::reset() before rendering audio, or to `ResetSignal::no` to keep its pre-existing state
-    AudioTestBuilder& withInputSignal (SignalBase<SampleType>&& signal, ResetSignal resetSignalBeforeProcessing = ResetSignal::no)
+    AudioTestBuilder& withInputSignal (SignalBase<SampleType>&& signal)
     {
         m_inputSignal = std::move (signal.move());
-        m_resetSignalBeforeProcessing = resetSignalBeforeProcessing == ResetSignal::yes;
         return *this;
     }
 
     /// @brief Sets the input signal for the test by transfering its smart pointer
     /// @note The ownership of the smart pointer will be transferred to this class
     /// @param signal Input signal, see @ref Signals
-    /// @param resetSignalBeforeProcessing Set to `ResetSignal::yes` if you want the runner to call
-    /// Signal::reset() before rendering audio, or to `ResetSignal::no` to keep its pre-existing state
-    AudioTestBuilder& withInputSignal (std::unique_ptr<SignalBase<SampleType>> signal, ResetSignal resetSignalBeforeProcessing = ResetSignal::no)
+    AudioTestBuilder& withInputSignal (std::unique_ptr<SignalBase<SampleType>> signal)
     {
         m_inputSignal = std::move (signal);
-        m_resetSignalBeforeProcessing = resetSignalBeforeProcessing == ResetSignal::yes;
         return *this;
     }
 
@@ -206,7 +225,6 @@ public:
             loop
         );
 
-        m_resetSignalBeforeProcessing = false;  // It gets constructed from scratch here anyway
         return *this;
     }
 
@@ -613,8 +631,11 @@ public:
         if (! m_processor->supportsChannelLayout (m_numInputChannels, m_numOutputChannels))
             HART_THROW_OR_RETURN (hart::ChannelLayoutError, "DSP testee does not support requested channel layout", std::move (m_processor));
 
-        m_processor->reset();
-        m_processor->prepareWithEnvelopes (m_sampleRateHz, m_numInputChannels, m_numOutputChannels, m_blockSizeFrames);
+        if (m_dspPreparationBeforeWarmUp == Preparation::reset || m_dspPreparationBeforeWarmUp == Preparation::resetAndPrepare)
+            m_processor->reset();
+
+        if (m_dspPreparationBeforeWarmUp == Preparation::prepare || m_dspPreparationBeforeWarmUp == Preparation::resetAndPrepare)
+            m_processor->prepareWithEnvelopes (m_sampleRateHz, m_numInputChannels, m_numOutputChannels, m_blockSizeFrames);
 
         for (const ParamValue& paramValue : paramValues)
         {
@@ -625,10 +646,12 @@ public:
         if (m_inputSignal == nullptr)
             m_inputSignal = std::move (hart::make_unique<Silence<SampleType>>());
 
-        if (m_resetSignalBeforeProcessing)
+        if (m_signalPreparationBeforeWarmUp == Preparation::reset || m_signalPreparationBeforeWarmUp == Preparation::resetAndPrepare)
             m_inputSignal->resetWithDSPChain();
 
-        m_inputSignal->prepareWithDSPChain (m_sampleRateHz, m_numInputChannels, m_blockSizeFrames);
+        if (m_signalPreparationBeforeWarmUp == Preparation::prepare || m_signalPreparationBeforeWarmUp == Preparation::resetAndPrepare)
+            m_inputSignal->prepareWithDSPChain (m_sampleRateHz, m_numInputChannels, m_blockSizeFrames);
+
         offsetFrames = 0;
 
         // TODO: Pre-allocate full buffer sizes here, as they're already known at this point
@@ -652,8 +675,17 @@ public:
             offsetFrames += blockSizeFrames;
         }
 
-        if (m_resetSignalAfterWarmUp)
+        if (m_dspPreparationAfterWarmUp == Preparation::reset || m_dspPreparationAfterWarmUp == Preparation::resetAndPrepare)
+            m_processor->reset();
+
+        if (m_dspPreparationAfterWarmUp == Preparation::prepare || m_dspPreparationAfterWarmUp == Preparation::resetAndPrepare)
+            m_processor->prepareWithEnvelopes (m_sampleRateHz, m_numInputChannels, m_numOutputChannels, m_blockSizeFrames);
+
+        if (m_signalPreparationAfterWarmUp == Preparation::reset || m_signalPreparationAfterWarmUp == Preparation::resetAndPrepare)
             m_inputSignal->resetWithDSPChain();
+
+        if (m_signalPreparationAfterWarmUp == Preparation::prepare || m_signalPreparationAfterWarmUp == Preparation::resetAndPrepare)
+            m_inputSignal->prepareWithDSPChain (m_sampleRateHz, m_numInputChannels, m_blockSizeFrames);
 
         // Main test render
         while (offsetFrames < totalDurationFrames)
@@ -738,10 +770,13 @@ private:
     std::vector<ParamValue> paramValues;
     double m_testDurationSeconds = 0.1;
     double m_warmUpDurationSeconds = 0.0;
-    bool m_resetSignalAfterWarmUp = false;
-    bool m_resetSignalBeforeProcessing = false;
     size_t offsetFrames = 0;
     std::string m_testLabel = {};
+
+    Preparation m_signalPreparationBeforeWarmUp = Preparation::resetAndPrepare;
+    Preparation m_signalPreparationAfterWarmUp = Preparation::none;
+    Preparation m_dspPreparationBeforeWarmUp = Preparation::resetAndPrepare;
+    Preparation m_dspPreparationAfterWarmUp = Preparation::none;
 
     std::vector<Check> perBlockChecks;
     std::vector<Check> fullSignalChecks;

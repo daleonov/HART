@@ -149,7 +149,8 @@ HART_TEST ("Re-using the input signal")
     // -10dB for 5ms, then 10ms ramp, then 5ms of -6dB signal
     processAudioWith (GainDb (0_dB))
         .withLabel ("Second section")
-        .withInputSignal (std::move (reusableSignal), ResetSignal::no)  // Re-use it
+        .withInputSignal (std::move (reusableSignal))  // Re-use it
+        .withSignalPreparation (hart::Preparation::none)  // Keep the state of re-used signal
         .withDuration (20_ms)
         .saveInputSignalTo (reusableSignal)  // Save it via same smart pointer reference
         .expectTrue (PeaksAt (-6_dB))
@@ -164,7 +165,8 @@ HART_TEST ("Re-using the input signal")
     // -6dB for 5ms, then 10ms ramp, then -3dB for 5ms
     processAudioWith (GainDb (0_dB))
         .withLabel ("Third section")
-        .withInputSignal (std::move (reusableSignal), ResetSignal::no)  // Re-use it again
+        .withInputSignal (std::move (reusableSignal))  // Re-use it again
+        .withSignalPreparation (hart::Preparation::none)  // Keep the state of re-used signal again
         .withDuration (20_ms)
         .saveInputSignalTo (inputSignalSink)  // Save it via provided function
         .expectTrue (PeaksAt (-3_dB))
@@ -174,7 +176,8 @@ HART_TEST ("Re-using the input signal")
     // -3dB for 5ms, then 10ms ramp, then -1dB for 5ms
     processAudioWith (GainDb (0_dB))
         .withLabel ("Fourth section")
-        .withInputSignal (std::move (reusableSignal), ResetSignal::no)  // And re-use it again
+        .withInputSignal (std::move (reusableSignal))  // And re-use it again
+        .withSignalPreparation (hart::Preparation::none)  // Still keep the state of re-used signal
         .withDuration (20_ms)
         .saveInputSignalTo (reusableSignal)  // Save it via provided function once again
         .expectTrue (PeaksAt (-1_dB))
@@ -183,7 +186,8 @@ HART_TEST ("Re-using the input signal")
     // Reset it back to initial state
     processAudioWith (GainDb (0_dB))
         .withLabel ("Back to first section")
-        .withInputSignal (std::move (reusableSignal), ResetSignal::yes)  // And re-use it one last time, but reset before rendering
+        .withInputSignal (std::move (reusableSignal))  // And re-use it one last time...
+        .withSignalPreparation (hart::Preparation::reset)  // ...but reset before rendering
         .withDuration (5_ms)
         .expectTrue (PeaksAt (-10_dB))
         .process();
