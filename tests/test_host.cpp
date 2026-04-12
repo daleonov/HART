@@ -233,3 +233,10 @@ HART_TEST ("Accessing DSP elements in Signal's DSP chain")
         .expectTrue (PeaksAt (-6_dB))
         .process();
 }
+
+HART_TEST ("Runner - No input signal defaults to Silence")
+{
+    processAudioWith (GainDb (0_dB))
+        .expectTrue (EqualsTo (Silence()))
+        .process();
+}

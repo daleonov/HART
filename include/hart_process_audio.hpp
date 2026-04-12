@@ -622,9 +622,8 @@ public:
             m_processor->setValue (paramValue.id, paramValue.value);
         }
 
-        // TODO: Default to Silence()
         if (m_inputSignal == nullptr)
-            HART_THROW_OR_RETURN (hart::StateError, "No input signal - call withInputSignal() first!", std::move (m_processor));
+            m_inputSignal = std::move (hart::make_unique<Silence<SampleType>>());
 
         if (m_resetSignalBeforeProcessing)
             m_inputSignal->resetWithDSPChain();
