@@ -207,3 +207,14 @@ HART_TEST ("Assertion Macros - Labels")
     HART_EXPECT_EQUAL (1 + 2, 3) << "More " << 123 << " complex " << 3.14f * 2 << " label";
     HART_ASSERT_EQUAL (1 + 2, 3) << "Same with assert level statements";
 }
+
+HART_TEST ("Assertion Conditions - Instantiation and metadata")
+{
+    hart::Condition conditionDefaultConstructed;
+    hart::Condition conditionImplicitCaseFromBool = 4 > 7;
+    hart::Condition conditionFromMacro = HART_GT (4, 7);
+
+    HART_ASSERT_FALSE (conditionDefaultConstructed.hasDetailedMetadata());
+    HART_ASSERT_FALSE (conditionImplicitCaseFromBool.hasDetailedMetadata());
+    HART_ASSERT_TRUE (conditionFromMacro.hasDetailedMetadata());
+}
