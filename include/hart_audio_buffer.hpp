@@ -435,25 +435,95 @@ public:
             stream << ", nan())";
     }
 
-    AudioBuffer<SampleType>& fillWith (SignalBase<SampleType>&& signal, size_t blockSizeFrames = 0, Preparation signalPreparation = Preparation::resetAndPrepare) &
-    {
-        _fillWith (signal, blockSizeFrames, signalPreparation);
-        return *this;
-    }
-
+    /// @brief Fills this AudioBuffer by rendering audio from a Signal.
+    /// @details
+    /// This method uses the supplied Signal and renders audio into this buffer, replacing all existing samples.
+    /// The Signal is not consumed and can be re-used after rendering completes.
+    ///
+    /// The buffer's sample rate and channel layout are used as the hosting configuration.
+    /// If the Signal does not support the current channel count or sample rate, an exception is raised.
+    ///
+    /// Rendering is performed block-by-block when @p blockSizeFrames is smaller than the buffer length.
+    /// The final block may be shorter than the requested block size.
+    /// @param signal A reusable Signal object to render from.
+    /// @param blockSizeFrames Number of frames to render per block. Pass 0 to render the whole buffer in one go.
+    /// @param signalPreparation Controls whether the Signal should be reset and/or prepared before rendering.
+    /// @return A reference to this AudioBuffer for chaining further operations.
+    /// @throws hart::SampleRateError if Sample rate of this buffer is undefined, or unsupported by the Signal.
+    /// @throws hart::ChannelLayoutError if this buffer has no channels allocated, or number of channels
+    /// is unsupported by the Signal
+    /// @throws hart::SizeError is this buffer has no frames allocated
     AudioBuffer<SampleType>& fillWith (SignalBase<SampleType>& signal, size_t blockSizeFrames = 0, Preparation signalPreparation = Preparation::resetAndPrepare) &
     {
         _fillWith (signal, blockSizeFrames, signalPreparation);
         return *this;
     }
 
-    AudioBuffer<SampleType>&& fillWith (SignalBase<SampleType>&& signal, size_t blockSizeFrames = 0, Preparation signalPreparation = Preparation::resetAndPrepare) &&
+    /// @brief Fills this AudioBuffer by rendering audio from a Signal.
+    /// @details
+    /// This method uses the supplied Signal and renders audio into this buffer, replacing all existing samples.
+    ///
+    /// The buffer's sample rate and channel layout are used as the hosting configuration.
+    /// If the Signal does not support the current channel count or sample rate, an exception is raised.
+    ///
+    /// Rendering is performed block-by-block when @p blockSizeFrames is smaller than the buffer length.
+    /// The final block may be shorter than the requested block size.
+    /// @param signal A temporary Signal instance to render from.
+    /// @param blockSizeFrames Number of frames to render per block. Pass 0 to render the whole buffer in one go.
+    /// @param signalPreparation Controls whether the Signal should be reset and/or prepared before rendering.
+    /// @return A reference to this AudioBuffer for chaining further operations.
+    /// @throws hart::SampleRateError if Sample rate of this buffer is undefined, or unsupported by the Signal.
+    /// @throws hart::ChannelLayoutError if this buffer has no channels allocated, or number of channels
+    /// is unsupported by the Signal
+    /// @throws hart::SizeError is this buffer has no frames allocated
+    AudioBuffer<SampleType>& fillWith (SignalBase<SampleType>&& signal, size_t blockSizeFrames = 0, Preparation signalPreparation = Preparation::resetAndPrepare) &
+    {
+        _fillWith (signal, blockSizeFrames, signalPreparation);
+        return *this;
+    }
+
+    /// @brief Fills this AudioBuffer by rendering audio from a Signal.
+    /// @details
+    /// This method uses the supplied Signal and renders audio into this buffer, replacing all existing samples.
+    /// The Signal is not consumed and can be re-used after rendering completes.
+    ///
+    /// The buffer's sample rate and channel layout are used as the hosting configuration.
+    /// If the Signal does not support the current channel count or sample rate, an exception is raised.
+    ///
+    /// Rendering is performed block-by-block when @p blockSizeFrames is smaller than the buffer length.
+    /// The final block may be shorter than the requested block size.
+    /// @param signal A reusable Signal object to render from.
+    /// @param blockSizeFrames Number of frames to render per block. Pass 0 to render the whole buffer in one go.
+    /// @param signalPreparation Controls whether the Signal should be reset and/or prepared before rendering.
+    /// @return An rvalue reference to this AudioBuffer, allowing fluent chaining with temporary buffers.
+    /// @throws hart::SampleRateError if Sample rate of this buffer is undefined, or unsupported by the Signal.
+    /// @throws hart::ChannelLayoutError if this buffer has no channels allocated, or number of channels
+    /// is unsupported by the Signal
+    /// @throws hart::SizeError is this buffer has no frames allocated
+    AudioBuffer<SampleType>&& fillWith (SignalBase<SampleType>& signal, size_t blockSizeFrames = 0, Preparation signalPreparation = Preparation::resetAndPrepare) &&
     {
         _fillWith (signal, blockSizeFrames, signalPreparation);
         return std::move (*this);
     }
 
-    AudioBuffer<SampleType>&& fillWith (SignalBase<SampleType>& signal, size_t blockSizeFrames = 0, Preparation signalPreparation = Preparation::resetAndPrepare) &&
+    /// @brief Fills this AudioBuffer by rendering audio from a Signal.
+    /// @details
+    /// This method uses the supplied Signal and renders audio into this buffer, replacing all existing samples.
+    ///
+    /// The buffer's sample rate and channel layout are used as the hosting configuration.
+    /// If the Signal does not support the current channel count or sample rate, an exception is raised.
+    ///
+    /// Rendering is performed block-by-block when @p blockSizeFrames is smaller than the buffer length.
+    /// The final block may be shorter than the requested block size.
+    /// @param signal A temporary Signal instance to render from.
+    /// @param blockSizeFrames Number of frames to render per block. Pass 0 to render the whole buffer in one go.
+    /// @param signalPreparation Controls whether the Signal should be reset and/or prepared before rendering.
+    /// @return An rvalue reference to this AudioBuffer, allowing fluent chaining with temporary buffers.
+    /// @throws hart::SampleRateError if Sample rate of this buffer is undefined, or unsupported by the Signal.
+    /// @throws hart::ChannelLayoutError if this buffer has no channels allocated, or number of channels
+    /// is unsupported by the Signal
+    /// @throws hart::SizeError is this buffer has no frames allocated
+    AudioBuffer<SampleType>&& fillWith (SignalBase<SampleType>&& signal, size_t blockSizeFrames = 0, Preparation signalPreparation = Preparation::resetAndPrepare) &&
     {
         _fillWith (signal, blockSizeFrames, signalPreparation);
         return std::move (*this);
