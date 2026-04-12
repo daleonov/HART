@@ -18,6 +18,31 @@ namespace hart
 class Condition
 {
 public:
+    /// @private
+    Condition (bool result):
+        Condition (
+            result,
+            "Condition (<bool>)",  // tokenRepresentation
+            "Condition (" + toString (result) + ')',  // stringRepresentation
+            "",  // file
+            -1,  // line
+            false  // hasDetailedMetadata
+            )
+    {
+    }
+
+    /// @private
+    Condition():
+        Condition (
+            false,  // result
+            "Condition()",  // tokenRepresentation
+            "Condition()",  // stringRepresentation
+            "",  // file
+            -1,  // line
+            false  // hasDetailedMetadata
+            )
+    {
+    }
 
     /// @private
     bool getResult() const
@@ -35,6 +60,18 @@ public:
     int getLine() const
     {
         return m_line;
+    }
+
+    /// @brief Returns whether it has rich metadata that's worth displaying on failure.
+    /// @details
+    /// Conditions created via proper macros have some useful diagnostic metadata
+    /// like token representation, or file name and line number where it was defined.
+    /// Default-constructed Conditions and Conditions created from basic `bool` value
+    /// do not have it.
+    /// @private
+    bool hasDetailedMetadata() const
+    {
+        return m_hasDetailedMetadata;
     }
 
     /// @private
@@ -245,8 +282,9 @@ public:
     }
 
 private:
-    Condition (bool result, std::string tokenRepresentation, std::string stringRepresentation, const char* file, int line) :
+    Condition (bool result, std::string tokenRepresentation, std::string stringRepresentation, const char* file, int line, bool hasDetailedMetadata = true) :
         m_result (result),
+        m_hasDetailedMetadata (hasDetailedMetadata),
         m_tokenRepresentation (std::move (tokenRepresentation)),
         m_stringRepresentation (std::move (stringRepresentation)),
         m_file (file),
@@ -254,11 +292,12 @@ private:
     {
     }
 
-    const bool m_result;
-    const std::string m_tokenRepresentation;
-    const std::string m_stringRepresentation;
-    const char* const m_file;
-    const int m_line;
+    bool m_result;
+    bool m_hasDetailedMetadata;
+    std::string m_tokenRepresentation;
+    std::string m_stringRepresentation;
+    const char* m_file;
+    int m_line;
 };
 
 }  // namespace hart

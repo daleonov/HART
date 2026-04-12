@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "hart_audio_buffer.hpp"
+#include "hart_condition.hpp"
 #include "dsp/hart_dsp_all.hpp"
 #include "dsp/hart_dsp_function.hpp"
 #include "hart_expectation_failure_messages.hpp"
@@ -321,10 +322,15 @@ public:
     /// @see MatcherFunction
     /// @param matcherFunction Function with signature:
     /// @code
-    /// bool(const AudioBuffer<SampleType>& output)
+    /// Condition (const AudioBuffer<SampleType>& output)
+    /// @endcode
+    ///
+    /// Example:
+    /// @code
+    /// [] (const AudioBuffer<SampleType>& output) { return HART_LESS_THAN (crestFactorDb (output), 3_dB); }
     /// @endcode
     /// @param label Optional label used in failure reports
-    AudioTestBuilder& expectTrue (std::function<bool (const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    AudioTestBuilder& expectTrue (std::function<Condition (const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
     {
         return expectTrue (MatcherFunction<SampleType> (std::move (matcherFunction), label));
     }
@@ -335,13 +341,21 @@ public:
     /// @see MatcherFunction
     /// @param matcherFunction Function with signature:
     /// @code
-    /// bool(const AudioBuffer<SampleType>& input,
-    ///      const AudioBuffer<SampleType>& output)
+    /// Condition (const AudioBuffer<SampleType>& input,
+    ///            const AudioBuffer<SampleType>& output)
+    /// @endcode
+    ///
+    /// Example:
+    /// @code
+    /// [] (const AudioBuffer<SampleType>& input, const AudioBuffer<SampleType>& output)
+    /// {
+    ///     return HART_LESS_THAN (crestFactorDb (output), crestFactorDb (input));
+    /// }
     /// @endcode
     /// @param label Optional label used in failure reports
     /// @note If your matcher function only cares about the output, and not the input,
-    /// just use the overload that takes `bool(const AudioBuffer<SampleType>& output)`.
-    AudioTestBuilder& expectTrue (std::function<bool (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    /// just use the overload that takes `Condition (const AudioBuffer<SampleType>& output)`.
+    AudioTestBuilder& expectTrue (std::function<Condition (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
     {
         return expectTrue (MatcherFunction<SampleType> (std::move (matcherFunction), label));
     }
@@ -352,10 +366,15 @@ public:
     /// @see MatcherFunction
     /// @param matcherFunction Function with signature:
     /// @code
-    /// bool(const AudioBuffer<SampleType>& output)
+    /// Condition (const AudioBuffer<SampleType>& output)
+    /// @endcode
+    ///
+    /// Example:
+    /// @code
+    /// [] (const AudioBuffer<SampleType>& output) { return HART_LESS_THAN (crestFactorDb (output), 3_dB); }
     /// @endcode
     /// @param label Optional label used in failure reports
-    AudioTestBuilder& expectFalse (std::function<bool (const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    AudioTestBuilder& expectFalse (std::function<Condition (const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
     {
         return expectFalse (MatcherFunction<SampleType> (std::move (matcherFunction), label));
     }
@@ -366,13 +385,21 @@ public:
     /// @see MatcherFunction
     /// @param matcherFunction Function with signature:
     /// @code
-    /// bool(const AudioBuffer<SampleType>& input,
-    ///      const AudioBuffer<SampleType>& output)
+    /// Condition (const AudioBuffer<SampleType>& input,
+    ///            const AudioBuffer<SampleType>& output)
+    /// @endcode
+    ///
+    /// Example:
+    /// @code
+    /// [] (const AudioBuffer<SampleType>& input, const AudioBuffer<SampleType>& output)
+    /// {
+    ///     return HART_LESS_THAN (crestFactorDb (output), crestFactorDb (input));
+    /// }
     /// @endcode
     /// @param label Optional label used in failure reports
     /// @note If your matcher function only cares about the output, and not the input,
-    /// just use the overload that takes `bool(const AudioBuffer<SampleType>& output)`.
-    AudioTestBuilder& expectFalse (std::function<bool (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    /// just use the overload that takes `Condition (const AudioBuffer<SampleType>& output)`.
+    AudioTestBuilder& expectFalse (std::function<Condition (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
     {
         return expectFalse (MatcherFunction<SampleType> (std::move (matcherFunction), label));
     }
@@ -383,10 +410,15 @@ public:
     /// @see MatcherFunction
     /// @param matcherFunction Function with signature:
     /// @code
-    /// bool(const AudioBuffer<SampleType>& output)
+    /// Condition (const AudioBuffer<SampleType>& output)
+    /// @endcode
+    ///
+    /// Example:
+    /// @code
+    /// [] (const AudioBuffer<SampleType>& output) { return HART_LESS_THAN (crestFactorDb (output), 3_dB); }
     /// @endcode
     /// @param label Optional label used in failure reports
-    AudioTestBuilder& assertTrue (std::function<bool (const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    AudioTestBuilder& assertTrue (std::function<Condition (const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
     {
         return assertTrue (MatcherFunction<SampleType> (std::move (matcherFunction), label));
     }
@@ -397,13 +429,21 @@ public:
     /// @see MatcherFunction
     /// @param matcherFunction Function with signature:
     /// @code
-    /// bool(const AudioBuffer<SampleType>& input,
-    ///      const AudioBuffer<SampleType>& output)
+    /// Condition (const AudioBuffer<SampleType>& input,
+    ///            const AudioBuffer<SampleType>& output)
+    /// @endcode
+    ///
+    /// Example:
+    /// @code
+    /// [] (const AudioBuffer<SampleType>& input, const AudioBuffer<SampleType>& output)
+    /// {
+    ///     return HART_LESS_THAN (crestFactorDb (output), crestFactorDb (input));
+    /// }
     /// @endcode
     /// @param label Optional label used in failure reports
     /// @note If your matcher function only cares about the output, and not the input,
-    /// just use the overload that takes `bool(const AudioBuffer<SampleType>& output)`.
-    AudioTestBuilder& assertTrue (std::function<bool (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    /// just use the overload that takes `Condition (const AudioBuffer<SampleType>& output)`.
+    AudioTestBuilder& assertTrue (std::function<Condition (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
     {
         return assertTrue (MatcherFunction<SampleType> (std::move (matcherFunction), label));
     }
@@ -414,10 +454,15 @@ public:
     /// @see MatcherFunction
     /// @param matcherFunction Function with signature:
     /// @code
-    /// bool(const AudioBuffer<SampleType>& output)
+    /// Condition (const AudioBuffer<SampleType>& output)
+    /// @endcode
+    ///
+    /// Example:
+    /// @code
+    /// [] (const AudioBuffer<SampleType>& output) { return HART_LESS_THAN (crestFactorDb (output), 3_dB); }
     /// @endcode
     /// @param label Optional label used in failure reports
-    AudioTestBuilder& assertFalse (std::function<bool (const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    AudioTestBuilder& assertFalse (std::function<Condition (const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
     {
         return assertFalse (MatcherFunction<SampleType> (std::move (matcherFunction), label));
     }
@@ -428,13 +473,21 @@ public:
     /// @see MatcherFunction
     /// @param matcherFunction Function with signature:
     /// @code
-    /// bool(const AudioBuffer<SampleType>& input,
-    ///      const AudioBuffer<SampleType>& output)
+    /// Condition (const AudioBuffer<SampleType>& input,
+    ///            const AudioBuffer<SampleType>& output)
+    /// @endcode
+    ///
+    /// Example:
+    /// @code
+    /// [] (const AudioBuffer<SampleType>& input, const AudioBuffer<SampleType>& output)
+    /// {
+    ///     return HART_LESS_THAN (crestFactorDb (output), crestFactorDb (input));
+    /// }
     /// @endcode
     /// @param label Optional label used in failure reports
     /// @note If your matcher function only cares about the output, and not the input,
-    /// just use the overload that takes `bool(const AudioBuffer<SampleType>& output)`.
-    AudioTestBuilder& assertFalse (std::function<bool (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
+    /// just use the overload that takes `Condition (const AudioBuffer<SampleType>& output)`.
+    AudioTestBuilder& assertFalse (std::function<Condition (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
     {
         return assertFalse (MatcherFunction<SampleType> (std::move (matcherFunction), label));
     }
