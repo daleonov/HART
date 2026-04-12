@@ -610,7 +610,9 @@ public:
             check.shouldSkip = false;
         }
 
-        // TODO: Ckeck supportsChannelLayout() here
+        if (! m_processor->supportsChannelLayout (m_numInputChannels, m_numOutputChannels))
+            HART_THROW_OR_RETURN (hart::ChannelLayoutError, "DSP testee does not support requested channel layout", std::move (m_processor));
+
         m_processor->reset();
         m_processor->prepareWithEnvelopes (m_sampleRateHz, m_numInputChannels, m_numOutputChannels, m_blockSizeFrames);
 
@@ -620,6 +622,7 @@ public:
             m_processor->setValue (paramValue.id, paramValue.value);
         }
 
+        // TODO: Default to Silence()
         if (m_inputSignal == nullptr)
             HART_THROW_OR_RETURN (hart::StateError, "No input signal - call withInputSignal() first!", std::move (m_processor));
 
