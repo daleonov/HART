@@ -238,6 +238,125 @@ HART_TEST ("Accessing DSP elements in Signal's DSP chain")
         .process();
 }
 
+HART_TEST ("AudioBuffer - Hosting a Signal and rendering in one go")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    constexpr size_t numChannels = 2;
+    constexpr double sampleRateHz = 44.1_kHz;
+    constexpr double durationSeconds = 0.1_s;
+    const size_t durationFrames = hart::roundToSizeT (durationSeconds * sampleRateHz);
+
+    AudioBuffer bufferGolden;
+    processAudioWith (GainLinear (1.0))
+        .withInputSignal (SineSweep())
+        .withDuration (durationSeconds)
+        .withSampleRate (sampleRateHz)
+        .withBlockSize (durationFrames)
+        .withInputChannels (numChannels)
+        .withOutputChannels (numChannels)
+        .saveOutputTo (bufferGolden)
+        .process();
+
+    const AudioBuffer bufferSilent (numChannels, durationFrames, sampleRateHz);
+    AudioBuffer bufferToFillWithTempObject (numChannels, durationFrames, sampleRateHz);
+    AudioBuffer bufferToFillWithNamedObjectA (numChannels, durationFrames, sampleRateHz);
+    AudioBuffer bufferToFillWithNamedObjectB (numChannels, durationFrames, sampleRateHz);
+    HART_ASSERT_EQUAL (bufferSilent, bufferToFillWithTempObject);
+
+    bufferToFillWithTempObject.fillWith (SineSweep());
+    HART_EXPECT_NOT_EQUAL (bufferToFillWithTempObject, bufferSilent);
+    HART_EXPECT_EQUAL (bufferToFillWithTempObject, bufferGolden);
+
+    auto namedSignalA = SineSweep();
+    bufferToFillWithNamedObjectA.fillWith (namedSignalA);
+    HART_EXPECT_NOT_EQUAL (bufferToFillWithNamedObjectA, bufferSilent);
+    HART_EXPECT_EQUAL (bufferToFillWithNamedObjectA, bufferToFillWithTempObject);
+    HART_EXPECT_EQUAL (bufferToFillWithNamedObjectA, bufferGolden);
+
+    // Keep the signal going, without resetting its state
+    bufferToFillWithNamedObjectB.fillWith (namedSignalA, 0, hart::Preparation::none);
+    HART_EXPECT_NOT_EQUAL (bufferToFillWithNamedObjectA, bufferToFillWithNamedObjectB);
+
+    // Reset the signal
+    bufferToFillWithNamedObjectB.fillWith (namedSignalA, 0, hart::Preparation::reset);
+    HART_EXPECT_EQUAL (bufferToFillWithNamedObjectA, bufferToFillWithNamedObjectB);
+
+    // Temporary AudioBuffer object with a temporary Signal
+    HART_EXPECT_FLOAT_EQUAL (
+        hart::crestFactorLinear (hart::mean(), AudioBuffer (numChannels, durationFrames, sampleRateHz).fillWith (SineWave())),
+        std::sqrt (2),
+        1e-2
+        );
+
+    // Temporary AudioBuffer object with a named Signal
+    auto namedSignalB = SineWave();
+    HART_EXPECT_FLOAT_EQUAL (
+        hart::crestFactorLinear (hart::mean(), AudioBuffer (numChannels, durationFrames, sampleRateHz).fillWith (namedSignalB)),
+        std::sqrt (2),
+        1e-2
+        );
+}
+
+HART_TEST ("AudioBuffer - Hosting a Signal and rendering block-by-block")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    constexpr size_t numChannels = 2;
+    constexpr size_t blockSizeFrames = 1024;
+    constexpr double sampleRateHz = 44.1_kHz;
+    constexpr double durationSeconds = 0.1_s;
+    const size_t durationFrames = hart::roundToSizeT (durationSeconds * sampleRateHz);
+
+    AudioBuffer bufferGolden;
+    processAudioWith (GainLinear (1.0))
+        .withInputSignal (SineSweep())
+        .withDuration (durationSeconds)
+        .withSampleRate (sampleRateHz)
+        .withBlockSize (blockSizeFrames)
+        .withInputChannels (numChannels)
+        .withOutputChannels (numChannels)
+        .saveOutputTo (bufferGolden)
+        .process();
+
+    const AudioBuffer bufferSilent (numChannels, durationFrames, sampleRateHz);
+    AudioBuffer bufferToFillWithTempObject (numChannels, durationFrames, sampleRateHz);
+    AudioBuffer bufferToFillWithNamedObjectA (numChannels, durationFrames, sampleRateHz);
+    AudioBuffer bufferToFillWithNamedObjectB (numChannels, durationFrames, sampleRateHz);
+    HART_ASSERT_EQUAL (bufferSilent, bufferToFillWithTempObject);
+
+    bufferToFillWithTempObject.fillWith (SineSweep(), blockSizeFrames);
+    HART_EXPECT_NOT_EQUAL (bufferToFillWithTempObject, bufferSilent);
+    HART_EXPECT_EQUAL (bufferToFillWithTempObject, bufferGolden);
+
+    auto namedSignalA = SineSweep();
+    bufferToFillWithNamedObjectA.fillWith (namedSignalA, blockSizeFrames);
+    HART_EXPECT_NOT_EQUAL (bufferToFillWithNamedObjectA, bufferSilent);
+    HART_EXPECT_EQUAL (bufferToFillWithNamedObjectA, bufferToFillWithTempObject);
+    HART_EXPECT_EQUAL (bufferToFillWithNamedObjectA, bufferGolden);
+
+    // Keep the signal going, without resetting its state
+    bufferToFillWithNamedObjectB.fillWith (namedSignalA, blockSizeFrames, hart::Preparation::none);
+    HART_EXPECT_NOT_EQUAL (bufferToFillWithNamedObjectA, bufferToFillWithNamedObjectB);
+
+    // Reset the signal
+    bufferToFillWithNamedObjectB.fillWith (namedSignalA, blockSizeFrames, hart::Preparation::reset);
+    HART_EXPECT_EQUAL (bufferToFillWithNamedObjectA, bufferToFillWithNamedObjectB);
+
+    // Temporary AudioBuffer object with a temporary Signal
+    HART_EXPECT_FLOAT_EQUAL (
+        hart::crestFactorLinear (hart::mean(), AudioBuffer (numChannels, blockSizeFrames, sampleRateHz).fillWith (SineWave())),
+        std::sqrt (2),
+        1e-2
+        );
+
+    // Temporary AudioBuffer object with a named Signal
+    auto namedSignalB = SineWave();
+    HART_EXPECT_FLOAT_EQUAL (
+        hart::crestFactorLinear (hart::mean(), AudioBuffer (numChannels, blockSizeFrames, sampleRateHz).fillWith (namedSignalB)),
+        std::sqrt (2),
+        1e-2
+        );
+}
+
 HART_TEST ("Runner - No input signal defaults to Silence")
 {
     processAudioWith (GainDb (0_dB))

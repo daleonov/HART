@@ -6,12 +6,17 @@
 
 #include "hart_exceptions.hpp"
 #include "hart_precision.hpp"  // hzPrecision
+#include "hart_preparation.hpp"
 #include "hart_utils.hpp"  // nan(), floatsEqual()
+
+// TODO: "<<" overload for an AudioBuffer
 
 /// @defgroup DataStructures Data Structures
 /// @brief Custom data structures and containers
 
 namespace hart {
+
+template <typename T> class SignalBase;
 
 /// @brief Container for audio data
 /// @note This class owns a memory block with audio samples - so it's a container, not a view. Treat it like a heavyweight object.
@@ -430,6 +435,30 @@ public:
             stream << ", nan())";
     }
 
+    AudioBuffer<SampleType>& fillWith (SignalBase<SampleType>&& signal, size_t blockSizeFrames = 0, Preparation signalPreparation = Preparation::resetAndPrepare) &
+    {
+        _fillWith (signal, blockSizeFrames, signalPreparation);
+        return *this;
+    }
+
+    AudioBuffer<SampleType>& fillWith (SignalBase<SampleType>& signal, size_t blockSizeFrames = 0, Preparation signalPreparation = Preparation::resetAndPrepare) &
+    {
+        _fillWith (signal, blockSizeFrames, signalPreparation);
+        return *this;
+    }
+
+    AudioBuffer<SampleType>&& fillWith (SignalBase<SampleType>&& signal, size_t blockSizeFrames = 0, Preparation signalPreparation = Preparation::resetAndPrepare) &&
+    {
+        _fillWith (signal, blockSizeFrames, signalPreparation);
+        return std::move (*this);
+    }
+
+    AudioBuffer<SampleType>&& fillWith (SignalBase<SampleType>& signal, size_t blockSizeFrames = 0, Preparation signalPreparation = Preparation::resetAndPrepare) &&
+    {
+        _fillWith (signal, blockSizeFrames, signalPreparation);
+        return std::move (*this);
+    }
+
 private:
     size_t m_numChannels = 0;
     size_t m_numFrames = 0;
@@ -442,6 +471,10 @@ private:
         for (size_t channel = 0; channel < m_numChannels; ++channel)
             m_channelPointers[channel] = m_numFrames > 0 ? &m_frames[channel * m_numFrames] : nullptr;
     }
+
+    void _fillWith (SignalBase<SampleType>& signal, size_t blockSizeFrames, Preparation signalPreparation);
 };
 
 }  // namespace hart
+
+#include "hart_audio_buffer_fill_with.hpp"
