@@ -357,6 +357,89 @@ HART_TEST ("AudioBuffer - Hosting a Signal and rendering block-by-block")
         );
 }
 
+HART_TEST ("AudioBuffer - Hosting a DSP and rendering in one go")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    constexpr size_t numChannels = 2;
+    constexpr double sampleRateHz = 44.1_kHz;
+    constexpr double durationSeconds = 0.1_s;
+    const size_t durationFrames = hart::roundToSizeT (durationSeconds * sampleRateHz);
+
+    AudioBuffer bufferGolden;
+    processAudioWith (HardClip (-6_dB))
+        .withInputSignal (SineSweep())
+        .withDuration (durationSeconds)
+        .withSampleRate (sampleRateHz)
+        .withBlockSize (durationFrames)
+        .withInputChannels (numChannels)
+        .withOutputChannels (numChannels)
+        .saveOutputTo (bufferGolden)
+        .process();
+
+    const auto bufferProcessedWithTempObject = AudioBuffer (numChannels, durationFrames, sampleRateHz)
+        .fillWith (SineSweep())
+        .processWith (HardClip (-6_dB));
+    HART_EXPECT_EQ (bufferProcessedWithTempObject, bufferGolden);
+
+    auto namedDsp = HardClip (-6_dB);
+    const auto bufferProcessedWithNamedObject = AudioBuffer (numChannels, durationFrames, sampleRateHz)
+        .fillWith (SineSweep())
+        .processWith (namedDsp);
+    HART_EXPECT_EQ (bufferProcessedWithNamedObject, bufferGolden);
+
+    AudioBuffer bufferToProcessWithTempObject (numChannels, durationFrames, sampleRateHz);
+    bufferToProcessWithTempObject.fillWith (SineSweep());
+    bufferToProcessWithTempObject.processWith (HardClip (-6_dB));
+    HART_EXPECT_EQ (bufferToProcessWithTempObject, bufferGolden);
+
+    AudioBuffer bufferToProcessWithNamedObject (numChannels, durationFrames, sampleRateHz);
+    bufferToProcessWithNamedObject.fillWith (SineSweep());
+    bufferToProcessWithNamedObject.processWith (namedDsp);
+    HART_EXPECT_EQ (bufferToProcessWithNamedObject, bufferGolden);
+}
+
+HART_TEST ("AudioBuffer - Hosting a DSP and rendering block-by-block")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    constexpr size_t numChannels = 2;
+    constexpr size_t blockSizeFrames = 1024;
+    constexpr double sampleRateHz = 44.1_kHz;
+    constexpr double durationSeconds = 0.1_s;
+    const size_t durationFrames = hart::roundToSizeT (durationSeconds * sampleRateHz);
+
+    AudioBuffer bufferGolden;
+    processAudioWith (HardClip (-6_dB))
+        .withInputSignal (SineSweep())
+        .withDuration (durationSeconds)
+        .withSampleRate (sampleRateHz)
+        .withBlockSize (blockSizeFrames)
+        .withInputChannels (numChannels)
+        .withOutputChannels (numChannels)
+        .saveOutputTo (bufferGolden)
+        .process();
+
+    const auto bufferProcessedWithTempObject = AudioBuffer (numChannels, durationFrames, sampleRateHz)
+        .fillWith (SineSweep())
+        .processWith (HardClip (-6_dB), blockSizeFrames);
+    HART_EXPECT_EQ (bufferProcessedWithTempObject, bufferGolden);
+
+    auto namedDsp = HardClip (-6_dB);
+    const auto bufferProcessedWithNamedObject = AudioBuffer (numChannels, durationFrames, sampleRateHz)
+        .fillWith (SineSweep())
+        .processWith (namedDsp, blockSizeFrames);
+    HART_EXPECT_EQ (bufferProcessedWithNamedObject, bufferGolden);
+
+    AudioBuffer bufferToProcessWithTempObject (numChannels, durationFrames, sampleRateHz);
+    bufferToProcessWithTempObject.fillWith (SineSweep());
+    bufferToProcessWithTempObject.processWith (HardClip (-6_dB), blockSizeFrames);
+    HART_EXPECT_EQ (bufferToProcessWithTempObject, bufferGolden);
+
+    AudioBuffer bufferToProcessWithNamedObject (numChannels, durationFrames, sampleRateHz);
+    bufferToProcessWithNamedObject.fillWith (SineSweep());
+    bufferToProcessWithNamedObject.processWith (namedDsp, blockSizeFrames);
+    HART_EXPECT_EQ (bufferToProcessWithNamedObject, bufferGolden);
+}
+
 HART_TEST ("Runner - No input signal defaults to Silence")
 {
     processAudioWith (GainDb (0_dB))

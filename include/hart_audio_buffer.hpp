@@ -16,6 +16,7 @@
 
 namespace hart {
 
+template <typename T> class DSPBase;
 template <typename T> class SignalBase;
 
 /// @brief Container for audio data
@@ -529,6 +530,31 @@ public:
         return std::move (*this);
     }
 
+    AudioBuffer<SampleType>& processWith (DSPBase<SampleType>& dsp, size_t blockSizeFrames = 0, Preparation dspPreparation = Preparation::resetAndPrepare) &
+    {
+        _processWith (dsp, blockSizeFrames, dspPreparation);
+        return *this;
+    }
+
+    AudioBuffer<SampleType>& processWith (DSPBase<SampleType>&& dsp, size_t blockSizeFrames = 0, Preparation dspPreparation = Preparation::resetAndPrepare) &
+    {
+        _processWith (dsp, blockSizeFrames, dspPreparation);
+        return *this;
+    }
+
+    AudioBuffer<SampleType>&& processWith (DSPBase<SampleType>& dsp, size_t blockSizeFrames = 0, Preparation dspPreparation = Preparation::resetAndPrepare) &&
+    {
+        _processWith (dsp, blockSizeFrames, dspPreparation);
+        return std::move (*this);
+    }
+
+    AudioBuffer<SampleType>&& processWith (DSPBase<SampleType>&& dsp, size_t blockSizeFrames = 0, Preparation dspPreparation = Preparation::resetAndPrepare) &&
+    {
+        _processWith (dsp, blockSizeFrames, dspPreparation);
+        return std::move (*this);
+    }
+    
+
 private:
     size_t m_numChannels = 0;
     size_t m_numFrames = 0;
@@ -542,9 +568,11 @@ private:
             m_channelPointers[channel] = m_numFrames > 0 ? &m_frames[channel * m_numFrames] : nullptr;
     }
 
+    void _processWith (DSPBase<SampleType>& dsp, size_t blockSizeFrames, Preparation dspPreparation);
     void _fillWith (SignalBase<SampleType>& signal, size_t blockSizeFrames, Preparation signalPreparation);
 };
 
 }  // namespace hart
 
 #include "hart_audio_buffer_fill_with.hpp"
+#include "hart_audio_buffer_process_with.hpp"
