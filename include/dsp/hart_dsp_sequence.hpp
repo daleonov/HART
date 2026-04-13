@@ -39,6 +39,10 @@ namespace hart
 /// @note
 /// Although the class can be constructed directly, the macro syntax is usually
 /// more concise and preferred in tests.
+/// @attention Doesn't support setting per-channel flags, such as
+/// `DSPSequence::atChannel ( {x, y, z} )` at the sequence level - all channels
+/// will still be processed regardless. However, using per-channel flags on the
+/// individual DSP instances works as it should.
 /// @see `HART_DSP_SEQUENCE()`, `HART_DSP_SEQUENCE_T()`
 /// @ingroup DSP
 template <typename SampleType>
@@ -77,10 +81,10 @@ public:
     void prepare (double sampleRateHz, size_t numInputChannels, size_t numOutputChannels, size_t maxBlockSizeFrames) override
     {
         for (auto& dsp : m_dspChain)
-            dsp->prepare (sampleRateHz, numInputChannels, numOutputChannels, maxBlockSizeFrames);
+            dsp->prepareWithEnvelopes (sampleRateHz, numInputChannels, numOutputChannels, maxBlockSizeFrames);
     }
 
-    void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const EnvelopeBuffers& envelopeBuffers, ChannelFlags channelsToProcess) override
+    void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const EnvelopeBuffers& /* envelopeBuffers */, ChannelFlags /* channelsToProcess */) override
     {
         if (m_dspChain.empty())
         {
@@ -91,7 +95,7 @@ public:
         }
 
         // First DSP - non-replacing processing
-        m_dspChain[0]->process (input, output, envelopeBuffers, channelsToProcess);
+        m_dspChain[0]->processWithEnvelopes (input, output);
 
         if (m_dspChain.size() == 1)
             return;
@@ -99,8 +103,10 @@ public:
         // All following DSPs - replacing processing
         const AudioBuffer<SampleType>& inputReplacing = output;
 
+        // TODO: Merge DSPSequence's channel flags with those of nested effects
+
         for (size_t i = 1; i < m_dspChain.size(); ++i)
-            m_dspChain[i]->process (inputReplacing, output, envelopeBuffers, channelsToProcess);
+            m_dspChain[i]->processWithEnvelopes (inputReplacing, output);
     }
 
     bool supportsSampleRate (double sampleRate) const override
