@@ -136,3 +136,93 @@ HART_TEST ("Crest factor")
         .expectTrue ([] (const AudioBuffer& output) { return HART_TRUE (crestFactorDb (hart::allFloatsEqualToEachOther(), output, {1, 3})); }, "Crest factors in dB on poky channels are the same")
         .process();
 }
+
+HART_TEST ("ESR")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using Channel = hart::Channel;
+    using hart::esr;
+    using std::isnan;
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Identical signal")
+        .withInputSignal (SineSweep())
+        .inMono()
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (input, output), 0.0, 1e-8); }, "ESR ~= 0")
+        .process();
+
+    processAudioWith (GainDb (-3_dB))
+        .withLabel ("Level mismatch matters")
+        .withInputSignal (SineSweep())
+        .inMono()
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_GT (esr (input, output), 0.01); }, "ESR > 0.01")
+        .process();
+
+    processAudioWith (AdditiveNoise (-20_dB))
+        .withLabel ("A little bit of noise")
+        .withInputSignal (SineSweep())
+        .inMono()
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_IN_RANGE (esr (input, output), 0.0, 0.01, 1e-8); }, "ESR < 0.01")
+        .process();
+
+    processAudioWith (AdditiveNoise (-6_dB))
+        .withLabel ("Quite a bit of noise")
+        .withInputSignal (SineSweep())
+        .inMono()
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_IN_RANGE (esr (input, output), 0.1, 0.2, 1e-8); }, "0.1 <= ESR <= 0.2")
+        .process();
+
+    processAudioWith (HART_DSP_SEQUENCE (Mute() >> AdditiveNoise (-12_dB)))
+        .withLabel ("Just noise")
+        .withInputSignal (SineSweep())
+        .inMono()
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_GREATER_THAN (esr (input, output), 1.0); }, "ESR > 1")
+        .process();
+
+    processAudioWith (AdditiveNoise (-12_dB))
+        .withLabel ("Reference signal has zero energy")
+        .withInputSignal (Silence())
+        .inMono()
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_TRUE (isnan (esr (input, output))); }, "ESR is undefined")
+        .process();
+
+    processAudioWith (Mute())
+        .withLabel ("Output signal has no energy")
+        .withInputSignal (SineSweep())
+        .inMono()
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (input, output), 1.0, 1e-8); }, "ESR ~= 1")
+        .process();
+
+    processAudioWith (GainLinear (-1.0))
+        .withLabel ("Output signal is perfectly out of phase")
+        .withInputSignal (SineSweep())
+        .inMono()
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (input, output), 4.0, 1e-8); }, "ESR ~= 4")
+        .process();
+
+    processAudioWith (GainLinear (2.0))
+        .withLabel ("Output signal is exactly 2x input")
+        .withInputSignal (SineSweep())
+        .inMono()
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (input, output), 1.0, 1e-8); }, "ESR ~= 4")
+        .process();
+
+    processAudioWith (AdditiveNoise (-20_dB))
+        .withLabel ("Non-commutativity for non-identical signals")
+        .withInputSignal (SineSweep())
+        .inMono()
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_NE (esr (input, output), esr (output, input), 1e-8); }, "ESR (x, y) != ESR (y, x)")
+        .process();
+
+    processAudioWith (HART_DSP_SEQUENCE (GainLinear (1.0) >> GainLinear (-1.0).atChannel (1) >> AdditiveNoise (-20_dB).atChannel (2) >> AdditiveNoise (-6_dB).atChannel (3) >> GainDb (-3.0).atChannel (4)))
+        .withLabel ("Multi-channel")
+        .withInputSignal (SineSweep())
+        .withInputChannels (5)
+        .withOutputChannels (5)
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (input, output, 0), 0.0, 1e-8); }, "ESR ~= 1 at channel 0")
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (input, output, 1), 4.0, 1e-8); }, "ESR ~= 4 at channel 1")
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_IN_RANGE (esr (input, output, 2), 0.0, 0.01, 1e-8); }, "ESR < 0.01 at channel 2")
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_IN_RANGE (esr (input, output, 3), 0.1, 0.2, 1e-8); }, "0.1 <= ESR <= 0.2 at channel 3")
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_GT (esr (input, output, 4), 0.01); }, "ESR > 0.01 at channel 4")
+        .process();
+}
