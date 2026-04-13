@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>  // min()
+
 namespace hart
 {
 
@@ -40,6 +42,18 @@ std::vector<size_t> getChannelIndicesToProcess (const AudioBuffer<SampleType>& b
         indices[i] = i;
 
     return indices;
+}
+
+/// @brief A helper to get an iterable of channel indices to process for a pair of buffers
+/// @details If buffers' channel count is mismatched, returns the shortest subset
+/// @ingroup Metrics
+template <typename SampleType>
+std::vector<size_t> getChannelIndicesToProcess (const AudioBuffer<SampleType>& bufferA, const AudioBuffer<SampleType>& bufferB, std::initializer_list<size_t> channels)
+{
+    if (bufferA.getNumChannels() > bufferB.getNumChannels())
+        return getChannelIndicesToProcess (bufferB, channels);
+
+    return getChannelIndicesToProcess (bufferA, channels);
 }
 
 }  // namespace hart
