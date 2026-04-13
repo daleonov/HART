@@ -52,6 +52,11 @@ public:
         return static_cast<RequestedType> (m_sum);
     }
 
+    SampleType getValue() const
+    {
+        return m_sum;
+    }
+
 private:
     SampleType m_sum;
     SampleType m_compensation;
