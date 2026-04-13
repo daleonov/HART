@@ -9,8 +9,6 @@
 #include "hart_preparation.hpp"
 #include "hart_utils.hpp"  // nan(), floatsEqual()
 
-// TODO: "<<" overload for an AudioBuffer
-
 /// @defgroup DataStructures Data Structures
 /// @brief Custom data structures and containers
 
@@ -427,11 +425,10 @@ public:
     /// @param stream String stream to append the representation to
     void represent (std::ostream& stream) const
     {
-        std::ostringstream oss;
         stream << "AudioBuffer (" << m_numChannels << ", " << m_numFrames;
 
         if (hasSampleRate())
-            stream << ", " << hzPrecision << m_sampleRateHz << ')';
+            stream << ", " << hzPrecision << m_sampleRateHz << "_Hz)";
         else
             stream << ", nan())";
     }
@@ -635,6 +632,14 @@ private:
     {
         for (size_t channel = 0; channel < m_numChannels; ++channel)
             m_channelPointers[channel] = m_numFrames > 0 ? &m_frames[channel * m_numFrames] : nullptr;
+    }
+
+    /// @brief Prints readable text representation of the AudioBuffer object into the I/O stream
+    /// @relates AudioBuffer
+    friend std::ostream& operator<< (std::ostream& stream, const AudioBuffer& audioBuffer)
+    {
+        audioBuffer.represent (stream);
+        return stream;
     }
 
     void _processWith (DSPBase<SampleType>& dsp, size_t blockSizeFrames, Preparation dspPreparation);
