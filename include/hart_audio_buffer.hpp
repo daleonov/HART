@@ -530,30 +530,99 @@ public:
         return std::move (*this);
     }
 
+    /// @brief Processes this AudioBuffer by rendering its audio through a provided DSP
+    /// @details
+    /// This method uses the supplied DSP and renders audio from this buffer, replacing all existing samples.
+    /// The DSP is not consumed and can be re-used after rendering completes.
+    ///
+    /// The buffer's sample rate and channel layout are used as the hosting configuration.
+    /// If the DSP does not support the current channel count or sample rate, an exception is raised.
+    ///
+    /// Rendering is performed block-by-block when @p blockSizeFrames is smaller than the buffer length.
+    /// The final block may be shorter than the requested block size.
+    /// @param signal A reusable hart::DSP object to render from
+    /// @param blockSizeFrames Number of frames to render per block. Pass 0 to render the whole buffer in one go
+    /// @param signalPreparation Controls whether the DSP object should be reset and/or prepared before rendering
+    /// @return A reference to this AudioBuffer for chaining further operations
+    /// @throws hart::SampleRateError if Sample rate of this buffer is undefined, or unsupported by the DSP object
+    /// @throws hart::ChannelLayoutError if this buffer has no channels allocated, or number of channels
+    /// is unsupported by the DSP object
+    /// @throws hart::SizeError is this buffer has no frames allocated
     AudioBuffer<SampleType>& processWith (DSPBase<SampleType>& dsp, size_t blockSizeFrames = 0, Preparation dspPreparation = Preparation::resetAndPrepare) &
     {
         _processWith (dsp, blockSizeFrames, dspPreparation);
         return *this;
     }
 
+    /// @brief Processes this AudioBuffer by rendering its audio through a provided DSP
+    /// @details
+    /// This method uses the supplied DSP and renders audio from this buffer, replacing all existing samples
+    ///
+    /// The buffer's sample rate and channel layout are used as the hosting configuration.
+    /// If the DSP does not support the current channel count or sample rate, an exception is raised.
+    ///
+    /// Rendering is performed block-by-block when @p blockSizeFrames is smaller than the buffer length
+    /// The final block may be shorter than the requested block size
+    /// @param signal A temporary hart::DSP object to process AudioBuffer's contents with
+    /// @param blockSizeFrames Number of frames to render per block. Pass 0 to render the whole buffer in one go.
+    /// @param signalPreparation Controls whether the DSP object should be reset and/or prepared before rendering
+    /// @return A reference to this AudioBuffer for chaining further operations
+    /// @throws hart::SampleRateError if Sample rate of this buffer is undefined, or unsupported by the DSP object
+    /// @throws hart::ChannelLayoutError if this buffer has no channels allocated, or number of channels
+    /// is unsupported by the DSP object
+    /// @throws hart::SizeError is this buffer has no frames allocated
     AudioBuffer<SampleType>& processWith (DSPBase<SampleType>&& dsp, size_t blockSizeFrames = 0, Preparation dspPreparation = Preparation::resetAndPrepare) &
     {
         _processWith (dsp, blockSizeFrames, dspPreparation);
         return *this;
     }
 
+    /// @brief Processes this AudioBuffer by rendering its audio through a provided DSP
+    /// @details
+    /// This method uses the supplied DSP and renders audio from this buffer, replacing all existing samples.
+    /// The DSP is not consumed and can be re-used after rendering completes.
+    ///
+    /// The buffer's sample rate and channel layout are used as the hosting configuration.
+    /// If the DSP does not support the current channel count or sample rate, an exception is raised.
+    ///
+    /// Rendering is performed block-by-block when @p blockSizeFrames is smaller than the buffer length.
+    /// The final block may be shorter than the requested block size.
+    /// @param signal A reusable hart::DSP object to render from
+    /// @param blockSizeFrames Number of frames to render per block. Pass 0 to render the whole buffer in one go.
+    /// @param signalPreparation Controls whether the DSP object should be reset and/or prepared before rendering.
+    /// @return An rvalue reference to this AudioBuffer, allowing fluent chaining with temporary buffers
+    /// @throws hart::SampleRateError if Sample rate of this buffer is undefined, or unsupported by the DSP object
+    /// @throws hart::ChannelLayoutError if this buffer has no channels allocated, or number of channels
+    /// is unsupported by the DSP object
+    /// @throws hart::SizeError is this buffer has no frames allocated
     AudioBuffer<SampleType>&& processWith (DSPBase<SampleType>& dsp, size_t blockSizeFrames = 0, Preparation dspPreparation = Preparation::resetAndPrepare) &&
     {
         _processWith (dsp, blockSizeFrames, dspPreparation);
         return std::move (*this);
     }
 
+    /// @brief Processes this AudioBuffer by rendering its audio through a provided DSP
+    /// @details
+    /// This method uses the supplied DSP and renders audio from this buffer, replacing all existing samples.
+    ///
+    /// The buffer's sample rate and channel layout are used as the hosting configuration.
+    /// If the DSP does not support the current channel count or sample rate, an exception is raised.
+    ///
+    /// Rendering is performed block-by-block when @p blockSizeFrames is smaller than the buffer length.
+    /// The final block may be shorter than the requested block size.
+    /// @param signal A temporary hart::DSP object to process AudioBuffer's contents with
+    /// @param blockSizeFrames Number of frames to render per block. Pass 0 to render the whole buffer in one go.
+    /// @param signalPreparation Controls whether the DSP object should be reset and/or prepared before rendering
+    /// @return An rvalue reference to this AudioBuffer, allowing fluent chaining with temporary buffers
+    /// @throws hart::SampleRateError if Sample rate of this buffer is undefined, or unsupported by the DSP object
+    /// @throws hart::ChannelLayoutError if this buffer has no channels allocated, or number of channels
+    /// is unsupported by the DSP object
+    /// @throws hart::SizeError is this buffer has no frames allocated
     AudioBuffer<SampleType>&& processWith (DSPBase<SampleType>&& dsp, size_t blockSizeFrames = 0, Preparation dspPreparation = Preparation::resetAndPrepare) &&
     {
         _processWith (dsp, blockSizeFrames, dspPreparation);
         return std::move (*this);
     }
-    
 
 private:
     size_t m_numChannels = 0;
