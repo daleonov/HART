@@ -228,6 +228,36 @@ struct min
     }
 };
 
+/// @brief Returns the nth element in the range (zero-based)
+/// @throws hart::IndexError if @p targetIndex is out of range
+/// @throws hart::SizeError is the range (or container) is empty
+struct nth
+{
+    nth (size_t targetIndex) : n_targetIndex (targetIndex) {}
+
+    template <typename IteratorType>
+    IteratedValueType<IteratorType>
+    operator() (IteratorType begin, IteratorType end) const
+    {
+        if (begin == end)
+            HART_THROW_OR_RETURN (hart::SizeError, "The range is empty", hart::nan<IteratedValueType<IteratorType>>());
+
+        IteratorType iterator = begin;
+
+        for (size_t i = 0; i < n_targetIndex; ++i)
+        {
+            ++iterator;
+
+            if (iterator == end)
+                HART_THROW_OR_RETURN (hart::IndexError, "Target index is out of range", hart::nan<IteratedValueType<IteratorType>>());
+        }
+
+        return *iterator;
+    }
+private:
+    const size_t n_targetIndex; 
+};
+
 /// @brief Returns the sum of all elements in the range
 struct sum
 {
