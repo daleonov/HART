@@ -214,6 +214,10 @@ HART_TEST ("ESR")
         .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_NE (esr (input, output), esr (output, input), 1e-8); }, "ESR (x, y) != ESR (y, x)")
         .process();
 
+    using hart::first;
+    using hart::last;
+    using hart::nth;
+
     processAudioWith (HART_DSP_SEQUENCE (GainLinear (1.0) >> GainLinear (-1.0).atChannel (1) >> AdditiveNoise (-20_dB).atChannel (2) >> AdditiveNoise (-6_dB).atChannel (3) >> GainDb (-3.0).atChannel (4)))
         .withLabel ("Multi-channel")
         .withInputSignal (SineSweep())
@@ -224,5 +228,14 @@ HART_TEST ("ESR")
         .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_IN_RANGE (esr (input, output, 2), 0.0, 0.01, 1e-8); }, "ESR < 0.01 at channel 2")
         .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_IN_RANGE (esr (input, output, 3), 0.1, 0.2, 1e-8); }, "0.1 <= ESR <= 0.2 at channel 3")
         .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_GT (esr (input, output, 4), 0.01); }, "ESR > 0.01 at channel 4")
+
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (first(), input, output), esr (input, output, 0), 1e-8); }, "esr() multi- vs single-channel overload at channel 0")
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (nth (1), input, output), esr (input, output, 1), 1e-8); }, "esr() multi- vs single-channel overload at channel 1")
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (nth (2), input, output), esr (input, output, 2), 1e-8); }, "esr() multi- vs single-channel overload at channel 2")
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (nth (3), input, output), esr (input, output, 3), 1e-8); }, "esr() multi- vs single-channel overload at channel 3")
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (last(),  input, output), esr (input, output, 4), 1e-8); }, "esr() multi- vs single-channel overload at channel 4")
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (nth (3), input, output), esr (nth (1), input, output, {4, 3, 1}), 1e-8); }, "esr() with custom channel subset A")
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (first(), input, output), esr (nth (2), input, output, {2, 4, 0, 1}), 1e-8); }, "esr() with custom channel subset B")
+
         .process();
 }

@@ -5,6 +5,9 @@
 #include "hart_exceptions.hpp"
 #include "hart_utils.hpp"  // nan(), floatsEqual()
 
+#include "hart_metrics_common.hpp"
+//#include "hart_reducers.hpp"
+
 namespace hart
 {
 
@@ -44,6 +47,18 @@ double esr (const AudioBuffer<SampleType>& referenceBuffer, const AudioBuffer<Sa
     return noisePower.getValue() / signalPower.getValue();
 }
 
-// TODO: Multi-channel version
+template <typename SampleType, typename ReducerType>
+auto esr (ReducerType reducer, const AudioBuffer<SampleType>& referenceBuffer, const AudioBuffer<SampleType>& estimatedBuffer, std::initializer_list<size_t> channels = {})
+    -> ReducerResultType<ReducerType, std::vector<double>::const_iterator>
+{
+    const auto channelIndicesToProcess = getChannelIndicesToProcess (referenceBuffer, estimatedBuffer, channels);
+    std::vector<double> perChannelValues;
+    perChannelValues.reserve (channelIndicesToProcess.size());
+
+    for (size_t channel : channelIndicesToProcess)
+        perChannelValues.push_back (esr (referenceBuffer, estimatedBuffer, channel));
+
+    return reducer (perChannelValues.begin(), perChannelValues.end());
+}
 
 }  // namespace hart
