@@ -23,6 +23,8 @@ constexpr double operator"" _us (long double val) { return static_cast<double> (
 constexpr double operator"" _us (unsigned long long int val) { return static_cast<double> (1e-6 * val); }
 constexpr double operator"" _dB (long double val) { return static_cast<double> (val); }
 constexpr double operator"" _dB (unsigned long long int val) { return static_cast<double> (val); }
+constexpr double operator"" _dBTP (long double val) { return static_cast<double> (val); }
+constexpr double operator"" _dBTP (unsigned long long int val) { return static_cast<double> (val); }
 constexpr double operator"" _Hz (long double val) { return static_cast<double> (val); }
 constexpr double operator"" _Hz (unsigned long long int val) { return static_cast<double> (val); }
 constexpr double operator"" _kHz (long double val) { return static_cast<double> (1e3 * val); }
