@@ -6,6 +6,7 @@
 #include <exception>
 #include <limits>  // infinity(), nan()
 #include <memory>
+#include <ostream>
 #include <string>
 #include <unordered_map>
 
@@ -53,6 +54,19 @@ enum class Loop
     no,
     yes
 };
+
+/// @brief Oversampling ratio
+enum Oversampling
+{
+    x4 = 4,
+    x8 = 8,
+    x16 = 16
+};
+
+inline std::ostream& operator<< (std::ostream& os, Oversampling oversampling)
+{
+    return os << "Oversampling::x" << static_cast<int> (oversampling);
+}
 
 /// @brief Returns a quiet NaN value for the given floating-point type.
 template<typename FloatType>
