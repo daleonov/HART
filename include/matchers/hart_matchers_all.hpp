@@ -9,3 +9,4 @@
 #include "matchers/hart_peaksat.hpp"
 #include "matchers/hart_peaksbelow.hpp"
 #include "matchers/hart_polarity_preserved.hpp"
+#include "matchers/hart_true_peaks_below.hpp"

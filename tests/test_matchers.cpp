@@ -429,3 +429,92 @@ HART_TEST ("PolarityPreserved")
         .expectFalse (PolarityPreserved (0.5, 10_ms, SilencePolicy::strict))
         .process();
 }
+
+HART_TEST ("TruePeaksBelow")
+{
+    using Oversampling = hart::Oversampling;
+    using FilterQuality = TruePeaksBelow::FilterQuality;
+    using Strictness = TruePeaksBelow::Strictness;
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Regular Sine wave")
+        .withInputSignal (SineWave())
+        .expectTrue (PeaksAt (0_dB))
+        .expectTrue (TruePeaksBelow (0_dB))
+        .expectTrue (TruePeaksBelow (0_dB, Oversampling::x8, FilterQuality::medium))
+        .expectFalse (TruePeaksBelow (0_dB, Oversampling::x8, FilterQuality::medium, Strictness::strict))
+        .expectFalse (TruePeaksBelow (0.01_dB, Oversampling::x8, FilterQuality::medium, Strictness::strict))
+        .process();
+
+    processAudioWith (HART_DSP_SEQUENCE (GainDb (12_dB) >> HardClip (0_dB)))
+        .withLabel ("Slammed Sine wave")
+        .withInputSignal (SineWave())
+        .expectTrue (PeaksAt (0_dB))
+        .expectFalse (TruePeaksBelow (0_dB))
+        .expectTrue (TruePeaksBelow (1_dB))
+        .expectTrue (TruePeaksBelow (2_dB, Oversampling::x8, FilterQuality::medium))
+        .expectTrue (TruePeaksBelow (2_dB, Oversampling::x8, FilterQuality::medium, Strictness::strict))
+        .process();
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("White Noise")
+        .withInputSignal (WhiteNoise())
+        .expectTrue (PeaksAt (0_dB))
+        .expectFalse (TruePeaksBelow (0_dB))
+        .expectFalse (TruePeaksBelow (3_dB))
+        .expectTrue (TruePeaksBelow (4_dB))
+        .process();
+
+    auto quarterSampleRateSignal = SignalFunction (
+        [] (hart::AudioBuffer<float>& buffer)
+        {
+            buffer.setNumFrames (4);
+
+            for (size_t channel = 0; channel < buffer.getNumChannels(); ++channel)
+            {
+                float* channelData = buffer[channel];
+                channelData[0] = 0.0f;
+                channelData[1] = 1.0f;
+                channelData[2] = 0.0f;
+                channelData[3] = -1.0f;
+            }
+        },
+        "SR/4 Signal",
+        hart::Loop::yes
+        );
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("SR/4 Signal")
+        .withInputSignal (std::move (quarterSampleRateSignal))
+        .expectTrue (PeaksAt (0_dB))
+        .expectFalse (TruePeaksBelow (0_dB, Oversampling::x8, FilterQuality::medium))
+        .expectTrue (TruePeaksBelow (0.2_dB, Oversampling::x8, FilterQuality::medium))
+        .expectFalse (TruePeaksBelow (0.2_dB, Oversampling::x8, FilterQuality::medium, Strictness::strict))
+        .expectTrue (TruePeaksBelow (0.3_dB, Oversampling::x8, FilterQuality::medium, Strictness::strict))
+        .process();
+
+    auto nyquistSignal = SignalFunction (
+        [] (hart::AudioBuffer<float>& buffer)
+        {
+            buffer.setNumFrames (2);
+
+            for (size_t channel = 0; channel < buffer.getNumChannels(); ++channel)
+            {
+                float* channelData = buffer[channel];
+                channelData[0] = 1.0f;
+                channelData[1] = -1.0f;
+            }
+        },
+        "Nyquist Signal",
+        hart::Loop::yes
+        );
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Nyquist signal")
+        .withInputSignal (std::move (nyquistSignal))
+        .expectTrue (PeaksAt (0_dB))
+        .expectFalse (TruePeaksBelow (0_dB))
+        .expectTrue (TruePeaksBelow (2.5_dB))
+        .expectFalse (TruePeaksBelow (2.5_dB, Oversampling::x8, FilterQuality::medium, Strictness::strict))
+        .process();
+}

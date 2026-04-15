@@ -19,7 +19,7 @@ namespace hart
 /// To do more strict per channel checks, use multiple matchers with @ref atChannel(), so that
 /// each matcher only targets one specific channel. 
 /// @attention It checks the sample peaks, not the inter-sample peaks (a popular metric in audio
-/// mastering community). Fon inter-sample peak checking, you can make your own custom Matcher.
+/// mastering community). For inter-sample peak checking, see @ref `TruePeaksBelow`.
 /// @ingroup Matchers
 template<typename SampleType>
 class PeaksAt:
