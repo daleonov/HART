@@ -32,13 +32,17 @@ public:
 
         const size_t numChannels = output.getNumChannels();
         const size_t numFrames = output.getNumFrames();
+        const bool isNonReplacing = &input != &output;
 
         for (size_t channel = 0; channel < numChannels; ++channel)
         {
             if (channelsToProcess[channel] == true)
                 output.clear (channel, 0, numFrames);
             else
-                output.copyFrom (channel, 0, input, channel, 0, numFrames);
+            {
+                if (isNonReplacing)
+                    output.copyFrom (channel, 0, input, channel, 0, numFrames);
+            }
         }
     }
 

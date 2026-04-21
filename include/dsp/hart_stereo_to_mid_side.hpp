@@ -30,8 +30,10 @@ public:
 
         for (size_t frame = 0; frame < input.getNumFrames(); ++frame)
         {
-            output[MidSideChannel::mid][frame] = input[Channel::left][frame] + input[Channel::right][frame];
-            output[MidSideChannel::side][frame] = input[Channel::left][frame] - input[Channel::right][frame];
+            const SampleType left = input[Channel::left][frame];
+            const SampleType right = input[Channel::right][frame];
+            output[MidSideChannel::mid][frame] = left + right;
+            output[MidSideChannel::side][frame] = left - right;
         }
     }
 

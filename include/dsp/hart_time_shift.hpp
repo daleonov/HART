@@ -156,8 +156,9 @@ public:
 
             for (size_t channel = 0; channel < numChannels; ++channel)
             {
+                const SampleType inputSample = input[channel][frame];
                 output[channel][frame] = m_buffers[channel][readIndex];
-                m_buffers[channel][m_writeIndex] = input[channel][frame];
+                m_buffers[channel][m_writeIndex] = inputSample;
             }
 
             m_writeIndex = (m_writeIndex + 1) % m_bufferSizeFrames;
