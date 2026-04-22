@@ -854,9 +854,7 @@ private:
                         stream << " at \"" << m_testLabel << "\"";
 
                     stream << std::endl << "Condition: " << *matcher;
-
-                    if (check.shouldPass)
-                        appendFailureDetails (stream, matcher->getFailureDetails(), inputAudio, outputAudio, baseFrameOffset);
+                    appendFailureDetails (stream, matcher->getFailureDetails(), inputAudio, outputAudio, baseFrameOffset);
 
                     throw hart::TestAssertException (std::string (stream.str()));
                 }
@@ -869,9 +867,7 @@ private:
                         stream << " at \"" << m_testLabel << "\"";
 
                     stream << std::endl << "Condition: " << * matcher;
-
-                    if (check.shouldPass)
-                        appendFailureDetails (stream, matcher->getFailureDetails(), inputAudio, outputAudio, baseFrameOffset);
+                    appendFailureDetails (stream, matcher->getFailureDetails(), inputAudio, outputAudio, baseFrameOffset);
 
                     hart::ExpectationFailureMessages::get().emplace_back (stream.str());
                 }
