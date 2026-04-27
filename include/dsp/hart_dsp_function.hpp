@@ -5,8 +5,6 @@
 #include "hart_dsp.hpp"
 #include "hart_exceptions.hpp"
 
-// TODO: Document this class
-
 namespace hart
 {
 
@@ -210,8 +208,6 @@ public:
 
     bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const override
     {
-        // TODO: Add a check for "sample wise with SR" as well, once it's there
-
         // There's no graceful way to handle non-matching channel numbers with sample-wise
         // function (other than perhaps mono-to-many), hence refusing to render those.
         if (m_dspFunctionSampleWise != nullptr)

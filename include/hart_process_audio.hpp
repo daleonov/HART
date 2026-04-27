@@ -884,8 +884,6 @@ private:
 
     void appendFailureDetails (std::stringstream& stream, const MatcherFailureDetails& details, const AudioBuffer<SampleType>& inputAudio, const AudioBuffer<SampleType>& observedOutputAudio, size_t baseFrameOffset)
     {
-        // TODO: Display input sample info as well
-
         const size_t frameOverall = baseFrameOffset + details.frame;
         const double timestampOverall = static_cast<double> (frameOverall) / m_sampleRateHz;
         const size_t warmUpDurationFrames = (size_t) std::round (m_sampleRateHz * m_warmUpDurationSeconds);

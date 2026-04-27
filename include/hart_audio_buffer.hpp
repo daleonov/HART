@@ -355,8 +355,6 @@ public:
         return peakSampleAcrossAllChannels;
     }
 
-    // TODO: Implement resize() to avoid repeated memory re-allocations caused by spamming appendFrom()
-
     /// @brief Copies audio from another buffer
     /// @param destChannel Channel within this buffer to copy the frames to
     /// @param destStartFrame Start frame within this buffer's channel
