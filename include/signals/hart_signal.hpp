@@ -186,6 +186,34 @@ public:
     /// @param[out] stream Output stream to write to
     virtual void represent (std::ostream& stream) const = 0;
 
+    /// @brief Checks whether the signal itself, and all the DSP instances in its signal chain support the requested channel number
+    /// @details This is intended to be called by the Signal's hosts.
+    bool supportsNumChannelsWithDSPChain (size_t numChannels)
+    {
+        if (! supportsNumChannels (numChannels))
+            return false;
+        
+        for (auto& dsp : m_dspChain)
+            if (! dsp->supportsChannelLayout (numChannels, numChannels))
+                return false;
+
+        return true;
+    }
+
+    /// @brief Checks whether the signal itself, and all the DSP instances in its signal chain support the requested sample rate
+    /// @details This is intended to be called by the Signal's hosts.
+    bool supportsSampleRateWithDSPChain (double sampleRateHz)
+    {
+        if (! supportsSampleRate (sampleRateHz))
+            return false;
+        
+        for (auto& dsp : m_dspChain)
+            if (! dsp->supportsSampleRate (sampleRateHz))
+                return false;
+
+        return true;
+    }
+
     /// @brief Prepares the signal and all attached effects in the DSP chain for rendering
     /// @details This method is intended to be called by Signal hosts like AudioTestBuilder or Matcher.
     /// If you're making something that owns an instance of a Signal and needs it to generate audio,
@@ -200,15 +228,7 @@ public:
         const size_t numInputChannels = numOutputChannels;
 
         for (auto& dsp : m_dspChain)
-        {
-            if (! dsp->supportsChannelLayout (numInputChannels, numOutputChannels))
-                HART_THROW_OR_RETURN_VOID (ChannelLayoutError, "Not all DSP in the Signal's DSP chain support its channel layout");
-
-            if (! dsp->supportsSampleRate (sampleRateHz))
-                HART_THROW_OR_RETURN_VOID (hart::SampleRateError, "Not all DSP in the Signal's DSP chain support its sample rate");
-
             dsp->prepareWithEnvelopes (sampleRateHz, numInputChannels, numOutputChannels, maxBlockSizeFrames);
-        }
 
         // Perform optional fast-forward set by DSP::skipTo()
         if (floatsNotEqual (m_startTimestampSeconds, 0.0))

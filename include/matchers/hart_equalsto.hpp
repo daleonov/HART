@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <sstream>
 
+#include "hart_exceptions.hpp"
 #include "matchers/hart_matcher.hpp"
 #include "hart_precision.hpp"
 #include "signals/hart_signal.hpp"
@@ -103,6 +104,14 @@ public:
 
     void prepare (double sampleRateHz, size_t numChannels, size_t maxBlockSizeFrames) override
     {
+        // TODO: Add supportsSampleRate() and supportsNumChannels() to the matcher's API
+
+        if (! m_referenceSignal->supportsSampleRateWithDSPChain (sampleRateHz))
+            HART_THROW_OR_RETURN (hart::SampleRateError, "Reference signal does not support requested sample rate");
+
+        if (! m_referenceSignal->supportsNumChannelsWithDSPChain (numChannels))
+            HART_THROW_OR_RETURN (hart::ChannelLayoutError, "Reference signal does not support requested number of channels");
+
         m_maxBlockSizeFrames = maxBlockSizeFrames;
         m_referenceOutputAudio = AudioBuffer<SampleType> (numChannels, maxBlockSizeFrames, sampleRateHz);
         m_referenceSignal->prepareWithDSPChain (sampleRateHz, numChannels, maxBlockSizeFrames);

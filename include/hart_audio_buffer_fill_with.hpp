@@ -16,11 +16,11 @@ void AudioBuffer<SampleType>::_fillWith (SignalBase<SampleType>& signal, size_t 
     if (! hasSampleRate())
         HART_THROW_OR_RETURN_VOID (hart::SampleRateError, "Can't fill an AudioBuffer with Signal if the buffer's sample rate is undefined");
 
-    if (! signal.supportsNumChannels (getNumChannels()))
-        HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "Signal doesn't support the number of channels that this buffer has");
+    if (! signal.supportsNumChannelsWithDSPChain (getNumChannels()))
+        HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, "Signal or an effect in its DSP chain doesn't support the number of channels that this buffer has");
 
-    if (! signal.supportsSampleRate (getSampleRateHz()))
-        HART_THROW_OR_RETURN_VOID (hart::SampleRateError, "Signal doesn't support the sample rate that this buffer has");
+    if (! signal.supportsSampleRateWithDSPChain (getSampleRateHz()))
+        HART_THROW_OR_RETURN_VOID (hart::SampleRateError, "Signal or an effect in its DSP chain doesn't support the sample rate that this buffer has");
 
     const size_t blockSizeFrames = (requestedBlockSizeFrames == 0) ? getNumFrames() : requestedBlockSizeFrames;
 
