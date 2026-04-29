@@ -113,3 +113,42 @@ HART_TEST ("DSP Contracts - Signal's DSP Chain")
         .process();
     verify (usedSignal->popDSP());
 }
+
+HART_TEST ("DSP Contracts - Rendered by AudioBuffer")
+{
+    hart::AudioBuffer<float> buffer (1, 4410, 44100_Hz);
+    buffer.clear();
+
+    // All default
+    DSPContractChecker dspContractChecker = DSPContractChecker()
+        .withExpectedMaxBlockSize (1024)
+        .withExpectedChannelLayout (1, 1)
+        .withExpectedSampleRate (44100_Hz)
+        .withExpectedRenderedDuration (100_ms);
+    buffer.processWith (dspContractChecker, 1024);
+    dspContractChecker.verify();
+
+    // Block size of 1 frame
+    dspContractChecker = DSPContractChecker().withExpectedMaxBlockSize (1);
+    buffer.processWith (dspContractChecker, 1);
+    dspContractChecker.verify();
+
+    // Render in a single large block
+    dspContractChecker = DSPContractChecker()
+        .withExpectedSampleRate (44100_Hz)
+        .withExpectedRenderedDuration (100_ms)
+        .withExpectedMaxBlockSize (4410);
+    buffer.processWith (dspContractChecker);
+    dspContractChecker.verify();
+
+    // All custom
+    buffer = hart::AudioBuffer<float> (3, hart::roundToSizeT (45.658_kHz * 347_ms), 45.658_kHz);
+    buffer.clear();
+    dspContractChecker = DSPContractChecker()
+        .withExpectedMaxBlockSize (123)
+        .withExpectedChannelLayout (3, 3)
+        .withExpectedSampleRate (45.658_kHz)
+        .withExpectedRenderedDuration (347_ms);
+    buffer.processWith (dspContractChecker, 123);
+    dspContractChecker.verify();
+}
