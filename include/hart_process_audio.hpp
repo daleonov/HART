@@ -628,6 +628,9 @@ public:
             check.shouldSkip = false;
         }
 
+        if (! m_processor->supportsSampleRate (m_sampleRateHz))
+            HART_THROW_OR_RETURN (hart::SampleRateError, "DSP testee does not support requested sample rate", std::move (m_processor));
+
         if (! m_processor->supportsChannelLayout (m_numInputChannels, m_numOutputChannels))
             HART_THROW_OR_RETURN (hart::ChannelLayoutError, "DSP testee does not support requested channel layout", std::move (m_processor));
 
