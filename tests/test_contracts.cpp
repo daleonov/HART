@@ -1,6 +1,8 @@
 #include "hart.hpp"
 #include "dsp_contract_checker.hpp"
 
+HART_DECLARE_ALIASES_FOR_FLOAT;
+
 static void verify (const std::unique_ptr<hart::DSPBase<float>>& dsp)
 {
     const DSPContractChecker* dspContractChecker = dynamic_cast<DSPContractChecker*> (dsp.get());
@@ -53,4 +55,61 @@ HART_TEST ("DSP Contracts - Test Runner")
         .withBlockSize (4410)
         .process();
     verify (usedDsp);
+}
+
+HART_TEST ("DSP Contracts - Signal's DSP Chain")
+{
+    std::unique_ptr<hart::SignalBase<float>> usedSignal;
+
+    DSPContractChecker dspContractChecker = DSPContractChecker()
+        .withExpectedMaxBlockSize (1024)
+        .withExpectedChannelLayout (1, 1)
+        .withExpectedSampleRate (44100_Hz)
+        .withExpectedRenderedDuration (100_ms);
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("All default")
+        .withInputSignal (Silence() >> std::move (dspContractChecker))
+        .saveInputSignalTo (usedSignal)
+        .process();
+    verify (usedSignal->popDSP());
+
+    dspContractChecker = DSPContractChecker()
+        .withExpectedMaxBlockSize (123)
+        .withExpectedChannelLayout (3, 3)
+        .withExpectedSampleRate (45.658_kHz)
+        .withExpectedRenderedDuration (347_ms);
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("All custom")
+        .withInputSignal (Silence() >> std::move (dspContractChecker))
+        .saveInputSignalTo (usedSignal)
+        .withSampleRate (45.658_kHz)
+        .withInputChannels (3)
+        .withOutputChannels (3)
+        .withBlockSize (123)
+        .withDuration (347_ms)
+        .process();
+    verify (usedSignal->popDSP());
+
+    dspContractChecker = DSPContractChecker().withExpectedMaxBlockSize (1);
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Block size of 1 frame")
+        .withInputSignal (Silence() >> std::move (dspContractChecker))
+        .saveInputSignalTo (usedSignal)
+        .withBlockSize (1)
+        .process();
+    verify (usedSignal->popDSP());
+
+    dspContractChecker = DSPContractChecker()
+        .withExpectedSampleRate (44100_Hz)
+        .withExpectedRenderedDuration (100_ms)
+        .withExpectedMaxBlockSize (4410);
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Render in a single large block")
+        .withInputSignal (Silence() >> std::move (dspContractChecker))
+        .saveInputSignalTo (usedSignal)
+        .withSampleRate (44100_Hz)
+        .withDuration (100_ms)
+        .withBlockSize (4410)
+        .process();
+    verify (usedSignal->popDSP());
 }
