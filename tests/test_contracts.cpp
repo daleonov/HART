@@ -216,3 +216,60 @@ HART_TEST ("Signal Contracts - Test Runner")
         .process();
     verify (usedSignal);
 }
+
+HART_TEST ("Signal Contracts - Hosted by a Matcher")
+{
+    // Note: as we cannot extract the reference signal from a matcher
+    // to do post-render verification, the render-related stuff
+    // like number of process() calls and observed rendered time
+    // is a blind spot for now.
+
+    auto signalContractChecker = SignalContractChecker()
+        .withExpectedMaxBlockSize (1024)
+        .withExpectedNumChannels (1)
+        .withExpectedSampleRate (44100_Hz)
+        .withExpectedRenderedDuration (100_ms);
+
+    std::unique_ptr<hart::SignalBase<float>> usedSignal;
+    processAudioWith (GainDb (0_dB))
+        .withInputSignal (Silence())
+        .expectTrue (EqualsTo (std::move (signalContractChecker)))
+        .process();
+
+    signalContractChecker = SignalContractChecker()
+        .withExpectedMaxBlockSize (123)
+        .withExpectedNumChannels (9)
+        .withExpectedSampleRate (45.658_kHz)
+        .withExpectedRenderedDuration (347_ms);
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("All custom")
+        .withInputSignal (Silence())
+        .expectTrue (EqualsTo (std::move (signalContractChecker)))
+        .withSampleRate (45.658_kHz)
+        .withInputChannels (9)
+        .withOutputChannels (9)
+        .withBlockSize (123)
+        .withDuration (347_ms)
+        .process();
+
+    signalContractChecker = SignalContractChecker().withExpectedMaxBlockSize (1);
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Block size of 1 frame")
+        .withInputSignal (Silence())
+        .expectTrue (EqualsTo (std::move (signalContractChecker)))
+        .withBlockSize (1)
+        .process();
+
+    signalContractChecker = SignalContractChecker()
+        .withExpectedSampleRate (44100_Hz)
+        .withExpectedRenderedDuration (100_ms)
+        .withExpectedMaxBlockSize (4410);
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Render in a single large block")
+        .withInputSignal (Silence())
+        .expectTrue (EqualsTo (std::move (signalContractChecker)))
+        .withSampleRate (44100_Hz)
+        .withDuration (100_ms)
+        .withBlockSize (4410)
+        .process();
+}
