@@ -649,6 +649,12 @@ public:
         if (m_inputSignal == nullptr)
             m_inputSignal = std::move (hart::make_unique<Silence<SampleType>>());
 
+        if (! m_inputSignal->supportsSampleRate (m_sampleRateHz))
+            HART_THROW_OR_RETURN (hart::SampleRateError, "Input signal does not support requested sample rate", std::move (m_processor));
+
+        if (! m_inputSignal->supportsNumChannels (m_numInputChannels))
+            HART_THROW_OR_RETURN (hart::ChannelLayoutError, "Input signal does not support requested number of channels", std::move (m_processor));
+
         if (m_signalPreparationBeforeWarmUp == Preparation::reset || m_signalPreparationBeforeWarmUp == Preparation::resetAndPrepare)
             m_inputSignal->resetWithDSPChain();
 
