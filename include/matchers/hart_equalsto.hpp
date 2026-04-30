@@ -104,14 +104,6 @@ public:
 
     void prepare (double sampleRateHz, size_t numChannels, size_t maxBlockSizeFrames) override
     {
-        // TODO: Add supportsSampleRate() and supportsNumChannels() to the matcher's API
-
-        if (! m_referenceSignal->supportsSampleRateWithDSPChain (sampleRateHz))
-            HART_THROW_OR_RETURN (hart::SampleRateError, "Reference signal does not support requested sample rate");
-
-        if (! m_referenceSignal->supportsNumChannelsWithDSPChain (numChannels))
-            HART_THROW_OR_RETURN (hart::ChannelLayoutError, "Reference signal does not support requested number of channels");
-
         m_maxBlockSizeFrames = maxBlockSizeFrames;
         m_referenceOutputAudio = AudioBuffer<SampleType> (numChannels, maxBlockSizeFrames, sampleRateHz);
         m_referenceSignal->prepareWithDSPChain (sampleRateHz, numChannels, maxBlockSizeFrames);
@@ -185,6 +177,16 @@ public:
     bool canOperatePerBlock() const override
     {
         return true;
+    }
+
+    bool supportsChannelLayout (size_t /* numInputChannels */, size_t numOutputChannels) const
+    {
+        return m_referenceSignal->supportsNumChannelsWithDSPChain (numOutputChannels);
+    }
+
+    bool supportsSampleRate (double sampleRateHz) const
+    {
+        return m_referenceSignal->supportsSampleRateWithDSPChain (sampleRateHz);
     }
 
     void reset() override

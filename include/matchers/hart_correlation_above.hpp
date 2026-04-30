@@ -82,6 +82,11 @@ public:
         m_hadValidData = false;
     }
 
+    bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const override
+    {
+        return numInputChannels == numOutputChannels;
+    }
+
     bool match (const AudioBuffer<SampleType>& inputAudio, const AudioBuffer<SampleType>& observedOutputAudio) override
     {
         hassert (inputAudio.getNumChannels() == observedOutputAudio.getNumChannels());

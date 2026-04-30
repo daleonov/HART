@@ -102,6 +102,20 @@ public:
     /// @param[out] stream Output stream to write to
     virtual void represent (std::ostream& stream) const = 0;
 
+    /// @brief Tells the host whether this Matcher is capable of operating on audio with a specific number of channels
+    /// @details It is guaranteed that the matcher will not receive unsupported number of channels in @ref match().
+    /// This method is guaranteed to be called at least once before @ref prepare()
+    /// @param numInputChannels Number of channels in input (reference) buffer that will need to be processed
+    /// @param numOutputChannels Number of channels in output (observed) buffer that will need to be processed
+    /// @return true if signal is capable of processing audio with requested number of channels, false otherwise
+    virtual bool supportsChannelLayout (size_t /* numInputChannels */, size_t /* numOutputChannels */) const { return true; }
+
+    /// @brief Tells whether this Matcher supports given sample rate
+    /// @details It is guaranteed to be called before @ref prepare()
+    /// @param sampleRateHz sample rate at which the audio will be presented
+    /// @return true if matcher is capable of processing audio with a given sample rate, false otherwise
+    virtual bool supportsSampleRate (double /* sampleRateHz */) const { return true; }
+
     /// @brief Returns a smart pointer with a copy of this object
     /// @return Copy of this object wrapped in a smart pointer
     virtual std::unique_ptr<MatcherBase<SampleType>> copy() const = 0;

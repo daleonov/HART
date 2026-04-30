@@ -616,17 +616,11 @@ public:
         if (totalDurationFrames == 0)
             HART_THROW_OR_RETURN (hart::SizeError, "Nothing to process", std::move (m_processor));
 
-        for (auto& check : perBlockChecks)
-        {
-            check.matcher->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
-            check.shouldSkip = false;
-        }
+        const bool perBlockChecksPreparationSuccessful = prepareChecks (perBlockChecks);
+        const bool fullSignalChecksPreparationSuccessful = prepareChecks (fullSignalChecks);
 
-        for (auto& check : fullSignalChecks)
-        {
-            check.matcher->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
-            check.shouldSkip = false;
-        }
+        if (! perBlockChecksPreparationSuccessful || ! fullSignalChecksPreparationSuccessful)
+            return std::move (m_processor);
 
         if (! m_processor->supportsSampleRate (m_sampleRateHz))
             HART_THROW_OR_RETURN (hart::SampleRateError, "DSP testee does not support requested sample rate", std::move (m_processor));
@@ -836,6 +830,23 @@ private:
 
         // TODO: emplace_back()
         group.push_back({ matcher.copy(), assertionLevel, false, shouldPass });
+    }
+
+    bool prepareChecks (std::vector<Check>& checks)
+    {
+        for (auto& check : checks)
+        {
+            if (! check.matcher->supportsSampleRate (m_sampleRateHz))
+                HART_THROW_OR_RETURN (hart::SampleRateError, "Matcher not support requested sample rate", false);
+
+            if (! check.matcher->supportsChannelLayout (m_numInputChannels, m_numOutputChannels))
+                HART_THROW_OR_RETURN (hart::ChannelLayoutError, "Matcher not support requested number of channels", false);
+
+            check.matcher->prepare (m_sampleRateHz, m_numOutputChannels, m_blockSizeFrames);
+            check.shouldSkip = false;
+        }
+
+        return true;
     }
 
     bool processChecks (std::vector<Check>& checksGroup, const AudioBuffer<SampleType>& inputAudio, const AudioBuffer<SampleType>& outputAudio, size_t baseFrameOffset)
