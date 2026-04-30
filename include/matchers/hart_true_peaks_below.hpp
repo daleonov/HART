@@ -86,7 +86,7 @@ public:
         m_sampleRateHz = sampleRateHz;  // Just for readable failure details
     }
 
-    virtual void reset()
+    void reset() override
     {
         for (std::vector<SampleType>& channelHistory : m_history)
             std::fill (channelHistory.begin(), channelHistory.end(), (SampleType) 0);

@@ -117,7 +117,7 @@ public:
         return true;
     }
 
-    bool supportsSampleRate (double sampleRateHz) const
+    bool supportsSampleRate (double sampleRateHz) const override
     {
         HART_EXPECT_EQ (std::this_thread::get_id(), m_threadIdWhereInstanceWasConstructed);
         HART_EXPECT_FLOAT_EQ (sampleRateHz, m_expectedSampleRateHz, 1e-8);

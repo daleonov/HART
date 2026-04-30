@@ -318,14 +318,14 @@ HART_TEST ("CorrelationAbove")
         .expectFalse (CorrelationAbove (0.95))
         .process();
 
-    processAudioWith ([] (float x) { return 0.01f * x + (static_cast<float> (std::rand()) / RAND_MAX * 2 - 1);})
+    processAudioWith ([] (float x) { return 0.01f * x + (static_cast<float> (std::rand()) / static_cast<float> (RAND_MAX) * 2 - 1);})
         .withLabel ("Very noisy")
         .withInputSignal (SineWave())
         .expectTrue (CorrelationAbove (0.01))
         .expectFalse (CorrelationAbove (0.1))
         .process();
 
-    processAudioWith ([] (float) { return static_cast<float> (std::rand()) / RAND_MAX; })
+    processAudioWith ([] (float) { return static_cast<float> (std::rand()) / static_cast<float> (RAND_MAX); })
         .withLabel ("Completely uncorrelated")
         .withInputSignal (SineWave())
         .expectFalse (CorrelationAbove (0.05))

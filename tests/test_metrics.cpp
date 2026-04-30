@@ -59,7 +59,6 @@ HART_TEST ("Metrics - Channel Correlation")
 HART_TEST ("Crest factor")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
-    using Channel = hart::Channel;
     using hart::floatsEqual;
     using hart::crestFactorLinear;
     using hart::crestFactorDb;
