@@ -1,5 +1,6 @@
 #include "hart.hpp"
 #include "dsp_contract_checker.hpp"
+#include "matcher_contract_checker.hpp"
 #include "signal_contract_checker.hpp"
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
@@ -309,4 +310,96 @@ HART_TEST ("Signal Contracts - Rendered by AudioBuffer")
         .withExpectedRenderedDuration (347_ms);
     buffer.fillWith (signalContractChecker, 123);
     signalContractChecker.verify();
+}
+
+HART_TEST ("Matcher Contracts")
+{
+    auto matcherContractCheckerA = MatcherContractChecker()
+        .withMatchResult (true)
+        .withPerBlockSupport (true);
+    auto matcherContractCheckerB = MatcherContractChecker (matcherContractCheckerA)
+        .withPerBlockSupport (false);
+    auto matcherContractCheckerC = MatcherContractChecker (matcherContractCheckerA)
+        .withMatchResult (false);
+    auto matcherContractCheckerD = MatcherContractChecker (matcherContractCheckerB)
+        .withMatchResult (false);
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("All default")
+        .expectTrue (std::move (matcherContractCheckerA))
+        .expectTrue (std::move (matcherContractCheckerB))
+        .expectFalse (std::move (matcherContractCheckerC))
+        .expectFalse (std::move (matcherContractCheckerD))
+        .process();
+
+    matcherContractCheckerA = MatcherContractChecker()
+        .withExpectedMaxBlockSize (123)
+        .withExpectedChannelLayout (7, 7)
+        .withExpectedSampleRate (45.658_kHz)
+        .withExpectedCheckedDuration (347_ms)
+        .withMatchResult (true)
+        .withPerBlockSupport (true);
+    matcherContractCheckerB = MatcherContractChecker (matcherContractCheckerA)
+        .withPerBlockSupport (false);
+    matcherContractCheckerC = MatcherContractChecker (matcherContractCheckerA)
+        .withMatchResult (false);
+    matcherContractCheckerD = MatcherContractChecker (matcherContractCheckerB)
+        .withMatchResult (false);
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("All custom")
+        .withSampleRate (45.658_kHz)
+        .withInputChannels (7)
+        .withOutputChannels (7)
+        .withBlockSize (123)
+        .withDuration (347_ms)
+        .expectTrue (std::move (matcherContractCheckerA))
+        .expectTrue (std::move (matcherContractCheckerB))
+        .expectFalse (std::move (matcherContractCheckerC))
+        .expectFalse (std::move (matcherContractCheckerD))
+        .process();
+
+    matcherContractCheckerA = MatcherContractChecker()
+        .withExpectedMaxBlockSize (1)
+        .withMatchResult (true)
+        .withPerBlockSupport (true);
+    matcherContractCheckerB = MatcherContractChecker (matcherContractCheckerA)
+        .withPerBlockSupport (false);
+    matcherContractCheckerC = MatcherContractChecker (matcherContractCheckerA)
+        .withMatchResult (false);
+    matcherContractCheckerD = MatcherContractChecker (matcherContractCheckerB)
+        .withMatchResult (false);
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Block size of 1 frame")
+        .withBlockSize (1)
+        .expectTrue (std::move (matcherContractCheckerA))
+        .expectTrue (std::move (matcherContractCheckerB))
+        .expectFalse (std::move (matcherContractCheckerC))
+        .expectFalse (std::move (matcherContractCheckerD))
+        .process();
+
+    matcherContractCheckerA = MatcherContractChecker()
+        .withExpectedSampleRate (44100_Hz)
+        .withExpectedCheckedDuration (100_ms)
+        .withExpectedMaxBlockSize (4410)
+        .withMatchResult (true)
+        .withPerBlockSupport (true);
+    matcherContractCheckerB = MatcherContractChecker (matcherContractCheckerA)
+        .withPerBlockSupport (false);
+    matcherContractCheckerC = MatcherContractChecker (matcherContractCheckerA)
+        .withMatchResult (false);
+    matcherContractCheckerD = MatcherContractChecker (matcherContractCheckerB)
+        .withMatchResult (false);
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Render in a single large block")
+        .withSampleRate (44100_Hz)
+        .withDuration (100_ms)
+        .withBlockSize (4410)
+        .expectTrue (std::move (matcherContractCheckerA))
+        .expectTrue (std::move (matcherContractCheckerB))
+        .expectFalse (std::move (matcherContractCheckerC))
+        .expectFalse (std::move (matcherContractCheckerD))
+        .process();
 }
