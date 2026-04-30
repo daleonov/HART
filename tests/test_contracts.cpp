@@ -273,3 +273,40 @@ HART_TEST ("Signal Contracts - Hosted by a Matcher")
         .withBlockSize (4410)
         .process();
 }
+
+HART_TEST ("Signal Contracts - Rendered by AudioBuffer")
+{
+    hart::AudioBuffer<float> buffer (1, 4410, 44100_Hz);
+
+    // All default
+    auto signalContractChecker = SignalContractChecker()
+        .withExpectedMaxBlockSize (1024)
+        .withExpectedNumChannels (1)
+        .withExpectedSampleRate (44100_Hz)
+        .withExpectedRenderedDuration (100_ms);
+    buffer.fillWith (signalContractChecker, 1024);
+    signalContractChecker.verify();
+
+    // Block size of 1 frame
+    signalContractChecker = SignalContractChecker().withExpectedMaxBlockSize (1);
+    buffer.fillWith (signalContractChecker, 1);
+    signalContractChecker.verify();
+
+    // Render in a single large block
+    signalContractChecker = SignalContractChecker()
+        .withExpectedSampleRate (44100_Hz)
+        .withExpectedRenderedDuration (100_ms)
+        .withExpectedMaxBlockSize (4410);
+    buffer.fillWith (signalContractChecker);
+    signalContractChecker.verify();
+
+    // All custom
+    buffer = hart::AudioBuffer<float> (3, hart::roundToSizeT (45.658_kHz * 347_ms), 45.658_kHz);
+    signalContractChecker = SignalContractChecker()
+        .withExpectedMaxBlockSize (123)
+        .withExpectedNumChannels (3)
+        .withExpectedSampleRate (45.658_kHz)
+        .withExpectedRenderedDuration (347_ms);
+    buffer.fillWith (signalContractChecker, 123);
+    signalContractChecker.verify();
+}
