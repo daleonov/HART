@@ -36,7 +36,7 @@ public:
             HART_THROW (hart::ValueError, "Target frequency must be > 0");
     }
 
-    void prepare (double sampleRateHz, size_t /* numChannels */, size_t /* maxBlockSizeFrames */) override
+    void prepare (double sampleRateHz, size_t /* numInputChannels */, size_t /* numOutputChannels */, size_t /* maxBlockSizeFrames */) override
     {
         m_sampleRateHz = sampleRateHz;
     }

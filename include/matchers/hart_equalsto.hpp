@@ -102,11 +102,11 @@ public:
 
     ~EqualsTo() override = default;
 
-    void prepare (double sampleRateHz, size_t numChannels, size_t maxBlockSizeFrames) override
+    void prepare (double sampleRateHz, size_t /* numInputChannels */, size_t numOutputChannels, size_t maxBlockSizeFrames) override
     {
         m_maxBlockSizeFrames = maxBlockSizeFrames;
-        m_referenceOutputAudio = AudioBuffer<SampleType> (numChannels, maxBlockSizeFrames, sampleRateHz);
-        m_referenceSignal->prepareWithDSPChain (sampleRateHz, numChannels, maxBlockSizeFrames);
+        m_referenceOutputAudio = AudioBuffer<SampleType> (numOutputChannels, maxBlockSizeFrames, sampleRateHz);
+        m_referenceSignal->prepareWithDSPChain (sampleRateHz, numOutputChannels, maxBlockSizeFrames);
     }
 
     bool match (const AudioBuffer<SampleType>& /* inputAudio */, const AudioBuffer<SampleType>& observedOutputAudio) override

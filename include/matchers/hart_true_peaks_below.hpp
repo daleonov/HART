@@ -75,9 +75,9 @@ public:
         hassert (m_maximumUnderReadLinear <= (SampleType) 1);
     }
 
-    void prepare (double sampleRateHz, size_t numChannels, size_t /* maxBlockSizeFrames */) override
+    void prepare (double sampleRateHz, size_t /* numInputChannels */, size_t numOutputChannels, size_t /* maxBlockSizeFrames */) override
     {
-        m_history.assign (numChannels, std::vector<SampleType> (getTapsPerPhase(), (SampleType) 0));
+        m_history.assign (numOutputChannels, std::vector<SampleType> (getTapsPerPhase(), (SampleType) 0));
         m_historyIndex = 0;
         m_offsetFrames = 0;
         m_TruePeakLinear = (SampleType) 0;

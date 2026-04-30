@@ -124,7 +124,7 @@ public:
     }
 
     bool canOperatePerBlock() const override { return false;}
-    void prepare (double /* sampleRateHz */, size_t /* numChannels */, size_t /* maxBlockSizeFrames */) override {}
+    void prepare (double /* sampleRateHz */, size_t /* numInputChannels */, size_t /* numOutputChannels */, size_t /* maxBlockSizeFrames */) override {}
 
 private:
     const std::function <Condition (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> m_matcherFunctionForInputAndOutput = nullptr;

@@ -130,12 +130,13 @@ public:
 
     ~LatencyBelow() override = default;
 
-    void prepare (double sampleRateHz, size_t numChannels, size_t maxBlockSizeFrames) override
+    void prepare (double sampleRateHz, size_t numInputChannels, size_t numOutputChannels, size_t maxBlockSizeFrames) override
     {
+        hassert (numInputChannels == numOutputChannels);
         hassert (m_latencyDetector != nullptr);
         m_latencyDetector->prepare (
             sampleRateHz,
-            numChannels,
+            numOutputChannels,
             maxBlockSizeFrames
         );
     }

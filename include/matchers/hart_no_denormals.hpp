@@ -65,7 +65,7 @@ public:
         return true;
     }
 
-    void prepare (double /*sampleRateHz*/, size_t /* numChannels */, size_t /* maxBlockSizeFrames */) override {}
+    void prepare (double /*sampleRateHz*/, size_t /* numInputChannels */, size_t /* numOutputChannels */, size_t /* maxBlockSizeFrames */) override {}
 
     HART_DEFINE_GENERIC_REPRESENT (NoDenormals);
 

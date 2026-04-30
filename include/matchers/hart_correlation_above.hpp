@@ -62,7 +62,7 @@ public:
             HART_THROW_OR_RETURN (hart::ValueError, "Max lag should be a non-negative number in seconds", false);
     }
 
-    void prepare (double sampleRateHz, size_t /* numChannels */, size_t /*maxBlockSizeFrames*/) override
+    void prepare (double sampleRateHz, size_t /* numInputChannels */, size_t /* numOutputChannels */, size_t /*maxBlockSizeFrames*/) override
     {
         m_sampleRateHz = sampleRateHz;
         m_maxLagFrames = static_cast<long long int> (std::round (m_maxLagSeconds * m_sampleRateHz));

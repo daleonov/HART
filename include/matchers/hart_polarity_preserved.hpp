@@ -99,10 +99,12 @@ public:
 
     void prepare (
         double sampleRateHz,
-        size_t /*numChannels*/,
+        size_t numInputChannels,
+        size_t numOutputChannels,
         size_t /*maxBlockSizeFrames*/
         ) override
     {
+        hassert (numInputChannels == numOutputChannels);
         m_sampleRateHz = sampleRateHz;
         m_maxLagFrames = static_cast<long long int> (std::round (m_maxLagSeconds * m_sampleRateHz));
     }
