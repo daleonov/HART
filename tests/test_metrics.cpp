@@ -59,6 +59,7 @@ HART_TEST ("Metrics - Channel Correlation")
 HART_TEST ("Crest factor")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
+    using Channel = hart::Channel;
     using hart::floatsEqual;
     using hart::crestFactorLinear;
     using hart::crestFactorDb;
@@ -70,10 +71,10 @@ HART_TEST ("Crest factor")
         .inMono()
         .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorLinear (output), sqrt (2.0), 1e-3); }, "Linear crest factor is around sqrt (2)")
         .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorLinear (output, 0), sqrt (2.0), 1e-3); }, "Linear crest factor is around sqrt (2)")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorLinear (output, hart::Channel::left), sqrt (2.0), 1e-3); }, "Linear crest factor is around sqrt (2)")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorLinear (output, Channel::left), sqrt (2.0), 1e-3); }, "Linear crest factor is around sqrt (2)")
         .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorDb (output), 3.01_dB, 0.01); }, "Crest factor is around 3.01 dB")
         .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorDb (output, 0), 3.01_dB, 0.01); }, "Crest factor is around 3.01 dB")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorDb (output, hart::Channel::left), 3.01_dB, 0.01); }, "Crest factor is around 3.01 dB")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorDb (output, Channel::left), 3.01_dB, 0.01); }, "Crest factor is around 3.01 dB")
         .process();
 
     hart::DSPFunction<float> halfWaveRectify (
@@ -139,7 +140,6 @@ HART_TEST ("Crest factor")
 HART_TEST ("ESR")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
-    using Channel = hart::Channel;
     using hart::esr;
     using std::isnan;
 
