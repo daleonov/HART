@@ -4,7 +4,6 @@
 #include <thread>  // get_id();
 
 #include "hart.hpp"
-#include "hart_assertion_macros.hpp"
 
 /// @brief Verifies the correct order of callbacks, render behaviour and single-threadiness of callbacks
 /// @private

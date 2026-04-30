@@ -94,6 +94,7 @@ public:
 
     LatencyBelow (const LatencyBelow& other):
         m_maxLatencySeconds (other.m_maxLatencySeconds),
+        m_method (other.m_method),
         m_silencePolicy (other.m_silencePolicy),
         m_threshold (other.m_threshold),
         m_latencyDetector (
@@ -115,6 +116,7 @@ public:
         hassert (other.m_latencyDetector != nullptr);  // Sanity check
 
         m_maxLatencySeconds = other.m_maxLatencySeconds;
+        m_method = other.m_method;
         m_silencePolicy = other.m_silencePolicy;
         m_threshold = other.m_threshold;
 
@@ -200,7 +202,7 @@ private:
     double m_maxLatencySeconds;
     Method m_method;
     SilencePolicy m_silencePolicy;
-    SampleType m_threshold;
+    double m_threshold;
 
     std::unique_ptr<LatencyDetector<SampleType>> m_latencyDetector;
 };

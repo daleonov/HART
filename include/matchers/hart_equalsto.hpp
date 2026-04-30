@@ -179,12 +179,12 @@ public:
         return true;
     }
 
-    bool supportsChannelLayout (size_t /* numInputChannels */, size_t numOutputChannels) const
+    bool supportsChannelLayout (size_t /* numInputChannels */, size_t numOutputChannels) const override
     {
         return m_referenceSignal->supportsNumChannelsWithDSPChain (numOutputChannels);
     }
 
-    bool supportsSampleRate (double sampleRateHz) const
+    bool supportsSampleRate (double sampleRateHz) const override
     {
         return m_referenceSignal->supportsSampleRateWithDSPChain (sampleRateHz);
     }

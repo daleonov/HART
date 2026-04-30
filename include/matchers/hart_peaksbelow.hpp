@@ -31,7 +31,7 @@ public:
     PeaksBelow (double thresholdDb, double toleranceLinear = 1e-3):
         m_thresholdDb ((SampleType) thresholdDb),
         m_thresholdLinear (static_cast<SampleType> (decibelsToRatio (thresholdDb) + toleranceLinear)),
-        m_toleranceLinear (toleranceLinear)
+        m_toleranceLinear (static_cast<SampleType> (toleranceLinear))
     {
     }
 

@@ -37,7 +37,7 @@ public:
     /// @param randomSeed Seed for noise generation.
     AdditiveNoise (double initialNoiseLevelDb = 0.0, uint_fast32_t randomSeed = CLIConfig::getInstance().getRandomSeed()) :
         m_initialNoiseLevelDb (initialNoiseLevelDb),
-        m_noiseLevelLinear (decibelsToRatio (initialNoiseLevelDb)),
+        m_noiseLevelLinear (static_cast<SampleType> (decibelsToRatio (initialNoiseLevelDb))),
         m_randomSeed (randomSeed),
         m_randomNumberGenerator (randomSeed)
         {
@@ -45,7 +45,7 @@ public:
 
     void prepare (double /* sampleRateHz */, size_t /* numInputChannels */, size_t /* numOutputChannels */, size_t /* maxBlockSizeFrames */) override {}
 
-    void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const EnvelopeBuffers& envelopeBuffers, ChannelFlags channelsToProcess) override
+    void process (const AudioBuffer<SampleType>& input, AudioBuffer<SampleType>& output, const EnvelopeBuffers& /* envelopeBuffers */, ChannelFlags channelsToProcess) override
     {
         const bool symmetricalChannelLayout = input.getNumChannels() == output.getNumChannels();
         const bool monoToMultiChannelLayout = input.getNumChannels() == 1 && output.getNumChannels() > 1;
@@ -83,7 +83,7 @@ public:
         if (paramId != Params::noiseLevelDb)
             HART_THROW_OR_RETURN_VOID (hart::ValueError, "Unsupported value ID");
 
-        m_noiseLevelLinear = decibelsToRatio (value);
+        m_noiseLevelLinear = static_cast<SampleType> (decibelsToRatio (value));
     }
 
     void reset() override
@@ -124,7 +124,7 @@ public:
 
 private:
     double m_initialNoiseLevelDb;
-    double m_noiseLevelLinear;
+    SampleType m_noiseLevelLinear;
     uint_fast32_t m_randomSeed;
 
     std::mt19937 m_randomNumberGenerator;

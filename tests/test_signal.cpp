@@ -365,7 +365,7 @@ HART_TEST ("Signal - SignalFunction")
     // 3. Inline lambda
     processAudioWith (GainDb (0_dB))
         .withLabel ("Impulse defined inline")
-        .withInputSignal ([] (AudioBuffer& buffer) { buffer.setNumFrames (2); buffer[0][0] = decibelsToRatio (-10_dB); buffer[0][1] = -buffer[0][0];}, "BLIP at -10dB", Loop::no)
+        .withInputSignal ([] (AudioBuffer& buffer) { buffer.setNumFrames (2); buffer[0][0] = decibelsToRatio (-10.0f); buffer[0][1] = -buffer[0][0];}, "BLIP at -10dB", Loop::no)
         .withSampleRate (sampleRateHz)
         .inMono()
         .expectTrue (PeaksAt (-10_dB))

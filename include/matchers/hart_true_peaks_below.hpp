@@ -68,7 +68,7 @@ public:
         m_oversamplingRatio (oversamplingRatio),
         m_filterQuality (filterQuality),
         m_strictness (strictness),
-        m_numericToleranceLinear (numericToleranceLinear),
+        m_numericToleranceLinear (static_cast<SampleType> (numericToleranceLinear)),
         m_maximumUnderReadLinear (calculateMaximumUnderReadLinear())
     {
         hassert (! floatsEqual (m_maximumUnderReadLinear, (SampleType) 0));

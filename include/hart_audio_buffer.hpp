@@ -50,7 +50,7 @@ public:
     }
 
     /// @brief Creates an audio buffer by moving
-    AudioBuffer (AudioBuffer&& other) :
+    AudioBuffer (AudioBuffer&& other) noexcept :
         m_numChannels (other.m_numChannels),
         m_numFrames (other.m_numFrames),
         m_sampleRateHz (other.m_sampleRateHz),
@@ -82,7 +82,7 @@ public:
     }
 
     /// @brief Creates an audio buffer by move-assigning
-    AudioBuffer& operator= (AudioBuffer&& other)
+    AudioBuffer& operator= (AudioBuffer&& other) noexcept
     {
         if (this == &other)
             return *this;

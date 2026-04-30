@@ -264,6 +264,9 @@ HART_TEST ("LatencyBelow - Correlation method")
 
 HART_TEST ("CorrelationAbove")
 {
+    const unsigned int randomSeed = static_cast<unsigned int> (hart::CLIConfig::getInstance().getRandomSeed());
+    std::srand (randomSeed);
+
     processAudioWith (GainDb (0_dB))
         .withLabel ("Identical signal")
         .withInputSignal (SineWave())
@@ -294,7 +297,7 @@ HART_TEST ("CorrelationAbove")
         .expectTrue (CorrelationAbove (0.999))
         .process();
 
-    processAudioWith ([] (float x) { return x + 0.5; })
+    processAudioWith ([] (float x) { return x + 0.5f; })
         .withLabel ("DC offset matters")
         .withInputSignal (SineWave())
         .expectTrue (CorrelationAbove (0.8))
@@ -315,17 +318,17 @@ HART_TEST ("CorrelationAbove")
         .expectFalse (CorrelationAbove (0.95))
         .process();
 
-    processAudioWith ([] (float x) { return 0.01 * x + (std::rand() / RAND_MAX * 2 - 1);})
+    processAudioWith ([] (float x) { return 0.01f * x + (static_cast<float> (std::rand()) / RAND_MAX * 2 - 1);})
         .withLabel ("Very noisy")
         .withInputSignal (SineWave())
         .expectTrue (CorrelationAbove (0.01))
         .expectFalse (CorrelationAbove (0.1))
         .process();
 
-    processAudioWith ([] (float) { return std::rand() / RAND_MAX; })
+    processAudioWith ([] (float) { return static_cast<float> (std::rand()) / RAND_MAX; })
         .withLabel ("Completely uncorrelated")
         .withInputSignal (SineWave())
-        .expectFalse (CorrelationAbove (0.001))
+        .expectFalse (CorrelationAbove (0.05))
         .process();
 }
 

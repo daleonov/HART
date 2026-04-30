@@ -127,8 +127,8 @@ public:
         return true;
     }
 
-    virtual bool supportsEnvelopeFor (int /* paramId */) const { return false; }
-    virtual void setValue (int /* paramId */, double /* value */) {}
+    virtual bool supportsEnvelopeFor (int /* paramId */) const override { return false; }
+    virtual void setValue (int /* paramId */, double /* value */) override {}
 
     void represent (std::ostream& stream) const override
     {
