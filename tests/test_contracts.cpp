@@ -1,5 +1,6 @@
 #include "hart.hpp"
 #include "dsp_contract_checker.hpp"
+#include "envelope_contract_checker.hpp"
 #include "matcher_contract_checker.hpp"
 #include "signal_contract_checker.hpp"
 
@@ -405,5 +406,46 @@ HART_TEST ("Matcher Contracts")
         .expectTrue (std::move (matcherContractCheckerB))
         .expectFalse (std::move (matcherContractCheckerC))
         .expectFalse (std::move (matcherContractCheckerD))
+        .process();
+}
+
+HART_TEST ("Envelope contracts")
+{
+    processAudioWith (GainDb (0_dB).withEnvelope (GainDb::gainDb, EnvelopeContractChecker()))
+        .withLabel ("All Defaults")
+        .process();
+
+    auto envelopeContractChecker = EnvelopeContractChecker()
+        .withExpectedSampleRate (45.658_kHz)
+        .withExpectedRenderedDuration (347_ms)
+        .withExpectedMaxBlockSize (123);
+    
+    processAudioWith (GainDb (0_dB).withEnvelope (GainDb::gainDb, std::move (envelopeContractChecker)))
+        .withLabel ("All Custom")
+        .withSampleRate (45.658_kHz)
+        .withInputChannels (7)
+        .withOutputChannels (7)
+        .withBlockSize (123)
+        .withDuration (347_ms)
+        .process();
+
+    envelopeContractChecker = EnvelopeContractChecker()
+        .withExpectedMaxBlockSize (1)
+        .withExpectedRenderedDuration (1_ms);
+    processAudioWith (GainDb (0_dB).withEnvelope (GainDb::gainDb, std::move (envelopeContractChecker)))
+        .withLabel ("Block size of 1 frame")
+        .withBlockSize (1)
+        .withDuration (1_ms)
+        .process();
+
+    envelopeContractChecker = EnvelopeContractChecker()
+        .withExpectedSampleRate (44100_Hz)
+        .withExpectedRenderedDuration (100_ms)
+        .withExpectedMaxBlockSize (4410);
+    processAudioWith (GainDb (0_dB).withEnvelope (GainDb::gainDb, std::move (envelopeContractChecker)))
+        .withLabel ("Render in a single large block")
+        .withSampleRate (44100_Hz)
+        .withDuration (100_ms)
+        .withBlockSize (4410)
         .process();
 }
