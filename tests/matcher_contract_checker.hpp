@@ -145,11 +145,11 @@ public:
     }
 
 private:
-    size_t m_expectedMaxBlockSizeFrames = 1024;
-    size_t m_expectedNumInputChannels = 1;
-    size_t m_expectedNumOutputChannels = 1;
-    double m_expectedSampleRateHz = 44100.0;
-    double m_expectedCheckedDurationSeconds = 0.1;
+    size_t m_expectedMaxBlockSizeFrames = hart::CLIConfig::getInstance().getGefaultBlockSizeFrames();
+    size_t m_expectedNumInputChannels = hart::CLIConfig::getInstance().getDefaultNumInputChannels();
+    size_t m_expectedNumOutputChannels = hart::CLIConfig::getInstance().getDefaultNumOutputChannels();
+    double m_expectedSampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
+    double m_expectedCheckedDurationSeconds = hart::CLIConfig::getInstance().getDefaultRenderDurationSeconds();
     bool m_requestedMatchResult = true;
     bool m_shouldBeAbleToOperatePerBlock = false;
     int m_expectedNumMatchCalls = 0;

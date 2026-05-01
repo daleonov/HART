@@ -62,6 +62,36 @@ public:
             "Number of displayed decimal places for values in cents in test output"
             )->default_val (0);
 
+        app.add_option (
+            "--block-size",
+            m_defaultBlockSizeFrames,
+            "Default max block size in frames (samples). All tests will run with this block size, unless other value is explicitly set via withBlockSize()."
+            )->default_val (1024);
+
+        app.add_option (
+            "--input-channels",
+            m_defaultNumInputChannels,
+            "Default number of input channels. All tests will run with this number of output channels, unless other value is explicitly selected via withOutputChannels() or a similar modifier."
+            )->default_val (1);
+
+        app.add_option (
+            "--output-channels",
+            m_defaultNumOutputChannels,
+            "Default number of output channels. All tests will run with this number of input channels, unless other value is explicitly selected via withInputChannels() or a similar modifier."
+            )->default_val (1);
+
+        app.add_option (
+            "--sample-rate",
+            m_defaultSampleRateHz,
+            "Default sample rate in Hz. All tests will run with this sample rate, unless other value is explicitly stated via withSampleRate()."
+            )->default_val (44100.0);
+
+        app.add_option (
+            "--render-duration",
+            m_defaultRenderDurationSeconds,
+            "Default render duration in seconds. All tests will render this amount of audio (excluding optional warm-up time), unless explicitly overridden with withDuration()."
+            )->default_val (0.1);
+
         app.add_flag ("--run-generators,-g", m_runGeneratorsNotTests, "Run generators instead of tests");
         app.add_flag ("--shuffle", m_shuffle, "Shuffle task order. Obeys --seed value.");
     }
@@ -97,6 +127,12 @@ public:
     bool shouldShuffleTasks() { return m_shuffle; }
     std::string& getTags() { return m_tags; }
 
+    size_t getGefaultBlockSizeFrames() const { return m_defaultBlockSizeFrames; }
+    size_t getDefaultNumInputChannels() const { return m_defaultNumInputChannels; }
+    size_t getDefaultNumOutputChannels() const { return m_defaultNumOutputChannels; }
+    double getDefaultSampleRateHz() const { return m_defaultSampleRateHz; }
+    double getDefaultRenderDurationSeconds() const { return m_defaultRenderDurationSeconds; }
+
 private:
     CLI::App app { "HART" };
 
@@ -112,6 +148,12 @@ private:
     int m_hzDecimals = 0;
     int m_radDecimals = 0;
     int m_centsDecimals = 0;
+
+    size_t m_defaultBlockSizeFrames = 1024;
+    size_t m_defaultNumInputChannels = 1;
+    size_t m_defaultNumOutputChannels = 1;
+    double m_defaultSampleRateHz = 44100.0;
+    double m_defaultRenderDurationSeconds = 0.1;
 
     CLIConfig() = default;
 };

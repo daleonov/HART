@@ -766,12 +766,12 @@ private:
 
     std::unique_ptr<DSPBase<SampleType>> m_processor;
     std::unique_ptr<SignalBase<SampleType>> m_inputSignal;
-    double m_sampleRateHz = (double) 44100;
-    size_t m_blockSizeFrames = 1024;
-    size_t m_numInputChannels = 1;
-    size_t m_numOutputChannels = 1;
+    double m_sampleRateHz = CLIConfig::getInstance().getDefaultSampleRateHz();
+    size_t m_blockSizeFrames = CLIConfig::getInstance().getGefaultBlockSizeFrames();
+    size_t m_numInputChannels = CLIConfig::getInstance().getDefaultNumInputChannels();
+    size_t m_numOutputChannels = CLIConfig::getInstance().getDefaultNumOutputChannels();
     std::vector<ParamValue> paramValues;
-    double m_testDurationSeconds = 0.1;
+    double m_testDurationSeconds = CLIConfig::getInstance().getDefaultRenderDurationSeconds();
     double m_warmUpDurationSeconds = 0.0;
     size_t offsetFrames = 0;
     std::string m_testLabel = {};

@@ -21,11 +21,7 @@ static void verify (const std::unique_ptr<hart::SignalBase<float>>& signal)
 
 HART_TEST ("DSP Contracts - Test Runner")
 {
-    DSPContractChecker dspContractChecker = DSPContractChecker()
-        .withExpectedMaxBlockSize (1024)
-        .withExpectedChannelLayout (1, 1)
-        .withExpectedSampleRate (44100_Hz)
-        .withExpectedRenderedDuration (100_ms);
+    DSPContractChecker dspContractChecker = DSPContractChecker();
     auto usedDsp = processAudioWith (std::move (dspContractChecker))
         .withLabel ("All default")
         .process();
@@ -70,11 +66,7 @@ HART_TEST ("DSP Contracts - Signal's DSP Chain")
 {
     std::unique_ptr<hart::SignalBase<float>> usedSignal;
 
-    DSPContractChecker dspContractChecker = DSPContractChecker()
-        .withExpectedMaxBlockSize (1024)
-        .withExpectedChannelLayout (1, 1)
-        .withExpectedSampleRate (44100_Hz)
-        .withExpectedRenderedDuration (100_ms);
+    DSPContractChecker dspContractChecker = DSPContractChecker();
     processAudioWith (GainDb (0_dB))
         .withLabel ("All default")
         .withInputSignal (Silence() >> std::move (dspContractChecker))
@@ -125,16 +117,18 @@ HART_TEST ("DSP Contracts - Signal's DSP Chain")
 
 HART_TEST ("DSP Contracts - Rendered by AudioBuffer")
 {
-    hart::AudioBuffer<float> buffer (1, 4410, 44100_Hz);
+    const hart::CLIConfig& cliConfig = hart::CLIConfig::getInstance();
+
+    hart::AudioBuffer<float> buffer (
+        cliConfig.getDefaultNumOutputChannels(),
+        hart::roundToSizeT (cliConfig.getDefaultSampleRateHz() * cliConfig.getDefaultRenderDurationSeconds()),
+        cliConfig.getDefaultSampleRateHz()
+    );
     buffer.clear();
 
     // All default
-    DSPContractChecker dspContractChecker = DSPContractChecker()
-        .withExpectedMaxBlockSize (1024)
-        .withExpectedChannelLayout (1, 1)
-        .withExpectedSampleRate (44100_Hz)
-        .withExpectedRenderedDuration (100_ms);
-    buffer.processWith (dspContractChecker, 1024);
+    DSPContractChecker dspContractChecker = DSPContractChecker();
+    buffer.processWith (dspContractChecker, hart::CLIConfig::getInstance().getGefaultBlockSizeFrames());
     dspContractChecker.verify();
 
     // Block size of 1 frame
@@ -143,10 +137,7 @@ HART_TEST ("DSP Contracts - Rendered by AudioBuffer")
     dspContractChecker.verify();
 
     // Render in a single large block
-    dspContractChecker = DSPContractChecker()
-        .withExpectedSampleRate (44100_Hz)
-        .withExpectedRenderedDuration (100_ms)
-        .withExpectedMaxBlockSize (4410);
+    dspContractChecker = DSPContractChecker().withExpectedMaxBlockSize (buffer.getNumFrames());
     buffer.processWith (dspContractChecker);
     dspContractChecker.verify();
 
@@ -164,12 +155,7 @@ HART_TEST ("DSP Contracts - Rendered by AudioBuffer")
 
 HART_TEST ("Signal Contracts - Test Runner")
 {
-    auto signalContractChecker = SignalContractChecker()
-        .withExpectedMaxBlockSize (1024)
-        .withExpectedNumChannels (1)
-        .withExpectedSampleRate (44100_Hz)
-        .withExpectedRenderedDuration (100_ms);
-
+    auto signalContractChecker = SignalContractChecker();
     std::unique_ptr<hart::SignalBase<float>> usedSignal;
     processAudioWith (GainDb (0_dB))
         .withInputSignal (std::move (signalContractChecker))
@@ -225,12 +211,7 @@ HART_TEST ("Signal Contracts - Hosted by a Matcher")
     // like number of process() calls and observed rendered time
     // is a blind spot for now.
 
-    auto signalContractChecker = SignalContractChecker()
-        .withExpectedMaxBlockSize (1024)
-        .withExpectedNumChannels (1)
-        .withExpectedSampleRate (44100_Hz)
-        .withExpectedRenderedDuration (100_ms);
-
+    auto signalContractChecker = SignalContractChecker();
     std::unique_ptr<hart::SignalBase<float>> usedSignal;
     processAudioWith (GainDb (0_dB))
         .withInputSignal (Silence())
@@ -277,15 +258,17 @@ HART_TEST ("Signal Contracts - Hosted by a Matcher")
 
 HART_TEST ("Signal Contracts - Rendered by AudioBuffer")
 {
-    hart::AudioBuffer<float> buffer (1, 4410, 44100_Hz);
+    const hart::CLIConfig& cliConfig = hart::CLIConfig::getInstance();
+
+    hart::AudioBuffer<float> buffer (
+        cliConfig.getDefaultNumInputChannels(),
+        hart::roundToSizeT (cliConfig.getDefaultSampleRateHz() * cliConfig.getDefaultRenderDurationSeconds()),
+        cliConfig.getDefaultSampleRateHz()
+    );
 
     // All default
-    auto signalContractChecker = SignalContractChecker()
-        .withExpectedMaxBlockSize (1024)
-        .withExpectedNumChannels (1)
-        .withExpectedSampleRate (44100_Hz)
-        .withExpectedRenderedDuration (100_ms);
-    buffer.fillWith (signalContractChecker, 1024);
+    auto signalContractChecker = SignalContractChecker();
+    buffer.fillWith (signalContractChecker, cliConfig.getGefaultBlockSizeFrames());
     signalContractChecker.verify();
 
     // Block size of 1 frame
@@ -294,10 +277,7 @@ HART_TEST ("Signal Contracts - Rendered by AudioBuffer")
     signalContractChecker.verify();
 
     // Render in a single large block
-    signalContractChecker = SignalContractChecker()
-        .withExpectedSampleRate (44100_Hz)
-        .withExpectedRenderedDuration (100_ms)
-        .withExpectedMaxBlockSize (4410);
+    signalContractChecker = SignalContractChecker().withExpectedMaxBlockSize (buffer.getNumFrames());
     buffer.fillWith (signalContractChecker);
     signalContractChecker.verify();
 
