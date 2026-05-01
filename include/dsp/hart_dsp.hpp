@@ -199,6 +199,9 @@ public:
         {
             const int paramId = item.first;
             m_envelopeBuffers.emplace (paramId, std::vector<double> (maxBlockSizeFrames));
+
+            std::unique_ptr<Envelope>& envelope = item.second;
+            envelope->prepare (sampleRateHz, maxBlockSizeFrames);
         }
 
         hassert (m_envelopes.size() == m_envelopeBuffers.size());
