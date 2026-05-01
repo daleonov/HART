@@ -264,6 +264,7 @@ HART_TEST ("LatencyBelow - Correlation method")
 
 HART_TEST ("CorrelationAbove")
 {
+    const double defaultRenderDuration = hart::CLIConfig::getInstance().getDefaultRenderDurationSeconds();
     const unsigned int randomSeed = static_cast<unsigned int> (hart::CLIConfig::getInstance().getRandomSeed());
     std::srand (randomSeed);
 
@@ -327,6 +328,7 @@ HART_TEST ("CorrelationAbove")
 
     processAudioWith ([] (float) { return static_cast<float> (std::rand()) / static_cast<float> (RAND_MAX); })
         .withLabel ("Completely uncorrelated")
+        .withDuration (std::max (defaultRenderDuration, 100_ms))
         .withInputSignal (SineWave())
         .expectFalse (CorrelationAbove (0.05))
         .process();
@@ -336,6 +338,7 @@ HART_TEST ("PolarityPreserved")
 {
     using SilencePolicy = hart::SilencePolicy;
 
+    const double defaultRenderDuration = hart::CLIConfig::getInstance().getDefaultRenderDurationSeconds();
     const unsigned int randomSeed = static_cast<unsigned int> (hart::CLIConfig::getInstance().getRandomSeed());
     std::srand (randomSeed);
 
@@ -347,12 +350,14 @@ HART_TEST ("PolarityPreserved")
 
     processAudioWith (TimeShift (10_ms))
         .withLabel ("Time shift within expected lag is fine")
+        .withDuration (std::max (defaultRenderDuration, 100_ms))
         .withInputSignal (SineSweep())
         .expectTrue (PolarityPreserved (0.5, 100_ms))
         .process();
 
     processAudioWith (TimeShift (10_ms))
         .withLabel ("Time shift beyond expected lag results in a failure")
+        .withDuration (std::max (defaultRenderDuration, 100_ms))
         .withInputSignal (SineSweep())
         .expectFalse (PolarityPreserved (0.5, 5_ms))
         .process();
@@ -374,6 +379,7 @@ HART_TEST ("PolarityPreserved")
     // Heavy clipping brings correlation down to 0.9 ish
     processAudioWith (HardClip (-40_dB))
         .withLabel ("Correlation thresholds - Distortion")
+        .withDuration (std::max (defaultRenderDuration, 50_ms))
         .withInputSignal (SineSweep())
         .expectTrue (PolarityPreserved (0.5))  // Relaxed threshold
         .expectFalse (PolarityPreserved (0.95))  // Pretty strict threshold
@@ -391,6 +397,7 @@ HART_TEST ("PolarityPreserved")
     // Additive noise brings correlation down to 0.4 ish
     processAudioWith (std::move (additiveNoise))
         .withLabel ("Correlation thresholds - Additive noise")
+        .withDuration (std::max (defaultRenderDuration, 100_ms))
         .withInputSignal (SineSweep())
         .expectTrue (PolarityPreserved (0.4))  // Relaxed threshold
         .expectFalse (PolarityPreserved (0.9))  // Pretty strict threshold
@@ -398,6 +405,7 @@ HART_TEST ("PolarityPreserved")
 
     processAudioWith (GainLinear (0.0).atChannel (1))
         .withLabel ("Silence policies - One of the channels is muted")
+        .withDuration (std::max (defaultRenderDuration, 50_ms))
         .withInputSignal (SineSweep())
         .inStereo()
         .expectTrue (PolarityPreserved (0.5, 10_ms, SilencePolicy::relaxed))
@@ -417,6 +425,7 @@ HART_TEST ("PolarityPreserved")
     // Very low correlation results in a failure, if it's not caused by silence
     processAudioWith (std::move (drownRightChannelInNoise))
         .withLabel ("Silence policies - One of the channels is weakly correlated, but not silent")
+        .withDuration (std::max (defaultRenderDuration, 11_ms))
         .withInputSignal (SineSweep())
         .inStereo()
         .expectFalse (PolarityPreserved (0.5, 10_ms, SilencePolicy::relaxed))
@@ -426,6 +435,7 @@ HART_TEST ("PolarityPreserved")
     // If all channels are silent, the matcher should report a failure in any policy setting
     processAudioWith (GainLinear (0.0))
         .withLabel ("Silence policies - All the output channels are silent")
+        .withDuration (std::max (defaultRenderDuration, 11_ms))
         .withInputSignal (SineSweep())
         .inStereo()
         .expectFalse (PolarityPreserved (0.5, 10_ms, SilencePolicy::relaxed))

@@ -171,6 +171,8 @@ HART_TEST ("Signal - Mixing Signals")
 
 HART_TEST ("Signal - Sawtooth Frequency")
 {
+    const double defaultRenderDuration = hart::CLIConfig::getInstance().getDefaultRenderDurationSeconds();
+
     processAudioWith (GainDb())
         .withLabel ("Normal use")
         .withInputSignal (Sawtooth())
@@ -193,6 +195,7 @@ HART_TEST ("Signal - Sawtooth Frequency")
 
     processAudioWith (GainDb())
         .withLabel ("Default Frequency")
+        .withDuration (std::max (defaultRenderDuration, 100_ms))
         .withInputSignal (Sawtooth())
         .expectTrue (PeaksAt (0_dB))
         .expectTrue (FundamentalEquals (1000_Hz))
@@ -200,6 +203,7 @@ HART_TEST ("Signal - Sawtooth Frequency")
 
     processAudioWith (GainDb())
         .withLabel ("Arbitrary Frequency")
+        .withDuration (std::max (defaultRenderDuration, 100_ms))
         .withInputSignal (Sawtooth (440_Hz))
         .expectTrue (PeaksAt (0_dB))
         .expectTrue (FundamentalEquals (440_Hz))
@@ -304,6 +308,7 @@ HART_TEST ("Signal - SignalFunction")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
     using hart::Loop;
+    const double defaultRenderDuration = hart::CLIConfig::getInstance().getDefaultRenderDurationSeconds();
 
     // 1. Looping signal
     auto nyquistSignal = SignalFunction (
@@ -323,6 +328,7 @@ HART_TEST ("Signal - SignalFunction")
     constexpr double sampleRateHz = 44.1_kHz;
     processAudioWith (GainDb (0_dB))
         .withLabel ("Nyquist signal")
+        .withDuration (std::max (defaultRenderDuration, 100_ms))
         .withInputSignal (nyquistSignal)
         .withSampleRate (sampleRateHz)
         .inStereo()
