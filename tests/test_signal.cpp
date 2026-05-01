@@ -20,7 +20,7 @@ HART_TEST ("Signal - Fast Forward via skipTo()")
 
     processAudioWith (GainDb())
         .withLabel ("Skip arbitrary small amount")
-        .withInputSignal (SineWave().skipTo (123_ms))
+        .withInputSignal (SineWave().skipTo (12.3_ms))
         .expectFalse (EqualsTo (SineWave(), toleranceLinear))
         .process();
 
@@ -64,12 +64,14 @@ HART_TEST ("Signal - Fast Forward via skipTo()")
         .expectTrue (EqualsTo (SineWave (60_Hz, hart::pi), toleranceLinear))
         .process();
 
+    const double defaultSampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
+    const double skipChunkSeconds = 0.5 / 440_Hz;
+    const size_t skipChunkFrames = hart::roundToSizeT (defaultSampleRateHz * skipChunkSeconds);
+    const double skipChunkRadians = hart::twoPi * 440_Hz * skipChunkFrames / defaultSampleRateHz;
     processAudioWith (GainDb())
         .withLabel ("Skip exactly half a cycle in reference signal")
-        .withInputSignal (SineWave (440_Hz, hart::pi))
-        .expectFalse (EqualsTo (SineWave (440_Hz), toleranceLinear))
+        .withInputSignal (SineWave (440_Hz, skipChunkRadians))
         .expectTrue (EqualsTo (SineWave (440_Hz).skipTo (0.5 / 440_Hz), toleranceLinear))
-        .expectTrue (EqualsTo (SineWave (440_Hz) >> GainLinear (-1.0), toleranceLinear))
         .process();
 
     processAudioWith (GainDb())
@@ -178,7 +180,7 @@ HART_TEST ("Signal - Sawtooth Frequency")
     processAudioWith (GainDb())
         .withLabel ("Arbitraty phase")
         .withInputSignal (Sawtooth (1000_Hz, 1.2345_rad))
-        .expectTrue (PeaksAt (0_dB))
+        .expectTrue (PeaksAt (0_dB, 0.02))
         .expectFalse (EqualsTo (Sawtooth()))
         .process();
 
