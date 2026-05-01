@@ -266,17 +266,7 @@ See `AudioTestBuilder` class documentation for the full list of options you can 
 
 # Setting up the audio
 
-What about the sample rate? Or the block size? I'm glad you asked! We didn't set those up earlier, because we were using a default configuration, which is:
-
-Parameter       | Value
-----------------|-------
-Sample Rate     | 44100 Hz
-Block Size      | 1024 frames
-Duration        | 100 ms
-Input Channels  | 1 (mono)
-Output Channels | 1 (mono)
-
-If you're looking for something different, you can change those like so:
+What about the sample rate? Or the block size? I'm glad you asked! We didn't set those up earlier, because we were using a default configuration. If you're looking for something specific in a given test case, you can change those like so:
 
 ```cpp
 hart::processAudioWith (MyDSPWrapper())
@@ -293,15 +283,17 @@ hart::processAudioWith (MyDSPWrapper())
     .process();
 ```
 
-For channel configurations, you can use some handy aliases:
- * `inMono()` - sets both input and output to mono
- * `inStereo()` - sets both input and output to stereo
- * `withStereoInput()`
- * `withStereoOutput()`
- * `withMonoInput()`
- * `withMonoOutput()`
-
 You can skip any parameters that don't care about (keeping them at their default values), and only set the specific ones. For more details, check @ref hart::AudioTestBuilder methods.
+
+HART also gives you an ability to override the defaults globally via respective CLI options. So you can, for instance, write tests once, without setting `withSampleRate (someSampleRateHz)` explicitly, and then run the test suite a few times with different `--sample-rate` options, ensuring all the tests pass at desired sample rates, without over-complicating test case logic by wrapping them in a bunch of `for`-loops. Here's all you need to know about those parameters:
+
+Parameter       | Default Value | CLI Default Override | Test-local override
+----------------|---------------|----------------------|----------------------
+Sample Rate     | 44100 Hz      | `--sample-rate`      | `withSampleRate()`
+Block Size      | 1024 frames   | `--block-size`       | `withBlockSize()`
+Duration        | 100 ms        | `--render-duration`  | `withDuration()`
+Input Channels  | 1 (mono)      | `--input-channels`   | `withInputChannels()`, `withMonoInput()`, `withStereoInput()`, `inMono()`, `inStereo()`
+Output Channels | 1 (mono)      | `--output-channels`  | `withInOutputChannels()`, `withMonoOutput()`, `withStereoOutput()`, `inMono()`, `inStereo()`
 
 # Logging the audio
 
@@ -481,6 +473,8 @@ To run tasks defined with those macros run your HART test binary with a `--run-g
 If you run your test binary with a `--help` CLI argument, it will tell you everything you need to know. Things you can do with it:
 
 * Provide a set of tags, to only run the tasks with those tags
+
+* Override global defaults for sample rate, block size and other audio render parameters
 
 * Set data root path for your relative file paths (like wav files)
 
