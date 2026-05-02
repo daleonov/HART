@@ -488,6 +488,69 @@ If you run your test binary with a `--help` CLI argument, it will tell you every
 
 Someday there will be option for tags and threaded runs as well. Hopefully!
 
+# Running tests at different sample rates, block sizes etc
+
+You probably want to make sure your DSP passes the tests at various sample rates, block sizes, channel configurations etc. The best way to do it is:
+
+1. Leave the tests at default, wherever applicable, i. e. don't override settings like sample rate by calling `withSampleRate()` in the test builder. Only override those in test that require those specific settings, for example, regression tests against a wav files with very specific sample rates and durations.
+
+2. Pick the tests that you want to run at different configurations, leveraging tags (see @ref `HART_TEST_WITH_TAGS()`). Or just choose to run the entire test suite for each configuration.
+
+3. Pick a few configurations - either a few arbitrary sample rates, block sizes, durations, channel layout configs, or just a Cartesian product of all possible settings, if your can afford it.
+
+4. Now you can override those settings by running the test binary with specific CLI flags like `--sample-rate`. Make a shell script that launches the test binary with each of selected configurations. It may be a good idea to run them as separate processes, and those test suites are often CPU-bound.
+
+5. Make sure your log files don't clash. Don't forget that besides the usual text console output, your tests may generate plot images and audio files, so you might want to provide a different path for saving those files at each config.
+
+Here's an example of a Powershell script that runs all tests at a few different configurations:
+
+```powershell
+
+$dataDir = "D:/Projects/HART/tests/data/"
+$exe = ".\HART_Tests.exe"
+
+$procs = @()
+
+$procs += Start-Process $exe -ArgumentList @(
+    "-d", $dataDir,
+    "--sample-rate", "96000",
+    "--block-size", "2048",
+    "--render-duration", "0.020",
+    "--input-channels", "1",
+    "--output-channels", "1"
+) -PassThru
+
+$procs += Start-Process $exe -ArgumentList @(
+    "-d", $dataDir,
+    "--sample-rate", "48000",
+    "--block-size", "512",
+    "--render-duration", "0.050",
+    "--input-channels", "2",
+    "--output-channels", "2"
+) -PassThru
+
+$procs += Start-Process $exe -ArgumentList @(
+    "-d", $dataDir,
+    "--sample-rate", "44100",
+    "--block-size", "64",
+    "--render-duration", "0.200",
+    "--input-channels", "2",
+    "--output-channels", "2"
+) -PassThru
+
+$allOk = $true
+
+foreach ($p in $procs) {
+    $p.WaitForExit()
+    if ($p.ExitCode -ne 0) {
+        Write-Host "Process failed with exit code $($p.ExitCode)"
+        $allOk = $false
+    }
+}
+
+if ($allOk) { exit 0 } else { exit 1 }
+```
+
 # Some more test examples
 
-Check `tests` directory for the examples. Is there a better way to document an automated test framework, than to read the tests used by it to test itself?
+See @ref DSPTestingCookbook if you're looking for some test case ideas. Also, check `tests` directory for the examples. Is there a better way to document an automated test framework, than to read the tests used by it to test itself?
