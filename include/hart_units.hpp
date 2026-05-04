@@ -21,6 +21,8 @@ constexpr double operator"" _ms (long double val) { return static_cast<double> (
 constexpr double operator"" _ms (unsigned long long int val) { return static_cast<double> (1e-3 * val); }
 constexpr double operator"" _us (long double val) { return static_cast<double> (1e-6 * val); }
 constexpr double operator"" _us (unsigned long long int val) { return static_cast<double> (1e-6 * val); }
+constexpr double operator"" _ns (long double val) { return static_cast<double> (1e-9 * val); }
+constexpr double operator"" _ns (unsigned long long int val) { return static_cast<double> (1e-9 * val); }
 constexpr double operator"" _dB (long double val) { return static_cast<double> (val); }
 constexpr double operator"" _dB (unsigned long long int val) { return static_cast<double> (val); }
 constexpr double operator"" _dBTP (long double val) { return static_cast<double> (val); }
