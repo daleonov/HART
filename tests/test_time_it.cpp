@@ -13,7 +13,7 @@ HART_TEST ("TimeIt")
     DSPRenderTimeMock dspRenderTimeMock (timeToRenderEachSampleSeconds);
 
     // 1. Rendering in one go
-    HART_TIME_IT (timeItRenderWholeBuffer, 200)
+    HART_TIME_IT (timeItRenderWholeBuffer, 1000)
     {
         mockBuffer.processWith (dspRenderTimeMock);
     }
@@ -25,7 +25,7 @@ HART_TEST ("TimeIt")
     HART_EXPECT_LT (p95ObservedRenderTimeSeconds, 2 * expectedRenderTimeSeconds);
 
     // 2. Rendering block-by-block
-    HART_TIME_IT (timeItRenderBlockWise, 200)
+    HART_TIME_IT (timeItRenderBlockWise, 1000)
     {
         mockBuffer.processWith (dspRenderTimeMock, blockSizeFrames);
     }
