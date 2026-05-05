@@ -32,6 +32,7 @@ set(HART_TEST_SOURCES
         tests/test_reducers.cpp
         tests/test_signal.cpp
         tests/test_sine_sweep.cpp
+        tests/test_time_it.cpp
     )
 
 option(HART_BUILD_TESTS "Build HART tests" ON)
