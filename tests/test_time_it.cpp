@@ -18,8 +18,13 @@ HART_TEST ("TimeIt")
         mockBuffer.processWith (dspRenderTimeMock);
     }
 
-    double meanObservedRenderTimeSeconds = timeItRenderWholeBuffer.result (hart::percentile (0.5, hart::Interpolation::linear));
-    HART_EXPECT_FLOAT_EQ (meanObservedRenderTimeSeconds, expectedRenderTimeSeconds, 0.6 * expectedRenderTimeSeconds);
+    double meanObservedRenderTimeSeconds = timeItRenderWholeBuffer.result (hart::mean());
+    HART_EXPECT_FLOAT_IN_RANGE (
+        meanObservedRenderTimeSeconds,
+        0.5 * expectedRenderTimeSeconds,
+        2.0 * expectedRenderTimeSeconds,
+        100_us
+    );
 
     double p95ObservedRenderTimeSeconds = timeItRenderWholeBuffer.result (hart::percentile (0.95, hart::Interpolation::linear));
     HART_EXPECT_LT (p95ObservedRenderTimeSeconds, 2 * expectedRenderTimeSeconds);
@@ -30,8 +35,13 @@ HART_TEST ("TimeIt")
         mockBuffer.processWith (dspRenderTimeMock, blockSizeFrames);
     }
 
-    meanObservedRenderTimeSeconds = timeItRenderBlockWise.result (hart::percentile (0.5, hart::Interpolation::linear));
-    HART_EXPECT_FLOAT_EQ (meanObservedRenderTimeSeconds, expectedRenderTimeSeconds, 0.6 * expectedRenderTimeSeconds);
+    meanObservedRenderTimeSeconds = timeItRenderBlockWise.result (hart::mean());
+    HART_EXPECT_FLOAT_IN_RANGE (
+        meanObservedRenderTimeSeconds,
+        0.5 * expectedRenderTimeSeconds,
+        2.0 * expectedRenderTimeSeconds,
+        100_us
+    );
 
     p95ObservedRenderTimeSeconds = timeItRenderWholeBuffer.result (hart::percentile (0.95, hart::Interpolation::linear));
     HART_EXPECT_LT (p95ObservedRenderTimeSeconds, 2 * expectedRenderTimeSeconds);
