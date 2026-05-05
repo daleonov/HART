@@ -7,7 +7,7 @@
 
 #include "hart_accurate_sum.hpp"
 #include "hart_exceptions.hpp"
-#include "hart_utils.hpp"  // nan(), floatsNotEqual()
+#include "hart_utils.hpp"  // nan(), floatsNotEqual(), Interpolation
 
 namespace hart
 {
@@ -256,6 +256,69 @@ struct nth
     }
 private:
     const size_t n_targetIndex; 
+};
+
+/// @brief Returns the percentile value
+/// @param quantile Quantile value, in 0..1 range
+/// @param interpolation Type of interpolation, nearest or linear
+struct percentile
+{
+    percentile (double quantile, Interpolation interpolation = Interpolation::nearest) :
+        m_quantile (quantile),
+        m_interpolation (interpolation)
+    {
+    }
+
+    template <typename IteratorType>
+    auto operator() (IteratorType begin, IteratorType end) const
+        -> IteratedValueType<IteratorType>
+    {
+        hassert (m_interpolation == Interpolation::nearest || m_interpolation == Interpolation::linear)
+
+        using ValueType = IteratedValueType<IteratorType>;
+
+        if (m_quantile < 0 || m_quantile > 1)
+            HART_THROW_OR_RETURN (hart::ValueError, "Quantile value should be in 0..1 range", hart::nan<ValueType>());
+
+        if (begin == end)
+            HART_THROW_OR_RETURN (hart::SizeError, "The range is empty", hart::nan<ValueType>());
+
+        const size_t n = static_cast<size_t> (std::distance (begin, end));
+        std::vector<ValueType> data (begin, end);
+
+        if (m_interpolation == Interpolation::nearest)
+        {
+            // Nearest-rank method, get an actual observed value
+            const size_t index = static_cast<size_t> (std::ceil (m_quantile * (n - 1)));
+
+            std::nth_element (data.begin(), data.begin() + index, data.end());
+            return data[index];
+        }
+        else
+        {
+            // Assuming Interpolation::linear
+            // Get a value with a fractional index
+            const double pos = m_quantile * (n - 1);
+            const size_t i0 = static_cast<size_t> (std::floor (pos));
+            const size_t i1 = static_cast<size_t> (std::ceil (pos));
+            const double t = pos - i0;
+
+            std::nth_element (data.begin(), data.begin() + i0, data.end());
+            const ValueType v0 = data[i0];
+
+            if (i0 == i1)
+                return v0;
+
+            std::nth_element (data.begin(), data.begin() + i1, data.end());
+            const ValueType v1 = data[i1];
+
+            return (v0 + (v1 - v0) * static_cast<ValueType> (t));
+        }
+    }
+
+private:
+    const double m_quantile;
+    const Interpolation m_interpolation;
 };
 
 /// @brief Returns the sum of all elements in the range

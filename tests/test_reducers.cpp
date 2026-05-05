@@ -24,6 +24,79 @@ HART_TEST ("Reducers - First and last")
     HART_EXPECT_TRUE (last() (values.begin(), values.end()) == 2.0);
 }
 
+HART_TEST ("Reducers - Percentile")
+{
+    using hart::percentile;
+    using hart::Interpolation;
+
+    const std::vector<double> values { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
+
+    // Nearest (default)
+
+    // median (q = 0.5)
+    // pos = 0.5 * (10 - 1) = 4.5 
+    // ceil (pos) = 5 => value = 6
+    HART_EXPECT_FLOAT_EQ (
+        percentile (0.5) (values.begin(), values.end()),
+        6.0,
+        1e-12
+    );
+
+    // p95 (q = 0.95)
+    // pos = 0.95 * 9 = 8.55
+    // ceil (pos) = 9 => value = 10
+    HART_EXPECT_FLOAT_EQ (
+        percentile (0.95) (values.begin(), values.end()),
+        10.0,
+        1e-12
+    );
+
+    // p99 (q = 0.99)
+    // pos = 0.99 * 9 = 8.91
+    // ceil (pos) = 9 => value = 10
+    HART_EXPECT_FLOAT_EQ (
+        percentile (0.99) (values.begin(), values.end()),
+        10.0,
+        1e-12
+    );
+
+    // Linear interpolation
+
+    // median (q = 0.5)
+    // pos = 4.5 => interpolate between 5 and 6 => 5.5
+    HART_EXPECT_FLOAT_EQ (
+        percentile (0.5, Interpolation::linear) (values.begin(), values.end()),
+        5.5,
+        1e-12
+    );
+
+    // p95 (q = 0.95)
+    // pos = 8.55 => between 9 and 10
+    // value = 9 + 0.55 * (10 - 9) = 9.55
+    HART_EXPECT_FLOAT_EQ (
+        percentile (0.95, Interpolation::linear) (values.begin(), values.end()),
+        9.55,
+        1e-12
+    );
+
+    // p99 (q = 0.99)
+    // pos = 8.91 => between 9 and 10
+    // value = 9 + 0.91 = 9.91
+    HART_EXPECT_FLOAT_EQ (
+        percentile (0.99, Interpolation::linear) (values.begin(), values.end()),
+        9.91,
+        1e-12
+    );
+
+    // Sanity check - ordering relations
+    const double median = percentile (0.5) (values.begin(), values.end());
+    const double p95 = percentile (0.95) (values.begin(), values.end());
+    const double p99 = percentile (0.99) (values.begin(), values.end());
+
+    HART_EXPECT_LE (median, p95);
+    HART_EXPECT_LE (p95, p99);
+}
+
 HART_TEST ("Reducers - Numeric")
 {
     using hart::floatsEqual;
