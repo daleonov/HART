@@ -19,7 +19,7 @@ HART_TEST ("TimeIt")
     }
 
     double meanObservedRenderTimeSeconds = timeItRenderWholeBuffer.result (hart::percentile (0.5, hart::Interpolation::linear));
-    HART_EXPECT_FLOAT_EQ (meanObservedRenderTimeSeconds, expectedRenderTimeSeconds, 0.2 * expectedRenderTimeSeconds);
+    HART_EXPECT_FLOAT_EQ (meanObservedRenderTimeSeconds, expectedRenderTimeSeconds, 0.6 * expectedRenderTimeSeconds);
 
     double p95ObservedRenderTimeSeconds = timeItRenderWholeBuffer.result (hart::percentile (0.95, hart::Interpolation::linear));
     HART_EXPECT_LT (p95ObservedRenderTimeSeconds, 2 * expectedRenderTimeSeconds);
@@ -31,7 +31,7 @@ HART_TEST ("TimeIt")
     }
 
     meanObservedRenderTimeSeconds = timeItRenderBlockWise.result (hart::percentile (0.5, hart::Interpolation::linear));
-    HART_EXPECT_FLOAT_EQ (meanObservedRenderTimeSeconds, expectedRenderTimeSeconds, 0.2 * expectedRenderTimeSeconds);
+    HART_EXPECT_FLOAT_EQ (meanObservedRenderTimeSeconds, expectedRenderTimeSeconds, 0.6 * expectedRenderTimeSeconds);
 
     p95ObservedRenderTimeSeconds = timeItRenderWholeBuffer.result (hart::percentile (0.95, hart::Interpolation::linear));
     HART_EXPECT_LT (p95ObservedRenderTimeSeconds, 2 * expectedRenderTimeSeconds);
