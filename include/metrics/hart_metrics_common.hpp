@@ -1,6 +1,9 @@
 #pragma once
 
 #include <algorithm>  // min()
+#include <vector>
+
+#include "hart_audio_buffer.hpp"
 
 namespace hart
 {
