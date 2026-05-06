@@ -9,6 +9,15 @@
 /// @brief Better readability
 /// @{
 
+/// @brief Represents a physical unit
+/// @note New units may be introduced here, whenever necessary
+enum Unit
+{
+    native,  ///< Default (native) unit of whatever returns some value 
+    linear,  ///< Value of a sample (voltage) in a linear domain
+    dB   ///< Value os something in decibels. Can represent voltage, power, or a domain-specific unit like "LUFS" or "dB TP"
+};
+
 constexpr double inf_dB = hart::inf;
 constexpr double oo_dB = hart::inf;
 constexpr double pi_rad = hart::pi;
