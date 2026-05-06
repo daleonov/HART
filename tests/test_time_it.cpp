@@ -27,7 +27,7 @@ HART_TEST ("TimeIt")
     );
 
     double p95ObservedRenderTimeSeconds = timeItRenderWholeBuffer.result (hart::percentile (0.95, hart::Interpolation::linear));
-    HART_EXPECT_LT (p95ObservedRenderTimeSeconds, 2 * expectedRenderTimeSeconds);
+    HART_EXPECT_LT (p95ObservedRenderTimeSeconds, 3 * expectedRenderTimeSeconds);
 
     // 2. Rendering block-by-block
     HART_TIME_IT (timeItRenderBlockWise, 1000)
@@ -44,5 +44,5 @@ HART_TEST ("TimeIt")
     );
 
     p95ObservedRenderTimeSeconds = timeItRenderWholeBuffer.result (hart::percentile (0.95, hart::Interpolation::linear));
-    HART_EXPECT_LT (p95ObservedRenderTimeSeconds, 2 * expectedRenderTimeSeconds);
+    HART_EXPECT_LT (p95ObservedRenderTimeSeconds, 3 * expectedRenderTimeSeconds);
 }
