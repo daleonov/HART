@@ -3,6 +3,7 @@
 #include "hart_accurate_sum.hpp"
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
+#include "hart_metric_query.hpp"
 #include "hart_utils.hpp"  // nan()
 
 namespace hart
@@ -37,46 +38,59 @@ namespace hart
 /// @throws hart::IndexError if either channel index is out of bounds
 /// @ingroup Metrics
 template <typename SampleType>
-double channelCorrelation (const AudioBuffer<SampleType>& buffer, size_t channelA = 0, size_t channelB = 1)
+MetricQuery<double>  channelCorrelation (const AudioBuffer<SampleType>& buffer, size_t channelA = 0, size_t channelB = 1)
 {
-    const double nan = hart::nan<double>();
-
-    if (channelA >= buffer.getNumChannels())
-        HART_THROW_OR_RETURN (hart::IndexError, "Channel A index is out of bounds", nan);
-
-    if (channelB >= buffer.getNumChannels())
-        HART_THROW_OR_RETURN (hart::IndexError, "Channel B index is out of bounds", nan);
-
-    if (buffer.getNumFrames() == 0)
-        return nan;
-
-    // If channel A and B point to the same channel, we still want to go through the whole thing,
-    // as it can be either 1.0 or NaN depending on the contents
-
-    const size_t numFrames = buffer.getNumFrames();
-    const SampleType* channelAData = buffer[channelA];
-    const SampleType* channelBData = buffer[channelB];
-
-    AccurateSum<double> dotProduct { 0.0 };
-    AccurateSum<double> sumSqChannelA { 0.0 };
-    AccurateSum<double> sumSqChannelB { 0.0 };
-
-    for (size_t frame = 0; frame < numFrames; ++frame)
+    typename MetricQuery<double>::MetricEvaluator evaluator =
+        [&buffer, channelA, channelB]
+        (size_t /* channel */, size_t sliceStart, size_t sliceStop, Unit requestedUnit)
+        -> double
     {
-        const double channelAValue = static_cast<double> (channelAData[frame]);
-        const double channelBValue = static_cast<double> (channelBData[frame]);
+        // Those cases are expected be handled by MetricQuery
+        hassert (sliceStart < sliceStop);
+        hassert (sliceStop <= buffer.getNumFrames());
 
-        dotProduct += channelAValue * channelBValue;
-        sumSqChannelA += channelAValue * channelAValue;
-        sumSqChannelB += channelBValue * channelBValue;
-    }
+        const double nan = hart::nan<double>();
 
-    if (floatsEqual<double> (sumSqChannelA, 0.0) || floatsEqual<double> (sumSqChannelB, 0.0))
-    {
-        return nan;
-    }
+        if (channelA >= buffer.getNumChannels())
+            HART_THROW_OR_RETURN (hart::IndexError, "Channel A index is out of bounds", nan);
 
-    return dotProduct / std::sqrt (sumSqChannelA * sumSqChannelB);
+        if (channelB >= buffer.getNumChannels())
+            HART_THROW_OR_RETURN (hart::IndexError, "Channel B index is out of bounds", nan);
+
+        if (requestedUnit != Unit::native && requestedUnit != Unit::none)
+            HART_THROW_OR_RETURN (hart::UnitError, "Channel correlation cannot be calculated in a requested unit", nan);
+
+        // If channel A and B point to the same channel, we still want to go through the whole thing,
+        // as it can be either 1.0 or NaN depending on the contents
+
+        const SampleType* channelAData = buffer[channelA];
+        const SampleType* channelBData = buffer[channelB];
+
+        AccurateSum<double> dotProduct { 0.0 };
+        AccurateSum<double> sumSqChannelA { 0.0 };
+        AccurateSum<double> sumSqChannelB { 0.0 };
+
+        for (size_t frame = sliceStart; frame < sliceStop; ++frame)
+        {
+            const double channelAValue = static_cast<double> (channelAData[frame]);
+            const double channelBValue = static_cast<double> (channelBData[frame]);
+
+            dotProduct += channelAValue * channelBValue;
+            sumSqChannelA += channelAValue * channelAValue;
+            sumSqChannelB += channelBValue * channelBValue;
+        }
+
+        if (floatsEqual<double> (sumSqChannelA, 0.0) || floatsEqual<double> (sumSqChannelB, 0.0))
+            return nan;
+
+        return dotProduct / std::sqrt (sumSqChannelA * sumSqChannelB);
+    };
+
+    return MetricQuery<double> (
+        std::move (evaluator),
+        1,  // This metric is not per-channel, so only needs to be called once
+        buffer.getNumFrames()
+    );
 }
 
 }  // namespace hart
