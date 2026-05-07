@@ -14,17 +14,17 @@ namespace hart
 /// @details This object is meant to be created by metric functions, see @ref Metrics.
 /// Usage examples:
 /// @code
-/// const double resultA = peakLinear (monoBuffer);  // Default unit, implicit cast to double
-/// const double resultB = peakLinear (monoBuffer).get();  // Default unit, explicit getter
-/// const double resultC = peakLinear (monoBuffer).as (dB);  // Request to calculate in dB
-/// const double resultD = peakLinear (monoBuffer).as (linear);  // Request to calculate in linear domain (as voltage, not dB)
-/// const double resultE = peakLinear (monoBuffer).as (native);  // Request to calculate in metric's native unit
-/// const double resultF = peakLinear (monoBuffer).slice (100, 200).get();  // Peak, observed between 100th (inclusive) and 200th (non-inclusive) frames
-/// const double resultG = peakLinear (multiChannelBuffer).as (dB).get (max());  // Get peak of the loudest channel, in dB
-/// const double resultH = peakLinear (multiChannelBuffer).as (linear).get (nth (4));  // Get peak of the 4th channel (zero-based), as a linear value
-/// const double resultI = peakLinear (multiChannelBuffer).ch ({3, 0, 5}).get (max ());  // Peak, calculated only for channels 3, 0 and 5, max value (requested order of channels will be preserved for order-sensitive reducers)
-/// const size_t resultJ = peakLinear (multiChannelBuffer).get (argmax());  // Get the index of the loudest channel
-/// const vector<double> resultK = peakLinear (multiChannelBuffer).as (dB).get (collect());  // Get vector of per-channel peak values in dB
+/// const double resultA = samplePeak (monoBuffer);  // Default unit, implicit cast to double
+/// const double resultB = samplePeak (monoBuffer).get();  // Default unit, explicit getter
+/// const double resultC = samplePeak (monoBuffer).as (dB);  // Request to calculate in dB
+/// const double resultD = samplePeak (monoBuffer).as (linear);  // Request to calculate in linear domain (as voltage, not dB)
+/// const double resultE = samplePeak (monoBuffer).as (native);  // Request to calculate in metric's native unit
+/// const double resultF = samplePeak (monoBuffer).slice (100, 200).get();  // Peak, observed between 100th (inclusive) and 200th (non-inclusive) frames
+/// const double resultG = samplePeak (multiChannelBuffer).as (dB).get (max());  // Get peak of the loudest channel, in dB
+/// const double resultH = samplePeak (multiChannelBuffer).as (linear).get (nth (4));  // Get peak of the 4th channel (zero-based), as a linear value
+/// const double resultI = samplePeak (multiChannelBuffer).ch ({3, 0, 5}).get (max ());  // Peak, calculated only for channels 3, 0 and 5, max value (requested order of channels will be preserved for order-sensitive reducers)
+/// const size_t resultJ = samplePeak (multiChannelBuffer).get (argmax());  // Get the index of the loudest channel
+/// const vector<double> resultK = samplePeak (multiChannelBuffer).as (dB).get (collect());  // Get vector of per-channel peak values in dB
 /// @endcode
 /// If you create your own metric functions, it's strongly encouraged for them to return this class instance,
 /// rather that just a POD value, as this class handles multi-channel setups, slices etc.

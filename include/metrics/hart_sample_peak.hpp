@@ -12,13 +12,13 @@ namespace hart
 {
 
 /// @brief Calculates Sample Peak of an audio buffer
-/// @details Calculates rectified peak values for each channel, use a reducer to
+/// @details Calculates rectified peak values for each channel. Use a reducer to
 /// get a scalar value (see @ref Reducers). Supports `Unit::linear` (default) and
 /// `Unit::dB` units. Usage example:
 /// @code
-/// HART_EXPECT_FLOAT_EQ (samplePeak (monoBuffer).as (dB).get(), -3_dB, 1e-2);
-/// HART_EXPECT_LT (samplePeak (monoBuffer).as (linear).get(), 1.0, 1e-3);
-/// HART_EXPECT_LT (samplePeak (stereoBuffer).as (dB).get (max()), -3_dB);
+/// HART_EXPECT_FLOAT_EQ (samplePeak (monoBuffer).as (dB).get(), -3_dB, 1e-2) << "Peaks below 3 dB";
+/// HART_EXPECT_LT (samplePeak (monoBuffer).as (linear).get(), 1.0, 1e-3) << "Peaks below unity gain (in linear domain)";
+/// HART_EXPECT_LT (samplePeak (stereoBuffer).as (dB).get (max()), -3_dB) << "Loudest channel peaks below 3 dB";
 /// @endcode
 /// @note It doesn't estimate inter-sample peaks. For true (inter-sample) peaks,
 /// consider using the `hart::TruePeaksBelow` matcher.
