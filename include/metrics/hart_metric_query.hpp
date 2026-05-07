@@ -2,8 +2,10 @@
 
 #include <functional>
 #include <initializer_list>
+#include <utility>  // pair
 
 #include "metrics/hart_metrics_common.hpp"  // ReducerResultType
+#include "hart_exceptions.hpp"
 #include "hart_reducers.hpp"  // first
 #include "hart_units.hpp"  // Unit
 #include "hart_utils.hpp"  // make_unique()
@@ -39,27 +41,68 @@ public:
     ///  - `channel` - number of channel to calculate metric (for metrics that operate per channel), see `ch()`
     ///  - `sliceStart`, `sliceStop` - the range of data to calculate the metric on, see `slice()`
     ///  - `requestedUnit` - the unit that the metric should be calculated in, see `as()`
-    using MetricEvaluator = std::function<ValueType (size_t channel, size_t sliceStart, size_t sliceStop, Unit requestedUnit)>;
+    using SingleChannelMetricEvaluator = std::function<ValueType (size_t channel, size_t sliceStart, size_t sliceStop, Unit requestedUnit)>;
 
-    /// @brief Create a metric query object
+    /// @brief A lambda function (or a callable object) that calculates a specific metric for a given pair of channels
+    /// @details Arguments:
+    ///  - `channelA` - number of left-hand-side channel to calculate metric (for metrics that operate per channel), see `ch()`
+    ///  - `channelB` - number of right-hand-side channel to calculate metric (for metrics that operate per channel), see `ch()`
+    ///  - `sliceStart`, `sliceStop` - the range of data to calculate the metric on, see `slice()`
+    ///  - `requestedUnit` - the unit that the metric should be calculated in, see `as()`
+    using ChannelPairMetricEvaluator = std::function<ValueType (size_t channelA, size_t channelB, size_t sliceStart, size_t sliceStop, Unit requestedUnit)>;
+
+    /// @brief Create a metric query object for a metric that operates on one channel at a time
     /// @details This ctor in meant to be invoked by the metric functions,
     /// as they return an object of this type.
     /// @param evaluator A callable object that calculates a specific metric, created by the metric function
     /// @param totalNumChannels Total number of channels in the received AudioBuffer or other container, observed by the metric function
     /// @param totalLength Total length of the container (for one channel) passed to the metric function, observed by the metric function.
-    /// For inctance, number of frames in an AudioBuffer, or number of bins in a Spectrum, per one channel.
+    /// For instance, number of frames in an AudioBuffer, or number of bins in a Spectrum, per one channel.
+    /// @param defaultChannelsToProcess Subset of channels to process by default, if `ch()` wasn't called.
     MetricQuery (
-        MetricEvaluator evaluator,
+        SingleChannelMetricEvaluator evaluator,
         size_t totalNumChannels,
-        size_t totalLength
+        size_t totalLength,
+        std::vector<size_t>&& defaultChannelsToProcess
         )
     {
         m_query = hart::make_unique<Query>();
-        m_query->evaluator = std::move (evaluator);
-        m_query->totalNumChannels = totalNumChannels;
+        m_query->singleChannelMetricEvaluator = std::move (evaluator);
+        m_query->totalNumChannelsA = totalNumChannels;
+        m_query->totalNumChannelsB = 0;
         m_query->sliceStart = 0;
         m_query->sliceStop = totalLength;
         m_query->requestedUnit = Unit::native;
+        m_query->channels = std::move (defaultChannelsToProcess);
+    }
+
+    /// @brief Create a metric query object for a metric that operates on pair of channels at a time
+    /// @details This ctor in meant to be invoked by the metric functions,
+    /// as they return an object of this type.
+    /// @param evaluator A callable object that calculates a specific metric, created by the metric function
+    /// @param totalNumChannelsA Total number of channels in the received left-hand-side AudioBuffer or other container, observed by the metric function
+    /// @param totalNumChannelsB Total number of channels in the received right-hand-side AudioBuffer or other container, observed by the metric function.
+    /// If metric requires pairs of channels, but operates on a single container, it's expected to be equal to totalNumChannelsA.
+    /// @param totalLength Total length of the container (for one channel) passed to the metric function, observed by the metric function.
+    /// For instance, number of frames in an AudioBuffer, or number of bins in a Spectrum, per one channel.
+    /// Left-hand-side and right-hand-side containers are typically expected to be equal in size (per each channel).
+    /// @param defaultChannelPairsToProcess Subset of channel pairs to process by default, if `ch()` wasn't called.
+    MetricQuery (
+        ChannelPairMetricEvaluator evaluator,
+        size_t totalNumChannelsA,
+        size_t totalNumChannelsB,
+        size_t totalLength,
+        std::vector<std::pair<size_t, size_t>>&& defaultChannelPairsToProcess
+        )
+    {
+        m_query = hart::make_unique<Query>();
+        m_query->channelPairMetricEvaluator = std::move (evaluator);
+        m_query->totalNumChannelsA = totalNumChannelsA;
+        m_query->totalNumChannelsB = totalNumChannelsB;
+        m_query->sliceStart = 0;
+        m_query->sliceStop = totalLength;
+        m_query->requestedUnit = Unit::native;
+        m_query->channelPairs = std::move (defaultChannelPairsToProcess);
     }
 
     /// @brief Requests the metric to return its value(s) in a certain unit
@@ -76,16 +119,53 @@ public:
     }
 
     /// @brief Requests the metric to be applied to certain channels.
+    /// @details If this method is not called, the channel subset will be
+    /// defined by a specific metric.
     /// @param channels List of zero-based channel indices to measure. You may
     /// use values from @ref hart::Channel or @ref hart::MidSideChannel where
     /// appropriate. The order of values handed to the reducer matches the order
-    /// of channel indices in `channels`, or natural channel order if `channels`
-    /// is empty. Passing an empty list to this method will enable all the channels
+    /// of channel indices in `channels`.
     MetricQuery ch (std::initializer_list<size_t> channels) const
     {
         MetricQuery copy (*this);
         copy.m_query = hart::make_unique<Query> (*m_query);
-        copy.m_query->channels.assign (channels.begin(), channels.end());
+
+        if (getEvaluatorType() == EvaluatorType::singleChannels)
+        {
+            copy.m_query->channels.clear();
+            copy.m_query->channels.reserve (channels.size());
+            copy.m_query->channels.assign (channels.begin(), channels.end());
+        }
+        else
+        {
+            copy.m_query->channelPairs.clear();
+            copy.m_query->channelPairs.reserve (channels.size());
+
+            for (const size_t channel : channels)
+                copy.m_query->channelPairs.emplace_back (channel, channel);
+        }
+
+        return copy;
+    }
+
+    /// @brief Requests the metric to be applied to certain channel pairs.
+    /// @details If this method is not called, the channel pair subset will
+    /// be defined by a specific metric.
+    /// @param channels List of pairs of zero-based channel indices to measure.
+    /// You may use values from @ref hart::Channel or @ref hart::MidSideChannel
+    /// wherever appropriate. The order of values handed to the reducer matches
+    /// the order of channel indices in `channels`.
+    MetricQuery ch (std::initializer_list<std::pair<size_t, size_t>> channels) const
+    {
+        MetricQuery copy (*this);
+        copy.m_query = hart::make_unique<Query> (*m_query);
+
+        if (getEvaluatorType() == EvaluatorType::singleChannels)
+            HART_THROW_OR_RETURN (hart::UnsupportedError, "The metric does not support channel pairs", copy);
+
+        copy.m_query->channelPairs.clear();
+        copy.m_query->channels.reserve (channels.size());
+        copy.m_query->channelPairs.assign (channels.begin(), channels.end());
         return copy;
     }
 
@@ -118,7 +198,7 @@ public:
     /// metric values
     template <typename ReducerType>
     auto get (ReducerType reducer) const
-        -> ReducerResultType<ReducerType, std::vector<double>::const_iterator>
+        -> ReducerResultType<ReducerType, std::vector<ValueType>::const_iterator>
     {
         ensureCache();
         return reducer (m_query->cachedValues.begin(), m_query->cachedValues.end());
@@ -147,15 +227,45 @@ public:
 private:
     struct Query
     {
-        MetricEvaluator evaluator;
+        SingleChannelMetricEvaluator singleChannelMetricEvaluator = nullptr;
+        ChannelPairMetricEvaluator channelPairMetricEvaluator = nullptr;
         std::vector<size_t> channels;
-        size_t totalNumChannels = 0;
-        int64_t sliceStart = 0;
-        int64_t sliceStop = 0;
+        std::vector<std::pair<size_t, size_t>> channelPairs;
+        size_t totalNumChannelsA = 0;
+        size_t totalNumChannelsB = 0;
+        size_t sliceStart = 0;
+        size_t sliceStop = 0;
         Unit requestedUnit = Unit::native;
         mutable bool cacheValid = false;
         mutable std::vector<ValueType> cachedValues;
     };
+
+    enum class EvaluatorType
+    {
+        singleChannels,
+        channelPairs,
+        none
+    };
+
+    EvaluatorType getEvaluatorType() const
+    {
+        hassert (m_query != nullptr);
+
+        if (m_query->singleChannelMetricEvaluator != nullptr)
+        {
+            hassert (m_query->channelPairMetricEvaluator == nullptr);
+            return EvaluatorType::singleChannels;
+        }
+
+        if (m_query->channelPairMetricEvaluator != nullptr)
+        {
+            hassert (m_query->singleChannelMetricEvaluator == nullptr);
+            return EvaluatorType::channelPairs;
+        }
+
+        hassertfalse;  // Unexpected state - both evaluators are empty!
+        return EvaluatorType::none;
+    }
 
     void ensureCache() const
     {
@@ -163,17 +273,27 @@ private:
             return;
 
         if (m_query->sliceStop < m_query->sliceStart)
-            HART_THROW_OR_RETURN_VOID (hart::SizeError, "Requester slice's start is greater than its stop");
+            HART_THROW_OR_RETURN_VOID (hart::SizeError, "Requested slices start is greater than its stop");
 
         m_query->cachedValues.clear();
 
-        for (size_t channel : getChannelIndicesToProcess())
+        if (getEvaluatorType() == EvaluatorType::singleChannels)
+            buildCacheForSingleChannelsEvaluator();
+        else
+            buildCacheForChannelPairsEvaluator();
+
+        m_query->cacheValid = true;
+    }
+
+    void buildCacheForSingleChannelsEvaluator() const
+    {
+        for (size_t channel : m_query->channels)
         {
-            if (channel >= m_query->totalNumChannels)
+            if (channel >= m_query->totalNumChannelsA)
                 HART_THROW_OR_RETURN_VOID (hart::IndexError, "Requested channel index is out of range");
 
             m_query->cachedValues.push_back (
-                m_query->evaluator (
+                m_query->singleChannelMetricEvaluator (
                     channel,
                     m_query->sliceStart,
                     m_query->sliceStop,
@@ -181,21 +301,25 @@ private:
                 )
             );
         }
-
-        m_query->cacheValid = true;
     }
 
-    std::vector<size_t> getChannelIndicesToProcess() const
+    void buildCacheForChannelPairsEvaluator() const
     {
-        if (m_query->channels.size() != 0)
-            return m_query->channels;
+        for (const std::pair<size_t, size_t>& channelPair : m_query->channelPairs)
+        {
+            if (channelPair.first >= m_query->totalNumChannelsA || channelPair.second >= m_query->totalNumChannelsB)
+                HART_THROW_OR_RETURN_VOID (hart::IndexError, "Requested channel index is out of range");
 
-        std::vector<size_t> indices (m_query->totalNumChannels);
-
-        for (size_t i = 0; i < m_query->totalNumChannels; ++i)
-            indices[i] = i;
-
-        return indices;
+            m_query->cachedValues.push_back (
+                m_query->channelPairMetricEvaluator (
+                    channelPair.first,
+                    channelPair.second,
+                    m_query->sliceStart,
+                    m_query->sliceStop,
+                    m_query->requestedUnit
+                )
+            );
+        }
     }
 
     std::shared_ptr<Query> m_query;

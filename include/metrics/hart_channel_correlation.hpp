@@ -1,5 +1,8 @@
 #pragma once
 
+#include <utility>  // pair
+#include <vector>
+
 #include "hart_accurate_sum.hpp"
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
@@ -10,7 +13,34 @@ namespace hart
 {
 
 /// @brief Calculates zero-lag normalized cross-correlation between two channels of an audio buffer
-/// @details
+/// @details Operates per specified pairs of channels, use a reducer to get a scalar value
+/// (see @ref Reducers). If custom channel subset is not specified via `ch()`, defaults to a set of
+/// all unique unordered channel pairs, e.g. `{{0, 1}}` for stereo buffer, or
+/// `{{0, 1}, {0, 2}, {1, 2}, {1, 3}, {2, 3}}` for 3-channel buffer. A specific order of pairs is
+/// not guaranteed, unless you explicitly pass a custom list of channel pairs via `ch()`.
+///
+/// Returns a unitless value, suppoert `Unit::none` and `Unit::native`, which are the same here,
+/// so there's no need to request any unit with a chained `as()` call.
+///
+/// Usage examples
+/// @code
+/// // All defaults - correlation between channels 0 and 1 (left and right)
+/// channelCorrelation (stereoBuffer).get();
+///
+/// // Highest value of three cross-correlations (channels 0 vs 1, 0 vs 2 and 1 vs 3) 
+/// channelCorrelation (multichannelBuffer).ch ({{0, 1}, {0, 2}, {1, 3}}).get (max());
+/// @endcode
+///
+/// Be careful when you want to specify only one channel pair:
+/// @code
+/// // /!\ Resolves to 2 matched channel pairs - 0 vs 0 and 1 vs 1.
+/// // Probably not what you're looking for!
+/// channelCorrelation (stereoBuffer).ch ({0, 1});
+/// 
+/// // Just one pair - 0 vs 1. Note the double curly braces.
+/// channelCorrelation (stereoBuffer).ch ({{0, 1}});
+/// @endcode
+///
 /// Uses the normalized cross-correlation formula:
 /// @f[
 /// \rho = \frac{\sum_n x[n]\,y[n]}
@@ -31,18 +61,17 @@ namespace hart
 /// - the buffer contains zero frames
 ///
 /// @param buffer Input audio buffer
-/// @param channelA Index of the first channel to compare. Defaults to `0` (left channel).
-/// @param channelB Index of the second channel to compare. Defaults to `1` (right channel).
-/// @returns Normalized correlation coefficient, or `NaN` if correlation is undefined
+/// @returns Chainable `MetricQuery`, which calculates normalized correlation coefficient
+/// per pair of channels, or `NaN` if correlation is undefined
 /// @tparam SampleType Floating point sample type, typically `float` or `double`
 /// @throws hart::IndexError if either channel index is out of bounds
 /// @ingroup Metrics
 template <typename SampleType>
-MetricQuery<double>  channelCorrelation (const AudioBuffer<SampleType>& buffer, size_t channelA = 0, size_t channelB = 1)
+MetricQuery<double>  channelCorrelation (const AudioBuffer<SampleType>& buffer)
 {
-    typename MetricQuery<double>::MetricEvaluator evaluator =
-        [&buffer, channelA, channelB]
-        (size_t /* channel */, size_t sliceStart, size_t sliceStop, Unit requestedUnit)
+    typename MetricQuery<double>::ChannelPairMetricEvaluator evaluator =
+        [&buffer]
+        (size_t channelA, size_t channelB, size_t sliceStart, size_t sliceStop, Unit requestedUnit)
         -> double
     {
         // Those cases are expected be handled by MetricQuery
@@ -86,10 +115,20 @@ MetricQuery<double>  channelCorrelation (const AudioBuffer<SampleType>& buffer, 
         return dotProduct / std::sqrt (sumSqChannelA * sumSqChannelB);
     };
 
+    const size_t numChannels = buffer.getNumChannels();
+    std::vector<std::pair<size_t, size_t>> defaultChannelPairsToProcess;
+    defaultChannelPairsToProcess.reserve (numChannels * (numChannels - 1) / 2);
+
+    for (size_t channelA = 0; channelA < numChannels; ++channelA)
+        for (size_t channelB = channelA + 1; channelB < numChannels; ++channelB)
+            defaultChannelPairsToProcess.emplace_back (channelA, channelB);
+
     return MetricQuery<double> (
         std::move (evaluator),
-        1,  // This metric is not per-channel, so only needs to be called once
-        buffer.getNumFrames()
+        numChannels,
+        numChannels,
+        buffer.getNumFrames(),
+        std::move (defaultChannelPairsToProcess)
     );
 }
 

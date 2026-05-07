@@ -29,7 +29,7 @@ namespace hart
 template <typename SampleType>
 MetricQuery<double> samplePeak (const AudioBuffer<SampleType>& audioBuffer)
 {
-    typename MetricQuery<double>::MetricEvaluator evaluator =
+    typename MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
         [&audioBuffer]
         (size_t channel, size_t sliceStart, size_t sliceStop, Unit requestedUnit)
         -> double
@@ -61,10 +61,16 @@ MetricQuery<double> samplePeak (const AudioBuffer<SampleType>& audioBuffer)
         }
     };
 
+    std::vector<size_t> defaultChannelsToProcess (audioBuffer.getNumChannels());
+
+    for (size_t i = 0; i < defaultChannelsToProcess.size(); ++i)
+        defaultChannelsToProcess[i] = i;
+
     return MetricQuery<double> (
         std::move (evaluator),
         audioBuffer.getNumChannels(),
-        audioBuffer.getNumFrames()
+        audioBuffer.getNumFrames(),
+        std::move (defaultChannelsToProcess)
     );
 }
 

@@ -126,12 +126,12 @@ HART_TEST ("Metrics - Channel Correlation")
         .withInputChannels (4)
         .withOutputChannels (4)
         .withInputSignal (std::move (multiChannelSignal))
-        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (channelCorrelation (output, 2, 1).get(), channelCorrelation (output, 1, 2).get(), 1e-8); }, "channelCorrelation() - Channel order does not matter - 1 vs 2")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (channelCorrelation (output, 1, 0).get(), channelCorrelation (output, 0, 1).get(), 1e-8); }, "channelCorrelation() - Channel order does not matter - 0 vs 1")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_LT (channelCorrelation (output, 0, 1).get(), -0.999); }, "channelCorrelation() Channels 0 vs 1")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_LT (std::abs (channelCorrelation (output, 0, 2)), 0.5); }, "channelCorrelation() - Channels 0 vs 2")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_LT (std::abs (channelCorrelation (output, 2, 1)), 0.5); }, "channelCorrelation() - Channels 2 vs 1")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (channelCorrelation (output, 0, 3).get(), 0.999); }, "channelCorrelation() - Channels 0 vs 3")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (channelCorrelation (output).ch ({{2, 1}}).get(), channelCorrelation (output).ch ({{1, 2}}).get(), 1e-8); }, "channelCorrelation() - Channel order does not matter - 1 vs 2")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (channelCorrelation (output).ch ({{1, 0}}).get(), channelCorrelation (output).ch ({{0, 1}}).get(), 1e-8); }, "channelCorrelation() - Channel order does not matter - 0 vs 1")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_LT (channelCorrelation (output).ch ({{0, 1}}).get(), -0.999); }, "channelCorrelation() Channels 0 vs 1")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_LT (std::abs (channelCorrelation (output).ch ({{0, 2}})), 0.5); }, "channelCorrelation() - Channels 0 vs 2")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_LT (std::abs (channelCorrelation (output).ch ({{2, 1}})), 0.5); }, "channelCorrelation() - Channels 2 vs 1")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (channelCorrelation (output).ch ({{0, 3}}).get(), 0.999); }, "channelCorrelation() - Channels 0 vs 3")
         .process();
 }
 
