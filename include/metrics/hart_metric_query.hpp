@@ -4,6 +4,7 @@
 #include <initializer_list>
 
 #include "metrics/hart_metrics_common.hpp"  // ReducerResultType
+#include "hart_reducers.hpp"  // first
 #include "hart_units.hpp"  // Unit
 #include "hart_utils.hpp"  // make_unique()
 
@@ -61,7 +62,7 @@ public:
         m_query->requestedUnit = Unit::native;
     }
 
-    /// @brief Requests the metric to return ints value(s) in a certain unit
+    /// @brief Requests the metric to return its value(s) in a certain unit
     /// @param requestedUnit A desired unit that the metric should return.
     /// Refer to the documentation of a specific metric for supported units.
     /// If unsupported unit is requested, the metric is expected to throw a
@@ -95,7 +96,7 @@ public:
     /// @param sliceStart Start ofn the slice, inclusive
     /// @param sliceStop End of the slice, non-inclusive
     /// @throws hart::SizeError If the the slice is empty
-    MetricQuery slice (int sliceStart, int sliceStop) const
+    MetricQuery slice (size_t sliceStart, size_t sliceStop) const
     {
         MetricQuery copy (*this);
         copy.m_query = hart::make_unique<Query> (*m_query);

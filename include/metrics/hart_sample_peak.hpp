@@ -29,7 +29,7 @@ namespace hart
 template <typename SampleType>
 MetricQuery<double> samplePeak (const AudioBuffer<SampleType>& audioBuffer)
 {
-    typename MetricQuery<SampleType>::MetricEvaluator evaluator =
+    typename MetricQuery<double>::MetricEvaluator evaluator =
         [&audioBuffer]
         (size_t channel, size_t sliceStart, size_t sliceStop, Unit requestedUnit)
         -> double
