@@ -64,7 +64,7 @@ enum Oversampling
 };
 
 /// @brief  @brief Interpolation method
-enum Interpolation
+enum class Interpolation
 {
     nearest,
     linear

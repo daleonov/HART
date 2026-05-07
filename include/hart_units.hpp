@@ -11,7 +11,7 @@
 
 /// @brief Represents a physical unit
 /// @note New units may be introduced here, whenever necessary
-enum Unit
+enum class Unit
 {
     native,  ///< Default (native) unit of whatever returns some value 
     linear,  ///< Value of a sample (voltage) in a linear domain
