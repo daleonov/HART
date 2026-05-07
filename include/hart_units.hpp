@@ -21,7 +21,8 @@ enum class Unit
 {
     native,  ///< Default (native) unit of whatever returns some value 
     linear,  ///< Value of a sample (voltage) in a linear domain
-    dB   ///< Value os something in decibels. Can represent voltage, power, or a domain-specific unit like "LUFS" or "dB TP"
+    dB,  ///< Value os something in decibels. Can represent voltage, power, or a domain-specific unit like "LUFS" or "dB TP"
+    none  ///< Unitless value
 };
 
 }  // namespace hart
@@ -31,7 +32,8 @@ enum class Unit
 #define HART_DECLARE_ALIASES_FOR_UNITS \
     constexpr hart::Unit native = hart::Unit::native; \
     constexpr hart::Unit linear = hart::Unit::linear; \
-    constexpr hart::Unit dB = hart::Unit::dB;
+    constexpr hart::Unit dB = hart::Unit::dB; \
+    constexpr hart::Unit none = hart::Unit::none;
 
 constexpr double inf_dB = hart::inf;
 constexpr double oo_dB = hart::inf;
