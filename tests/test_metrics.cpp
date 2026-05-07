@@ -3,8 +3,86 @@
 #include "hart.hpp"
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
+HART_DECLARE_ALIASES_FOR_UNITS;
 using AudioBuffer = hart::AudioBuffer<float>;
 using hart::floatsEqual;
+
+HART_TEST ("MetricQuery and Sample Peak")
+{
+    // This test case is mostly for checking MetricQuery mechanics, samplePeak is merely a guinea pig here
+
+    using hart::samplePeak;
+    using hart::first;
+    using hart::last;
+    using hart::max;
+    using hart::mean;
+    using hart::nth;
+    using hart::size;
+    using hart::decibelsToRatio;
+    using hart::ratioToDecibels;
+
+    for (const size_t numChannels : { 1, 2, 5, 15 })
+    {
+        processAudioWith (GainDb (0_dB))
+            .withLabel (HART_STR ("Output vector size at " << numChannels << " channels"))
+            .withInputSignal (SineWave())
+            .withInputChannels (numChannels)
+            .withOutputChannels (numChannels)
+            .withDuration (1_ms)
+            .expectTrue ([numChannels] (const AudioBuffer& output) { return HART_EQ (samplePeak (output).get (size()), numChannels); }, "Correct vector size")
+            .process();
+    }
+
+    for (const double levelDb : {-3_dB, 0_dB, -12.34_dB, 0.1_dB})
+    {
+        const double levelLinear = decibelsToRatio (levelDb);
+
+        processAudioWith (GainDb (0_dB))
+            .withLabel (HART_STR ("Mono, level at " << levelDb << " dB"))
+            .withInputSignal (SineWave() >> GainDb (levelDb))
+            .inMono()
+            .expectTrue ([levelDb] (const AudioBuffer& output) { return HART_FLOAT_EQ ((double) samplePeak (output).as (dB), levelDb, 1e-2); }, "Sample Peak in dB, C-style cast")
+            .expectTrue ([levelDb] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).get(), levelDb, 1e-2); }, "Sample Peak in dB, default getter")
+            .expectTrue ([levelDb] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).get (first()), levelDb, 1e-2); }, "Sample Peak in dB, first() reducer")
+            .expectTrue ([levelLinear] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (linear).get(), levelLinear, 1e-3); }, "Sample Peak as linear value")
+            .expectTrue ([levelLinear] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (native).get(), levelLinear, 1e-3); }, "Sample Peak as native value, same as linear")
+            .process();
+    }
+
+    const double expectedDbMean = (-3_dB + -6_dB + -12_dB) / 3;
+    const double expectedLinToDbMean = ratioToDecibels ((decibelsToRatio (-3_dB) + decibelsToRatio (-6_dB) + decibelsToRatio (-12_dB)) / 3);
+    HART_ASSERT_FLOAT_NE (expectedDbMean, expectedLinToDbMean, 1e-8) << "Geometric vs arithmetic averaging";
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Multiple channels")
+        .withInputSignal (SineWave() >> GainDb (-3_dB).atChannel (0) >> GainDb (-6_dB).atChannel (1) >> GainDb (-12_dB).atChannel (2))
+        .withInputChannels (3)
+        .withOutputChannels (3)
+
+        .expectTrue ([] (const AudioBuffer& output) { return HART_EQ (samplePeak (output).get (size()), 3); }, "Correct vector size")
+
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).get (nth (0)), -3_dB, 1e-2); }, "Sample Peak in dB, n = 0")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).get (nth (1)), -6_dB, 1e-2); }, "Sample Peak in dB, n = 1")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).get (nth (2)), -12_dB, 1e-2); }, "Sample Peak in dB, n = 2")
+            
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (linear).get (nth (0)), decibelsToRatio (-3_dB), 1e-3); }, "Sample Peak linear, n = 0")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (linear).get (nth (1)), decibelsToRatio (-6_dB), 1e-3); }, "Sample Peak linear, n = 1")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (linear).get (nth (2)), decibelsToRatio (-12_dB), 1e-3); }, "Sample Peak linear, n = 2")
+            
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ ((double) samplePeak (output).as (dB), -3_dB, 1e-2); }, "Sample Peak in dB, C-style cast")  // Not using a reducer isn't too useful for multi-channel metrics, but checking for test sake
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).get(), -3_dB, 1e-2); }, "Sample Peak in dB, default getter")  // Not using a reducer isn't too useful for multi-channel metrics, but checking for test sake
+
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).get (first()), -3_dB, 1e-2); }, "Sample Peak in dB, first() reducer")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).get (last()), -12_dB, 1e-2); }, "Sample Peak in dB, last() reducer")
+
+        .expectTrue ([expectedDbMean] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).get (mean()), expectedDbMean, 1e-2); }, "Sample Peak in dB, mean() reducer")
+        .expectTrue ([expectedLinToDbMean] (const AudioBuffer& output) { return HART_FLOAT_EQ (ratioToDecibels (samplePeak (output).as (linear).get (mean())), expectedLinToDbMean, 1e-3); }, "Sample Peak linear, mean() reducer, then converted to dB")
+
+        .process();
+
+    // TODO: Test selected channels
+    // TODO: Test slices
+}
 
 HART_TEST ("Metrics - Channel Correlation")
 {
