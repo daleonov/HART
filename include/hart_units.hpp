@@ -9,7 +9,13 @@
 /// @brief Better readability
 /// @{
 
+namespace hart
+{
+
 /// @brief Represents a physical unit
+/// @details You might want to use those without namespace, like `someMetric (...).as (dB)`.
+/// If you're on C++17 or earlier, you can use the `HART_DECLARE_ALIASES_FOR_UNITS` macro.
+/// For C++20 an on, you can just use `using enum Unit`.
 /// @note New units may be introduced here, whenever necessary
 enum class Unit
 {
@@ -17,6 +23,15 @@ enum class Unit
     linear,  ///< Value of a sample (voltage) in a linear domain
     dB   ///< Value os something in decibels. Can represent voltage, power, or a domain-specific unit like "LUFS" or "dB TP"
 };
+
+}  // namespace hart
+
+/// @brief Pre-C++20 macro to use units without namespace
+/// @details For C++20 and later, you can just use `using enum Unit`
+#define HART_DECLARE_ALIASES_FOR_UNITS \
+    constexpr hart::Unit native = hart::Unit::native; \
+    constexpr hart::Unit linear = hart::Unit::linear; \
+    constexpr hart::Unit dB = hart::Unit::dB;
 
 constexpr double inf_dB = hart::inf;
 constexpr double oo_dB = hart::inf;
