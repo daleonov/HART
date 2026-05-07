@@ -321,6 +321,16 @@ private:
     const Interpolation m_interpolation;
 };
 
+/// @brief Returns the number of elements (values) in the range
+struct size
+{
+    template <typename IteratorType>
+    size_t operator() (IteratorType begin, IteratorType end) const
+    {
+        return static_cast<size_t> (std::distance (begin, end));
+    }
+};
+
 /// @brief Returns the sum of all elements in the range
 struct sum
 {

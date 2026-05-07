@@ -149,3 +149,14 @@ HART_TEST ("Reducers - Boolean")
     HART_EXPECT_TRUE (allFloatsEqualToEachOther (0.001) (nearlyEqualValues.begin(), nearlyEqualValues.end()) == true);
     HART_EXPECT_TRUE (allFloatsEqualToEachOther (0.001) (differentValues.begin(), differentValues.end()) == false);
 }
+
+HART_TEST ("Reducers - Size")
+{
+    using hart::size;
+
+    for (const size_t expectedSize : { 0, 1, 2, 5, 15, 123 })
+    {
+        const std::vector<double> values (expectedSize);
+        HART_EXPECT_EQ (size() (values.begin(), values.end()), expectedSize);
+    }
+}
