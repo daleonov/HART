@@ -3,7 +3,7 @@
 // Define this macro if those literals clash with existing ones in your codebase
 #ifndef HART_DO_NOT_ADD_UNITS
 
-#include "hart_utils.hpp"  // pi
+#include "hart_utils.hpp"  // pi, decibelsToRatio(), ratioToDecibels()
 
 /// @defgroup Units Units
 /// @brief Better readability
@@ -61,6 +61,13 @@ constexpr double operator"" _deg (long double val) { return static_cast<double> 
 constexpr double operator"" _deg (unsigned long long val) { return static_cast<double>(val) * hart::pi / 180.0; }
 constexpr double operator"" _cents (long double val) { return static_cast<double> (val); }
 constexpr double operator"" _cents (unsigned long long val) { return static_cast<double>(val); }
+
+constexpr double operator"" _dB_as_ratio (long double val) { return hart::decibelsToRatio (static_cast<double> (val)); }
+constexpr double operator"" _dB_as_ratio (unsigned long long int val) { return hart::decibelsToRatio (static_cast<double> (val)); }
+constexpr double operator"" _ratio_as_dB (long double val) { return hart::ratioToDecibels (static_cast<double> (val)); }
+constexpr double operator"" _ratio_as_dB (unsigned long long int val) { return hart::ratioToDecibels (static_cast<double> (val)); }
+
+// TODO: percent <-> ratio conversions
 
 /// @}
 
