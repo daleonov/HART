@@ -30,7 +30,7 @@ public:
         return *this;
     }
 
-    void renderNextBlock (size_t blockSize, std::vector<double>& valuesOutput)
+    void renderNextBlock (size_t blockSize, std::vector<double>& valuesOutput) override
     {
         HART_EXPECT_EQ (std::this_thread::get_id(), m_threadIdWhereInstanceWasConstructed);
         HART_EXPECT_TRUE (m_prepareCalled);
@@ -47,7 +47,7 @@ public:
             verify();
     }
 
-    void prepare (double sampleRateHz, size_t maxBlockSizeFrames)
+    void prepare (double sampleRateHz, size_t maxBlockSizeFrames) override
     {
         HART_EXPECT_EQ (std::this_thread::get_id(), m_threadIdWhereInstanceWasConstructed);
 
@@ -59,7 +59,7 @@ public:
         m_prepareCalled = true;
     }
 
-    void reset()
+    void reset() override
     {
         HART_EXPECT_EQ (std::this_thread::get_id(), m_threadIdWhereInstanceWasConstructed);
     }
