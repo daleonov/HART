@@ -327,3 +327,143 @@ HART_TEST ("ESR")
 
         .process();
 }
+
+HART_TEST ("Max Cross Correlation")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::maxCrossCorrelation;
+    using std::abs;
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Identical signal")
+        .withInputSignal (SineSweep())
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_EQ (maxCrossCorrelation (input, output, 10_ms).get(), 1.0, 1e-3);
+            },
+            "Perfectly correlated"
+        )
+        .process();
+
+    processAudioWith (AdditiveNoise (-12_dB))
+        .withLabel ("Moderately noisy")
+        .withInputSignal (SineSweep() >> GainDb (-3_dB))
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_LT (maxCrossCorrelation (input, output, 10_ms).get(), 0.99);
+            },
+            "Moderately correlated"
+        )
+        .process();
+
+    processAudioWith (AdditiveNoise (-12_dB))
+        .withLabel ("Very noisy")
+        .withInputSignal (SineSweep() >> GainDb (-12_dB))
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_LT (abs (maxCrossCorrelation (input, output, 10_ms).get()), 0.8);
+            },
+            "Weakly correlated"
+        )
+        .process();
+
+    processAudioWith (HART_DSP_SEQUENCE (Mute() >> AdditiveNoise (0_dB)))
+        .withLabel ("Pure noise")
+        .withInputSignal (SineSweep())
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_LT (abs (maxCrossCorrelation (input, output, 10_ms).get()), 0.1);
+            },
+            "Uncorrelated"
+        )
+        .process();
+
+    processAudioWith (GainDb (-3_dB))
+        .withLabel ("Gain doesn't matter")
+        .withInputSignal (SineSweep())
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_EQ (maxCrossCorrelation (input, output, 10_ms).get(), 1.0, 1e-3);
+            },
+            "Perfectly correlated"
+        )
+        .process();
+
+    processAudioWith (TimeShift (5_ms))
+        .withLabel ("Time shift")
+        .withInputSignal (SineSweep())
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_GT (maxCrossCorrelation (input, output, 10_ms).get(), 0.999);
+            },
+            "Lag range larger than time shift"
+        )
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_LT (maxCrossCorrelation (input, output, 2_ms).get(), 0.999);
+            },
+            "Lag range smaller than time shift"
+        )
+        .process();
+
+    processAudioWith (GainLinear (-1.0))
+        .withLabel ("Polarity")
+        .withInputSignal (SineSweep())
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_EQ (maxCrossCorrelation (input, output, 10_ms).get(), -1.0, 1e-3);
+            },
+            "Looking for best abs correlation (default argument)"
+        )
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_EQ (maxCrossCorrelation (input, output, 10_ms, hart::bestAbsoluteCorrelation).get(), -1.0, 1e-3);
+            },
+            "Looking for best abs correlation (explicit argument)"
+        )
+
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_NE (maxCrossCorrelation (input, output, 10_ms, hart::bestSignedCorrelation).get(), -1.0, 1e-3);
+            },
+            "Looking for best signed correlation (explicit argument)"
+        )
+        .process();
+
+    processAudioWith (AdditiveNoise (-9_dB))
+        .withLabel ("Units")
+        .withInputSignal (SineSweep() >> GainDb (-6_dB))
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_EQ (
+                    maxCrossCorrelation (input, output, 10_ms).get(),
+                    maxCrossCorrelation (input, output, 10_ms).as (none).get(),
+                    1e-8
+                    );
+            },
+            "default == unitless"
+        )
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_EQ (
+                    maxCrossCorrelation (input, output, 10_ms).as (native).get(),
+                    maxCrossCorrelation (input, output, 10_ms).as (none).get(),
+                    1e-8
+                    );
+            },
+            "native == unitless"
+        )
+        .process();
+}

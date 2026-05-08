@@ -59,4 +59,11 @@ std::vector<size_t> getChannelIndicesToProcess (const AudioBuffer<SampleType>& b
     return getChannelIndicesToProcess (bufferA, channels);
 }
 
+/// @brief Describes how to look for best cross-correlation
+enum CorrelationSearchMode
+{
+    bestSignedCorrelation,
+    bestAbsoluteCorrelation
+};
+
 }  // namespace hart
