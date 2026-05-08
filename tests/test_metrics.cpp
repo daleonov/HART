@@ -467,3 +467,143 @@ HART_TEST ("Max Cross Correlation")
         )
         .process();
 }
+
+HART_TEST ("Lag At Max Cross Correlation")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::lagAtMaxCrossCorrelation;
+    using std::abs;
+
+    const double defaultSampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
+    const double defaultRenderDurationSeconds = hart::CLIConfig::getInstance().getDefaultRenderDurationSeconds();
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Identical signal")
+        .withInputSignal (SineSweep())
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_EQ (lagAtMaxCrossCorrelation (input, output, 10_ms).get(), 0_s, 1_us);
+            },
+            "No latency"
+        )
+        .process();
+
+    for (const double timeShiftSeconds : {2_ms, 5_ms, 15_ms})
+    {
+        const double renderDurationSeconds = std::max (4 * timeShiftSeconds, defaultRenderDurationSeconds);
+        const double expectedLagFrames = timeShiftSeconds * defaultSampleRateHz;
+
+        processAudioWith (TimeShift (timeShiftSeconds))
+            .withLabel (HART_STR ("Time shift = " << timeShiftSeconds << " s"))
+            .withInputSignal (SineSweep())
+            .withDuration (renderDurationSeconds)
+            .expectTrue (
+                [timeShiftSeconds] (const AudioBuffer& input, const AudioBuffer& output)
+                {
+                    return HART_FLOAT_EQ (lagAtMaxCrossCorrelation (input, output, timeShiftSeconds * 2).as (seconds).get(), timeShiftSeconds, 1_ms);
+                },
+                "Lag range larger than time shift, calculated in seconds"
+            )
+            .expectTrue (
+                [timeShiftSeconds] (const AudioBuffer& input, const AudioBuffer& output)
+                {
+                    return HART_FLOAT_NE (lagAtMaxCrossCorrelation (input, output, timeShiftSeconds - 1_ms).as (seconds).get(), timeShiftSeconds, 1_ms);
+                },
+                "Lag range smaller than time shift, calculated in seconds"
+            )
+            .expectTrue (
+                [timeShiftSeconds, expectedLagFrames] (const AudioBuffer& input, const AudioBuffer& output)
+                {
+                    return HART_FLOAT_EQ (lagAtMaxCrossCorrelation (input, output, timeShiftSeconds * 2).as (frames).get(), expectedLagFrames, 2.0 /* frames */);
+                },
+                "Lag range larger than time shift, calculated in frames"
+            )
+            .expectTrue (
+                [timeShiftSeconds, expectedLagFrames] (const AudioBuffer& input, const AudioBuffer& output)
+                {
+                    return HART_FLOAT_NE (lagAtMaxCrossCorrelation (input, output, timeShiftSeconds - 1_ms).as (frames).get(), expectedLagFrames, 2.0 /* frames */);
+                },
+                "Lag range smaller than time shift, calculated in frames"
+            )
+            .process();
+    }
+
+    processAudioWith (HART_DSP_SEQUENCE (GainLinear (-1.0) >> TimeShift (5_ms)))
+        .withLabel ("Flipped signal")
+        .withInputSignal (SineSweep())
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_EQ (lagAtMaxCrossCorrelation (input, output, 10_ms, 0.9, hart::bestAbsoluteCorrelation).as (seconds).get(), 5_ms, 500_us);
+            },
+            "CorrelationSearchMode = bestAbsoluteCorrelation"
+        )
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                const double lagSeconds = lagAtMaxCrossCorrelation (input, output, 10_ms, 0.9, hart::bestSignedCorrelation).as (seconds).get();
+                return HART_TRUE (std::isnan (lagSeconds) || hart::floatsNotEqual (lagSeconds, 5_ms, 500_us));
+            },
+            "CorrelationSearchMode = bestSignedCorrelation"
+        )
+        .process();
+
+    processAudioWith (HART_DSP_SEQUENCE (GainDb (-9_dB) >> AdditiveNoise (-3_dB) >> TimeShift (5_ms)))
+        .withLabel ("Very noisy signal")
+        .withInputSignal (SineSweep())
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_EQ (lagAtMaxCrossCorrelation (input, output, 10_ms, 0.3).as (seconds).get(), 5_ms, 500_us);
+            },
+            "Correlation threshold = 0.3"
+        )
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                const double lagSeconds = lagAtMaxCrossCorrelation (input, output, 10_ms, 0.9).as (seconds).get();
+                return HART_TRUE (std::isnan (lagSeconds) || hart::floatsNotEqual (lagSeconds, 5_ms, 500_us));
+            },
+            "Correlation threshold = 0.9"
+        )
+        .process();
+
+    processAudioWith (TimeShift (1_ms))
+        .withLabel ("Units")
+        .withInputSignal (SineSweep())
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_EQ (
+                    lagAtMaxCrossCorrelation (input, output, 2_ms).get(),
+                    lagAtMaxCrossCorrelation (input, output, 2_ms).as (frames).get(),
+                    1e-8
+                    );
+            },
+            "default == frames"
+        )
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_EQ (
+                    lagAtMaxCrossCorrelation (input, output, 2_ms).as (native).get(),
+                    lagAtMaxCrossCorrelation (input, output, 2_ms).as (frames).get(),
+                    1e-8
+                    );
+            },
+            "native == frames"
+        )
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_NE (
+                    lagAtMaxCrossCorrelation (input, output, 2_ms).as (frames).get(),
+                    lagAtMaxCrossCorrelation (input, output, 2_ms).as (seconds).get(),
+                    1e-8
+                    );
+            },
+            "frames != seconds"
+        )
+        .process();
+}
