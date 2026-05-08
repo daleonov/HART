@@ -198,7 +198,7 @@ public:
     /// metric values
     template <typename ReducerType>
     auto get (ReducerType reducer) const
-        -> ReducerResultType<ReducerType, std::vector<ValueType>::const_iterator>
+        -> ReducerResultType<ReducerType, typename std::vector<ValueType>::const_iterator>
     {
         ensureCache();
         return reducer (m_query->cachedValues.begin(), m_query->cachedValues.end());

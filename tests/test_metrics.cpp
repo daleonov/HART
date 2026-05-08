@@ -140,20 +140,27 @@ HART_TEST ("Crest factor")
     using AudioBuffer = hart::AudioBuffer<float>;
     using Channel = hart::Channel;
     using hart::floatsEqual;
-    using hart::crestFactorLinear;
-    using hart::crestFactorDb;
+    using hart::crestFactor;
     using std::sqrt;
 
     processAudioWith (GainDb (0_dB))
         .withLabel ("Crest factor of a sine wave")
         .withInputSignal (SineWave())
         .inMono()
-        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorLinear (output), sqrt (2.0), 1e-3); }, "Linear crest factor is around sqrt (2)")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorLinear (output, 0), sqrt (2.0), 1e-3); }, "Linear crest factor is around sqrt (2)")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorLinear (output, Channel::left), sqrt (2.0), 1e-3); }, "Linear crest factor is around sqrt (2)")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorDb (output), 3.01_dB, 0.01); }, "Crest factor is around 3.01 dB")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorDb (output, 0), 3.01_dB, 0.01); }, "Crest factor is around 3.01 dB")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorDb (output, Channel::left), 3.01_dB, 0.01); }, "Crest factor is around 3.01 dB")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactor (output).get(), sqrt (2.0), 1e-3); }, "Linear crest factor is around sqrt (2)")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactor (output).ch ({0}).get(), sqrt (2.0), 1e-3); }, "Linear crest factor is around sqrt (2)")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactor (output).ch ({Channel::left}).get(), sqrt (2.0), 1e-3); }, "Linear crest factor is around sqrt (2)")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactor (output). ch({0}).as (dB).get(), 3.01_dB, 0.01); }, "Crest factor is around 3.01 dB")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactor (output). ch({Channel::left}).as (dB).get(), 3.01_dB, 0.01); }, "Crest factor is around 3.01 dB")
+        .process();
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Crest factor units")
+        .withInputSignal (SineWave())
+        .inMono()
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactor (output).get(), crestFactor (output).as (native).get(), 1e-8); }, "default == native")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactor (output).as (linear).get(), crestFactor (output).as (native).get(), 1e-8); }, "linear == native")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_NE (crestFactor (output).as (linear).get(), crestFactor (output).as (dB).get(), 1e-8); }, "linear != dB")
         .process();
 
     hart::DSPFunction<float> halfWaveRectify (
@@ -165,16 +172,16 @@ HART_TEST ("Crest factor")
         .withLabel ("Crest factor of a half-rectified sine wave")
         .withInputSignal (SineWave() >> std::move (halfWaveRectify))
         .inMono()
-        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorLinear (output), 2.0, 1e-3); }, "Linear crest factor is around 2")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorDb (output), 6.02_dB, 0.01); }, "Crest factor is around 6.02 dB")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactor (output).get(), 2.0, 1e-3); }, "Linear crest factor is around 2")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactor (output).as (dB).get(), 6.02_dB, 0.01); }, "Crest factor is around 6.02 dB")
         .process();
 
     processAudioWith (GainDb (0_dB))
         .withLabel ("Crest factor of an impulse")
         .withInputSignal (Impulse())
         .inMono()
-        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (crestFactorLinear (output), 20.0); }, "Linear crest factor is more than 20")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (crestFactorDb (output), 10_dB); }, "Crest factor is around 10 dB")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (crestFactor (output).get(), 20.0); }, "Linear crest factor is more than 20")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (crestFactor (output).as (dB).get(), 10_dB); }, "Crest factor is around 10 dB")
         .process();
 
     const auto sharpTransientEnvelope = SegmentedEnvelope (0_dB)
@@ -185,8 +192,8 @@ HART_TEST ("Crest factor")
         .withLabel ("Crest factor of a poky sine wave")
         .withInputSignal (SineWave() >> GainDb().withEnvelope (GainDb::gainDb, sharpTransientEnvelope))
         .inMono()
-        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (crestFactorLinear (output), 4.0); }, "Linear crest factor is more than 4")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (crestFactorDb (output), 12_dB); }, "Crest factor is more than 12 dB")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (crestFactor (output).get(), 4.0); }, "Linear crest factor is more than 4")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (crestFactor (output).as (dB).get(), 12_dB); }, "Crest factor is more than 12 dB")
         .process();
 
     for (double signalLevelDb : { -60_dB, -3_dB, -0.5_dB, +1_dB, +12_dB })
@@ -195,24 +202,27 @@ HART_TEST ("Crest factor")
             .withLabel (HART_STR ("Gain doesn't matter, input level: " << hart::dbPrecision << signalLevelDb << " dB"))
             .withInputSignal (SineWave() >> GainDb (signalLevelDb))
             .inMono()
-            .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorLinear (output), sqrt (2.0), 1e-3); }, "Linear crest factor is around sqrt (2)")
-            .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorDb (output, 0), 3.01_dB, 0.01); }, "Crest factor is around 3.01 dB")
+            .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactor (output).get(), sqrt (2.0), 1e-3); }, "Linear crest factor is around sqrt (2)")
+            .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactor (output).as (dB).get(), 3.01_dB, 0.01); }, "Crest factor is around 3.01 dB")
             .process();
     }
+
+    using hart::first;
+    using hart::allFloatsEqualToEachOther;
 
     processAudioWith (GainDb (0_dB))
         .withLabel ("Multi-channel")
         .withInputSignal (SineWave() >> GainDb().withEnvelope (GainDb::gainDb, sharpTransientEnvelope).atChannels ({1, 3}))
         .withInputChannels (5)
         .withOutputChannels (5)
-        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorLinear (hart::first(), output, {0, 2, 4}), sqrt (2.0), 1e-3); }, "Linear crest factor on steady channels is around sqrt (2)")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_TRUE (crestFactorLinear (hart::allFloatsEqualToEachOther(), output, {0, 2, 4})); }, "Linear crest factor on steady channels are the same")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactorDb (hart::first(), output, {0, 2, 4}), 3.01_dB, 0.01); }, "Crest factor on steady channels is around 3.01 dB")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_TRUE (crestFactorDb (hart::allFloatsEqualToEachOther(), output, {0, 2, 4})); }, "Crest factors in dB on steady channels are the same")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (crestFactorLinear (hart::first(), output, {1, 3}), 4.0); }, "Linear crest factor on poky channels is more than 4")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_TRUE (crestFactorLinear (hart::allFloatsEqualToEachOther(), output, {1, 3})); }, "Linear crest factors on poky channels are the same")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (crestFactorDb (hart::first(), output, {1, 3}), 12_dB); }, "Crest factor in dB on poky channels is over 12 dB")
-        .expectTrue ([] (const AudioBuffer& output) { return HART_TRUE (crestFactorDb (hart::allFloatsEqualToEachOther(), output, {1, 3})); }, "Crest factors in dB on poky channels are the same")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactor (output).ch ({0, 2, 4}).get (first()), sqrt (2.0), 1e-3); }, "Linear crest factor on steady channels is around sqrt (2)")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_TRUE (crestFactor (output).ch ({0, 2, 4}).get (allFloatsEqualToEachOther())); }, "Linear crest factor on steady channels are the same")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (crestFactor (output).ch ({0, 2, 4}).as (dB).get (first()), 3.01_dB, 0.01); }, "Crest factor on steady channels is around 3.01 dB")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_TRUE (crestFactor (output).as (dB).ch ({0, 2, 4}).get (allFloatsEqualToEachOther())); }, "Crest factors in dB on steady channels are the same")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (crestFactor (output).ch ({1, 3}).get (first()), 4.0); }, "Linear crest factor on poky channels is more than 4")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_TRUE (crestFactor (output).ch ({1, 3}).get (allFloatsEqualToEachOther())); }, "Linear crest factors on poky channels are the same")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (crestFactor (output).as (dB).ch ({1, 3}).get (first()), 12_dB); }, "Crest factor in dB on poky channels is over 12 dB")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_TRUE (crestFactor (output).as (dB).ch ({1, 3}).get (allFloatsEqualToEachOther())); }, "Crest factors in dB on poky channels are the same")
         .process();
 }
 

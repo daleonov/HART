@@ -283,7 +283,7 @@ HART_TEST ("AudioBuffer - Hosting a Signal and rendering in one go")
 
     // Temporary AudioBuffer object with a temporary Signal
     HART_EXPECT_FLOAT_EQUAL (
-        hart::crestFactorLinear (hart::mean(), AudioBuffer (numChannels, durationFrames, sampleRateHz).fillWith (SineWave())),
+        hart::crestFactor (AudioBuffer (numChannels, durationFrames, sampleRateHz).fillWith (SineWave())).get (hart::mean()),
         std::sqrt (2),
         1e-2
         );
@@ -291,7 +291,7 @@ HART_TEST ("AudioBuffer - Hosting a Signal and rendering in one go")
     // Temporary AudioBuffer object with a named Signal
     auto namedSignalB = SineWave();
     HART_EXPECT_FLOAT_EQUAL (
-        hart::crestFactorLinear (hart::mean(), AudioBuffer (numChannels, durationFrames, sampleRateHz).fillWith (namedSignalB)),
+        hart::crestFactor (AudioBuffer (numChannels, durationFrames, sampleRateHz).fillWith (namedSignalB)).get (hart::mean()),
         std::sqrt (2),
         1e-2
         );
@@ -343,7 +343,7 @@ HART_TEST ("AudioBuffer - Hosting a Signal and rendering block-by-block")
 
     // Temporary AudioBuffer object with a temporary Signal
     HART_EXPECT_FLOAT_EQUAL (
-        hart::crestFactorLinear (hart::mean(), AudioBuffer (numChannels, blockSizeFrames, sampleRateHz).fillWith (SineWave())),
+        hart::crestFactor (AudioBuffer (numChannels, blockSizeFrames, sampleRateHz).fillWith (SineWave())).get (hart::mean()),
         std::sqrt (2),
         1e-2
         );
@@ -351,7 +351,7 @@ HART_TEST ("AudioBuffer - Hosting a Signal and rendering block-by-block")
     // Temporary AudioBuffer object with a named Signal
     auto namedSignalB = SineWave();
     HART_EXPECT_FLOAT_EQUAL (
-        hart::crestFactorLinear (hart::mean(), AudioBuffer (numChannels, blockSizeFrames, sampleRateHz).fillWith (namedSignalB)),
+        hart::crestFactor (AudioBuffer (numChannels, blockSizeFrames, sampleRateHz).fillWith (namedSignalB)).get (hart::mean()),
         std::sqrt (2),
         1e-2
         );
