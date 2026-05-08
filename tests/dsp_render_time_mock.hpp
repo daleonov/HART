@@ -24,9 +24,16 @@ public:
 
     void process (const hart::AudioBuffer<float>& /* input */, hart::AudioBuffer<float>& output, const hart::EnvelopeBuffers& /* envelopeBuffers */, hart::ChannelFlags /* channelsToProcess */) override
     {
+        using namespace std::chrono;
+        using clock = steady_clock;
+
         const double requiredRenderTimeSeconds = output.getNumFrames() * output.getNumChannels() * m_timeToRenderEachSampleSeconds;
-        std::this_thread::sleep_for (std::chrono::duration<double> (requiredRenderTimeSeconds));
+        const auto deadline = clock::now() + duration<double> (requiredRenderTimeSeconds);
+
         output.clear();
+
+        while (clock::now() < deadline)
+            std::this_thread::yield();
     }
 
     void setValue (int /* id */, double /* value */) override
