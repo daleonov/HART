@@ -3,9 +3,10 @@
 #include <functional>
 #include <initializer_list>
 #include <utility>  // pair
+#include <vector>
 
-#include "metrics/hart_metrics_common.hpp"  // ReducerResultType
 #include "hart_exceptions.hpp"
+#include "metrics/hart_metrics_common.hpp"  // ReducerResultType
 #include "hart_reducers.hpp"  // first
 #include "hart_slice.hpp"
 #include "hart_units.hpp"  // Unit

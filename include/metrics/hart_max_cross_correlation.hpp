@@ -1,9 +1,16 @@
 #pragma once
 
+#include <cmath>  // abs()
+#include <utility>  // pair
+#include <vector>
+
 #include "hart_accurate_sum.hpp"
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
-#include "hart_metrics_common.hpp"  // CorrelationSearchMode
+#include "metrics/hart_metric_query.hpp"
+#include "metrics/hart_metrics_common.hpp"  // CorrelationSearchMode
+#include "hart_slice.hpp"
+#include "hart_units.hpp"  // Unit
 #include "hart_utils.hpp"  // roundToSizeT()
 
 namespace hart

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <utility>  // pair
+#include <vector>
+
 #include "hart_accurate_sum.hpp"
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"

@@ -1,16 +1,14 @@
 #pragma once
 
-#include <algorithm>
-#include <cmath>
-#include <initializer_list>
+#include <cmath>  // abs(), sqrt()
 #include <vector>
 
 #include "hart_accurate_sum.hpp"
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
-#include "hart_metrics_common.hpp"
-#include "hart_reducers.hpp"
+#include "metrics/hart_metric_query.hpp"
 #include "hart_slice.hpp"
+#include "hart_units.hpp"  // Unit
 #include "hart_utils.hpp"  // nan(), inf, ratioToDecibels()
 
 namespace hart
