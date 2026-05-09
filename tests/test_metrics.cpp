@@ -676,10 +676,10 @@ HART_TEST ("Loudest Bin Magnitude")
 
         const Spectrum spectrum (output);
         const double measuredMagnitudeLinear = loudestBinMagnitude (spectrum).as (linear);
-        const double expectedMagnitudeLinear = spectrum.getMagnitudeLinear (Channel::left, loudFrequencyHz);
+        const double expectedMagnitudeLinear = spectrum.getBinMagnitude (Channel::left, loudFrequencyHz);
 
         HART_EXPECT_FLOAT_EQ (measuredMagnitudeLinear, expectedMagnitudeLinear, 1e-8) << "Bin magnitude at correct frequency";
-        HART_EXPECT_GT (measuredMagnitudeLinear, spectrum.getMagnitudeLinear (Channel::left, quietFrequencyHz)) << "Louder than other sine wave";
+        HART_EXPECT_GT (measuredMagnitudeLinear, spectrum.getBinMagnitude (Channel::left, quietFrequencyHz)) << "Louder than other sine wave";
 
         HART_EXPECT_FLOAT_EQ (measuredMagnitudeLinear, loudestBinMagnitude (spectrum).get(), 1e-8) << "Implicit unit";
         HART_EXPECT_FLOAT_EQ (measuredMagnitudeLinear, loudestBinMagnitude (spectrum).as (native).get(), 1e-8) << "Native unit";

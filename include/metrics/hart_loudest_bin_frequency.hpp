@@ -1,7 +1,7 @@
 #pragma once
 
 #include <algorithm>  // max()
-#include <complex> // complex, norm()
+#include <complex>  // complex, norm()
 #include <vector>
 
 #include "hart_exceptions.hpp"
@@ -14,41 +14,36 @@
 namespace hart
 {
 
-/// @brief Calculates the magnitude of the loudest FFT bin
+/// @brief Returns the center frequency of the loudest FFT bin
 /// @details
 /// Finds the maximum-magnitude FFT bin independently for each channel.
 /// Use reducers to combine multi-channel results (see @ref Reducers).
 ///
-/// Supports:
-/// - `Unit::linear` (native/default)
-/// - `Unit::dB` as linear ratio, not power
+/// Supports `Unit::Hz` (native/default) unit, so requesting a unit
+/// explicitly via `MetricQuery::as()` is not required.
 ///
 /// This metric operates on FFT bins exactly as stored in the Spectrum.
-///
-/// Typical use cases:
-/// - alias detection
-/// - spur detection
-/// - harmonic inspection
-/// - FFT sanity checks
-/// - spectral leakage diagnostics
+/// In a not-so-likely event where multiple bins have exactly the same
+/// magnitube, the lowest frequency will be returned.
+/// This is not intended for precise pitch tracking, but still useful
+/// for some types of tests, based around looking for peaks in a band
+/// of frequencies, but not a specific frequency.
 ///
 /// Usage examples:
 /// @code
 /// // Loudest spectral component in dB
-/// const double loudestDb = loudestBinMagnitude (spectrum).as (dB).get();
+/// const double loudestFreqHz = loudestBinFrequency (monoSpectrum).get();
 ///
 /// // Loudest bin only inside a frequency range
-/// const double loudestMidBandDb =
-///     loudestBinMagnitude (spectrum)
-///         .as (dB)
+/// const double loudestMidBanFreqHz =
+///     loudestBinFrequency (monoSpectrum)
 ///         .at (Slice::frequency (500_Hz, 2000_Hz))
 ///         .get();
 ///
-/// // Loudest bin, but only inside a specific channel subset, as a
-/// // linear value (not dB). Calculated per chanel, then averaged.
-/// const double loudestBinLinear =
-///     loudestBinMagnitude (spectrum)
-///         .as (linear)
+/// // Loudest bin, but only inside a specific channel subset.
+///  Calculated per chanel, then averaged.
+/// const double loudestFreqHz =
+///     loudestBinMagnitude (multiChannelSpectrum)
 ///         .ch ({0, 2, 4})
 ///         .get (mean());
 ///
@@ -57,7 +52,7 @@ namespace hart
 /// @param spectrum Input frequency-domain spectrum
 /// @throws hart::UnitError if unsupported unit is requested
 /// @ingroup Metrics
-inline MetricQuery<double> loudestBinMagnitude (const Spectrum& spectrum)
+inline MetricQuery<double> loudestBinFrequency (const Spectrum& spectrum)
 {
     typename MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
         [&spectrum]
@@ -65,6 +60,9 @@ inline MetricQuery<double> loudestBinMagnitude (const Spectrum& spectrum)
         -> double
     {
         hassert (channel < spectrum.getNumChannels());
+
+        if (requestedUnit != Unit::native || requestedUnit != Unit::Hz)
+            HART_THROW_OR_RETURN (hart::UnitError, "Unsupported unit", hart::nan<double>());
 
         const std::pair<size_t, size_t> binIndices = spectrum.getBinIndices (slice);
         const size_t startBin = binIndices.first;
@@ -78,30 +76,20 @@ inline MetricQuery<double> loudestBinMagnitude (const Spectrum& spectrum)
 
         const std::complex<double>* bins = spectrum[channel];
         double maxSquaredMagnitude = 0.0;
+        size_t binOfMaxSquaredMagnitude = 0;
 
-        for (size_t bin = startBin; bin < stopBin; ++bin)
-            maxSquaredMagnitude = std::max (std::norm (bins[bin]), maxSquaredMagnitude);
-
-        const double maxMagnitude = sqrt (maxSquaredMagnitude);
-
-        switch (requestedUnit)
+        for (size_t currentBin = startBin; currentBin < stopBin; ++currentBin)
         {
-            case Unit::native:
-            case Unit::linear:
-            {
-                return maxMagnitude;
-            }
+            const double currentSquaredMagnitude = std::norm (bins[currentBin]);
 
-            case Unit::dB:
+            if (currentMagnitude > maxMagnitude)
             {
-                return hart::ratioToDecibels (maxMagnitude);
-            }
-
-            default:
-            {
-                HART_THROW_OR_RETURN (hart::UnitError, "Unsupported unit", hart::nan<double>());
+                maxMagnitude = currentMagnitude;
+                binOfMaxMagnitude = currentBin;
             }
         }
+
+        return spectrum.getBinFrequencyHz (binOfMaxMagnitude);
     };
 
     std::vector<size_t> defaultChannelsToProcess (

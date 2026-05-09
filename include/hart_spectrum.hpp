@@ -14,17 +14,15 @@ namespace hart
 
 /// @brief Frequency-domain representation of a multi-channel audio signal
 /// @details
-/// Stores magnitude spectra for each channel independently.
+/// Stores complex spectra for each channel independently.
 /// Spectrum is constructed by performing FFT on the entire signal,
 /// zero-padding to the next power-of-two size if necessary.
-///
-/// Magnitudes are stored in linear domain as `double`.
 ///
 /// Current implementation assumptions:
 /// - Rectangular window (no windowing)
 /// - Real-valued input signal
 /// - One-sided spectrum only (`fftSize / 2 + 1` bins)
-/// - Magnitude-only storage (no phase information)
+/// - Double floating-point precision, regardless of input signal value types
 /// @ingroup DataStructures
 class Spectrum
 {
@@ -40,20 +38,16 @@ public:
 
         m_sampleRateHz = buffer.getSampleRateHz();
         m_numChannels = buffer.getNumChannels();
+        m_data.resize (m_numChannels);
 
         const size_t numFrames = buffer.getNumFrames();
 
         m_fftSize = nextPowerOfTwo (std::max<size_t> (1, numFrames));
         m_numBins = m_fftSize / 2 + 1;
 
-        constexpr double coherentGainLinear = 1.0;  // Unity gain because of rect window 
-        const double normalisationGainLinear = 2.0 / static_cast<double> (m_fftSize) / coherentGainLinear;  // 2.0 because it's one-seded spectrum
-
-        m_magnitudes.resize (m_numChannels);
-
         for (size_t channel = 0; channel < m_numChannels; ++channel)
         {
-            m_magnitudes[channel].resize (m_numBins);
+            m_data[channel].resize (m_numBins);
             std::vector<std::complex<double>> fftBuffer (m_fftSize);
             const SampleType* samples = buffer[channel];
 
@@ -66,7 +60,7 @@ public:
             performFFT (fftBuffer);
 
             for (size_t bin = 0; bin < m_numBins; ++bin)
-                m_magnitudes[channel][bin] = normalisationGainLinear * std::abs (fftBuffer[bin]);
+                m_data[channel][bin] = fftBuffer[bin];
         }
     }
 
@@ -108,8 +102,8 @@ public:
         return m_sampleRateHz / m_fftSize;
     }
 
-    /// @brief Returns magnitude of a frequency bin in linear domain, by bin index
-    double getMagnitudeLinear (size_t channel, size_t binIndex) const
+    /// @brief Returns complex value of a frequency bin, by bin index
+    std::complex<double> getBinValue (size_t channel, size_t binIndex) const
     {
         if (channel >= m_numChannels)
             HART_THROW_OR_RETURN (hart::IndexError, "Channel index is out of range", hart::nan<double>());
@@ -117,22 +111,34 @@ public:
         if (binIndex >= m_numBins)
             HART_THROW_OR_RETURN (hart::IndexError, "Bin index is out of range", hart::nan<double>());
 
-        return m_magnitudes[channel][binIndex];
+        return m_data[channel][binIndex];
     }
 
-    /// @brief Returns magnitude of a frequency bin in linear domain, by frequency
-    double getMagnitudeLinear (size_t channel, double frequencyHz) const
+    /// @brief Returns complex value of a frequency bin, by frequency
+    std::complex<double> getBinValue (size_t channel, double frequencyHz) const
     {
-        return getMagnitudeLinear (channel, findClosestBin (frequencyHz));
+        return getBinValue (channel, findClosestBin (frequencyHz));
+    }
+
+    /// @brief Returns magnitude of a frequency bin, by bin index
+    double getBinMagnitude (size_t channel, size_t binIndex) const
+    {
+        return std::abs (getBinValue (channel, binIndex));
+    }
+
+    /// @brief Returns magnitude of a frequency bin, by frequency
+    double getBinMagnitude (size_t channel, double frequencyHz) const
+    {
+        return getBinMagnitude (channel, findClosestBin (frequencyHz));
     }
 
     /// @brief Returns pointer to magnitudes of a specific channel
-    const double* operator[] (size_t channel) const
+    const std::complex<double>* operator[] (size_t channel) const
     {
         if (channel >= m_numChannels)
             HART_THROW_OR_RETURN (hart::IndexError, "Channel index is out of range", hart::nan<double>());
 
-        return m_magnitudes[channel].data();
+        return m_data[channel].data();
     }
 
     /// @brief Finds closest FFT bin to a given frequency
@@ -256,7 +262,7 @@ private:
     size_t m_fftSize = 0;
     size_t m_numBins = 0;
 
-    std::vector<std::vector<double>> m_magnitudes;
+    std::vector<std::vector<std::complex<double>>> m_data;
 };
 
 } // namespace hart
