@@ -80,8 +80,40 @@ HART_TEST ("MetricQuery and Sample Peak")
 
         .process();
 
+    using Slice = hart::Slice;
+    const auto gainCurve = SegmentedEnvelope (decibelsToRatio (-3_dB))
+        .hold (10_ms)
+        .rampTo (decibelsToRatio (-6_dB), 1_ms)
+        .hold (10_ms)
+        .rampTo (decibelsToRatio (-1_dB), 1_ms);
+
+    using hart::roundToSizeT;
+    const double sampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
+    auto toFrames = [sampleRateHz] (double timeStampSeconds) { return roundToSizeT (timeStampSeconds * sampleRateHz); };
+
+    processAudioWith (GainLinear().withEnvelope (GainLinear::gainLinear, gainCurve))
+        .withLabel ("Slices")
+        .withInputSignal (SineWave())
+        .inMono()
+
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).get(), -1_dB, 0.01); }, "No slice")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).at (Slice::whole()).get(), -1_dB, 0.01); }, "Whole")
+
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).at (Slice::time (0_ms, 9_ms)).get(), -3_dB, 0.01); }, "Time - Section A")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).at (Slice::time (12_ms, 19_ms)).get(), -6_dB, 0.01); }, "Time - Section B")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).at (Slice::time (22_ms, 30_ms)).get(), -1_dB, 0.01); }, "Time - Section C")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).at (Slice::time (0_ms, 19_ms)).get(), -3_dB, 0.01); }, "Time - Sections A-B")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).at (Slice::time (12_ms, 30_ms)).get(), -1_dB, 0.01); }, "Time - Sections B-C")
+
+        .expectTrue ([&toFrames] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).at (Slice::frames (toFrames (0_ms), toFrames (9_ms))).get(), -3_dB, 0.01); }, "Frames - Section A")
+        .expectTrue ([&toFrames] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).at (Slice::frames (toFrames (12_ms), toFrames (19_ms))).get(), -6_dB, 0.01); }, "Frames - Section B")
+        .expectTrue ([&toFrames] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).at (Slice::frames (toFrames (22_ms), toFrames (30_ms))).get(), -1_dB, 0.01); }, "Frames - Section C")
+        .expectTrue ([&toFrames] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).at (Slice::frames (toFrames (0_ms), toFrames (19_ms))).get(), -3_dB, 0.01); }, "Frames - Sections A-B")
+        .expectTrue ([&toFrames] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).at (Slice::frames (toFrames (12_ms), toFrames (30_ms))).get(), -1_dB, 0.01); }, "Frames - Sections B-C")
+
+        .process();
+
     // TODO: Test selected channels
-    // TODO: Test slices
     // TODO: Test preserving index order for multi-channel selections
 }
 
