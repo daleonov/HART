@@ -3,62 +3,91 @@
 #include "hart_accurate_sum.hpp"
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
+#include "metrics/hart_metric_query.hpp"
 #include "hart_utils.hpp"  // nan(), floatsEqual()
-
-#include "hart_metrics_common.hpp"
-//#include "hart_reducers.hpp"
+#include "hart_units.hpp"  // Unit
 
 namespace hart
 {
 
+// TODO: Add more detailed doc for esr()
+
+/// @brief Calculates error-to-signal ratio (ESR)
 template <typename SampleType>
-double esr (const AudioBuffer<SampleType>& referenceBuffer, const AudioBuffer<SampleType>& estimatedBuffer, size_t channel = 0)
+MetricQuery<double> esr (const AudioBuffer<SampleType>& referenceBuffer, const AudioBuffer<SampleType>& estimatedBuffer)
 {
-    if (channel >= referenceBuffer.getNumChannels() || channel >= estimatedBuffer.getNumChannels())
-        HART_THROW_OR_RETURN (hart::IndexError, "Channel index is out of bounds", hart::nan<double>());
+    if ((referenceBuffer.hasSampleRate() || estimatedBuffer.hasSampleRate()) && referenceBuffer.getSampleRateHz() != estimatedBuffer.getSampleRateHz())
+        HART_THROW_OR_RETURN (hart::SampleRateError, "Audio buffers must have equal sample rates", {});
 
     if (estimatedBuffer.getNumFrames() != referenceBuffer.getNumFrames())
         HART_THROW_OR_RETURN (hart::SizeError, "Buffers' sizes don't match", hart::nan<double>());
 
-    const size_t numFrames = referenceBuffer.getNumFrames();
-
-    if (numFrames == 0)
-        return hart::nan<double>();
-
-    AccurateSum<double> signalPower;
-    AccurateSum<double> noisePower;
-
-    const SampleType* referenceSamples = referenceBuffer[channel];
-    const SampleType* estimatedSamples = estimatedBuffer[channel];
-
-    for (size_t frame = 0; frame < numFrames; ++frame)
+    typename MetricQuery<double>::ChannelPairMetricEvaluator evaluator =
+        [&referenceBuffer, &estimatedBuffer]
+        (size_t referenceBufferChannel, size_t estimatedBufferChannel, Slice slice, Unit requestedUnit)
+        -> double
     {
-        const double x = static_cast<double> (referenceSamples[frame]);
-        const double y = static_cast<double> (estimatedSamples[frame]);
-        const double noise = x - y;
+        hassert (estimatedBuffer.getNumFrames() == referenceBuffer.getNumFrames());
 
-        signalPower += x * x;
-        noisePower += noise * noise;
-    }
+        if (referenceBufferChannel >= referenceBuffer.getNumChannels())
+            HART_THROW_OR_RETURN (hart::IndexError, "Reference buffer's channel index is out of bounds", hart::nan<double>());
 
-    if (floatsEqual<double> (signalPower, 0.0))
-        return hart::nan<double>();
+        if (estimatedBufferChannel >= estimatedBuffer.getNumChannels())
+            HART_THROW_OR_RETURN (hart::IndexError, "Estimated buffer's channel index is out of bounds", hart::nan<double>());
 
-    return noisePower.getValue() / signalPower.getValue();
-}
+        // TODO: Support percent or dB?
+        if (requestedUnit != Unit::native && requestedUnit != Unit::ratio)
+            HART_THROW_OR_RETURN (hart::UnitError, "ESR does not support requested unit", hart::nan<double>());
 
-template <typename SampleType, typename ReducerType>
-auto esr (ReducerType reducer, const AudioBuffer<SampleType>& referenceBuffer, const AudioBuffer<SampleType>& estimatedBuffer, std::initializer_list<size_t> channels = {})
-    -> ReducerResultType<ReducerType, std::vector<double>::const_iterator>
-{
-    const auto channelIndicesToProcess = getChannelIndicesToProcess (referenceBuffer, estimatedBuffer, channels);
-    std::vector<double> perChannelValues;
-    perChannelValues.reserve (channelIndicesToProcess.size());
+        if (slice.isEmpty())
+            return hart::nan<double>();
 
-    for (size_t channel : channelIndicesToProcess)
-        perChannelValues.push_back (esr (referenceBuffer, estimatedBuffer, channel));
+        const auto sliceFrameIndices = referenceBuffer.getFrameIndices (slice);
+        const size_t sliceStart = sliceFrameIndices.first;
+        const size_t sliceStop = sliceFrameIndices.second;
+        hassert (sliceStop > sliceStart);
+        hassert (sliceStop <= referenceBuffer.getNumFrames());
 
-    return reducer (perChannelValues.begin(), perChannelValues.end());
+        const size_t numFrames = sliceStop - sliceStart;
+        hassert (numFrames != 0);
+
+        AccurateSum<double> signalPower;
+        AccurateSum<double> noisePower;
+
+        const SampleType* referenceSamples = referenceBuffer[referenceBufferChannel] + sliceStart;
+        const SampleType* estimatedSamples = estimatedBuffer[estimatedBufferChannel] + sliceStart;
+
+        for (size_t frame = 0; frame < numFrames; ++frame)
+        {
+            const double x = static_cast<double> (referenceSamples[frame]);
+            const double y = static_cast<double> (estimatedSamples[frame]);
+            const double noise = x - y;
+
+            signalPower += x * x;
+            noisePower += noise * noise;
+        }
+
+        if (floatsEqual<double> (signalPower, 0.0))
+            return hart::nan<double>();
+
+        return noisePower.getValue() / signalPower.getValue();
+    };
+
+    std::vector<std::pair<size_t, size_t>> defaultChannelPairs;
+    const size_t numPairs = std::min (referenceBuffer.getNumChannels(), estimatedBuffer.getNumChannels());
+    defaultChannelPairs.reserve (numPairs);
+
+    for (size_t channel = 0; channel < numPairs; ++channel)
+        defaultChannelPairs.emplace_back (channel, channel);
+
+    hassert (estimatedBuffer.getNumFrames() == referenceBuffer.getNumFrames());
+    return MetricQuery<double> (
+        std::move (evaluator),
+        referenceBuffer.getNumChannels(),
+        estimatedBuffer.getNumChannels(),
+        referenceBuffer.getNumFrames(),
+        std::move (defaultChannelPairs)
+    );
 }
 
 }  // namespace hart
