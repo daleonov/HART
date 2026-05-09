@@ -54,7 +54,7 @@ namespace hart
 /// @throws hart::IndexError if the channel index is out of bounds
 /// @ingroup Metrics
 template <typename SampleType>
-MetricQuery<double> crestFactor (const AudioBuffer<SampleType>& buffer, size_t channel = 0)
+MetricQuery<double> crestFactor (const AudioBuffer<SampleType>& buffer)
 {
     typename MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
         [&buffer]
