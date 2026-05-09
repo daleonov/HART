@@ -7,7 +7,7 @@ HART_DECLARE_ALIASES_FOR_UNITS;
 using AudioBuffer = hart::AudioBuffer<float>;
 using hart::floatsEqual;
 
-HART_TEST ("MetricQuery and Sample Peak")
+HART_TEST ("Metrics - MetricQuery and Sample Peak")
 {
     // This test case is mostly for checking MetricQuery mechanics, samplePeak is merely a guinea pig here
 
@@ -167,7 +167,7 @@ HART_TEST ("Metrics - Channel Correlation")
         .process();
 }
 
-HART_TEST ("Crest factor")
+HART_TEST ("Metrics - Crest factor")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
     using Channel = hart::Channel;
@@ -258,7 +258,7 @@ HART_TEST ("Crest factor")
         .process();
 }
 
-HART_TEST ("ESR")
+HART_TEST ("Metrics - ESR")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
     using hart::esr;
@@ -360,7 +360,7 @@ HART_TEST ("ESR")
         .process();
 }
 
-HART_TEST ("Max Cross Correlation")
+HART_TEST ("Metrics - Max Cross Correlation")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
     using hart::maxCrossCorrelation;
@@ -500,7 +500,7 @@ HART_TEST ("Max Cross Correlation")
         .process();
 }
 
-HART_TEST ("Lag At Max Cross Correlation")
+HART_TEST ("Metrics - Lag At Max Cross Correlation")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
     using hart::lagAtMaxCrossCorrelation;
@@ -640,7 +640,7 @@ HART_TEST ("Lag At Max Cross Correlation")
         .process();
 }
 
-HART_TEST ("Loudest Bin Magnitude")
+HART_TEST ("Metrics - Loudest Bin Magnitude")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
     using Spectrum = hart::Spectrum;
