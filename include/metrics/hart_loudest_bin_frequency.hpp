@@ -29,18 +29,21 @@ namespace hart
 /// for some types of tests, based around looking for peaks in a band
 /// of frequencies, but not a specific frequency.
 ///
+/// For more precise peak frequency estimation, consider using
+/// Quinn's second estimator (`hart::quinns2()` metric) instead.
+///
 /// Usage examples:
 /// @code
-/// // Loudest spectral component in dB
+/// // Loudest bin frequency in Hz
 /// const double loudestFreqHz = loudestBinFrequency (monoSpectrum).get();
 ///
-/// // Loudest bin only inside a frequency range
+/// // Loudest bin frequency, but only inside a frequency range
 /// const double loudestMidBanFreqHz =
 ///     loudestBinFrequency (monoSpectrum)
 ///         .at (Slice::frequency (500_Hz, 2000_Hz))
 ///         .get();
 ///
-/// // Loudest bin, but only inside a specific channel subset.
+/// // Loudest bin frequency, but only inside a specific channel subset.
 ///  Calculated per chanel, then averaged.
 /// const double loudestFreqHz =
 ///     loudestBinMagnitude (multiChannelSpectrum)
@@ -61,7 +64,7 @@ inline MetricQuery<double> loudestBinFrequency (const Spectrum& spectrum)
     {
         hassert (channel < spectrum.getNumChannels());
 
-        if (requestedUnit != Unit::native || requestedUnit != Unit::Hz)
+        if (requestedUnit != Unit::native && requestedUnit != Unit::Hz)
             HART_THROW_OR_RETURN (hart::UnitError, "Unsupported unit", hart::nan<double>());
 
         const std::pair<size_t, size_t> binIndices = spectrum.getBinIndices (slice);
@@ -82,14 +85,14 @@ inline MetricQuery<double> loudestBinFrequency (const Spectrum& spectrum)
         {
             const double currentSquaredMagnitude = std::norm (bins[currentBin]);
 
-            if (currentMagnitude > maxMagnitude)
+            if (currentSquaredMagnitude > maxSquaredMagnitude)
             {
-                maxMagnitude = currentMagnitude;
-                binOfMaxMagnitude = currentBin;
+                maxSquaredMagnitude = currentSquaredMagnitude;
+                binOfMaxSquaredMagnitude = currentBin;
             }
         }
 
-        return spectrum.getBinFrequencyHz (binOfMaxMagnitude);
+        return spectrum.getBinFrequencyHz (binOfMaxSquaredMagnitude);
     };
 
     std::vector<size_t> defaultChannelsToProcess (
