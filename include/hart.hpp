@@ -19,6 +19,7 @@
 #include "hart_process_audio.hpp"
 #include "hart_reducers.hpp"
 #include "signals/hart_signals_all.hpp"
+#include "hart_spectrum.hpp"
 #include "hart_str.hpp"
 #include "hart_test_registry.hpp"
 #include "hart_units.hpp"
