@@ -2,6 +2,7 @@
 
 #include <algorithm>  // max_element(), copy(), fill()
 #include <cmath>  // isnan(), abs()
+#include <utility>  // pair, make_pair()
 #include <vector>
 
 #include "hart_exceptions.hpp"
