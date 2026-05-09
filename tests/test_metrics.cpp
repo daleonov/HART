@@ -686,3 +686,200 @@ HART_TEST ("Metrics - Loudest Bin Magnitude")
         HART_EXPECT_FLOAT_EQ (ratioToDecibels (measuredMagnitudeLinear), loudestBinMagnitude (spectrum).as (dB).get(), 1e-8) << "Decibels";
     }
 }
+
+HART_TEST ("Metrics - Quinn's Second Estimator")
+{
+    using Spectrum = hart::Spectrum;
+    using hart::centsToHz;
+    using hart::quinns2;
+    using std::pow;
+
+    const std::array<double, 6> expectedFundamentalsHz ({20_Hz, 123_Hz, 456_Hz, 1_kHz, 5_kHz, 15_kHz});
+
+    for (const double expectedFundamentalHz : expectedFundamentalsHz)
+    {
+        AudioBuffer output;
+        processAudioWith (GainDb (0_dB))
+            .withInputSignal (SineWave (expectedFundamentalHz))
+            .inMono()
+            .saveOutputTo (output)
+            .process();
+
+        const Spectrum spectrum (output);
+        const double estimatedFundamentalHz = quinns2 (spectrum);
+
+        constexpr double toleranceCents = 1_cents;
+        const double toleranceHz = centsToHz (expectedFundamentalHz, toleranceCents);
+
+        HART_EXPECT_FLOAT_EQ (estimatedFundamentalHz, expectedFundamentalHz, toleranceHz)
+            << "Sine wave at " << expectedFundamentalHz << " Hz";
+    }
+
+    for (const double expectedFundamentalHz : expectedFundamentalsHz)
+    {
+        AudioBuffer output;
+        processAudioWith (GainDb (0_dB))
+            .withInputSignal (Sawtooth (expectedFundamentalHz))
+            .inMono()
+            .saveOutputTo (output)
+            .process();
+
+        const Spectrum spectrum (output);
+        const double estimatedFundamentalHz = quinns2 (spectrum);
+
+        constexpr double toleranceCents = 1_cents;
+        const double toleranceHz = centsToHz (expectedFundamentalHz, toleranceCents);
+
+        HART_EXPECT_FLOAT_EQ (estimatedFundamentalHz, expectedFundamentalHz, toleranceHz)
+            << "Sawtooth at " << expectedFundamentalHz << " Hz";
+    }
+}
+
+HART_TEST ("Metrics - Loudest Bin Frequency")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using Spectrum = hart::Spectrum;
+    using hart::centsToHz;
+    using hart::loudestBinFrequency;
+    using std::pow;
+
+    const std::array<double, 5> expectedFundamentalsHz ({123_Hz, 456_Hz, 1_kHz, 5_kHz, 15_kHz});
+
+    for (const double expectedFundamentalHz : expectedFundamentalsHz)
+    {
+        AudioBuffer output;
+        processAudioWith (GainDb (0_dB))
+            .withInputSignal (SineWave (expectedFundamentalHz))
+            .inMono()
+            .saveOutputTo (output)
+            .process();
+
+        const Spectrum spectrum (output);
+        const double estimatedFundamentalHz = loudestBinFrequency (spectrum);
+
+        const size_t expectedBinIndex = spectrum.findClosestBin (expectedFundamentalHz);
+        const double expectedBinFrequency = spectrum.getBinFrequencyHz (expectedBinIndex);
+        const double binHalfWidthHz = 0.5 * spectrum.getBinWidthHz();
+        const double expectedFundamentalLowerHz = expectedBinFrequency - binHalfWidthHz;
+        const double expectedFundamentalUpperHz = expectedBinFrequency + binHalfWidthHz;
+
+        HART_EXPECT_FLOAT_IN_RANGE (estimatedFundamentalHz, expectedFundamentalLowerHz, expectedFundamentalUpperHz, 1e-8)
+            << "Sine wave at " << expectedFundamentalHz << " Hz";
+    }
+
+    for (const double expectedFundamentalHz : expectedFundamentalsHz)
+    {
+        AudioBuffer output;
+        processAudioWith (GainDb (0_dB))
+            .withInputSignal (Sawtooth (expectedFundamentalHz))
+            .inMono()
+            .saveOutputTo (output)
+            .process();
+
+        const Spectrum spectrum (output);
+        const double estimatedFundamentalHz = loudestBinFrequency (spectrum);
+
+        const size_t expectedBinIndex = spectrum.findClosestBin (expectedFundamentalHz);
+        const double expectedBinFrequency = spectrum.getBinFrequencyHz (expectedBinIndex);
+        const double binHalfWidthHz = 0.5 * spectrum.getBinWidthHz();
+        const double expectedFundamentalLowerHz = expectedBinFrequency - binHalfWidthHz;
+        const double expectedFundamentalUpperHz = expectedBinFrequency + binHalfWidthHz;
+
+        HART_EXPECT_FLOAT_IN_RANGE (estimatedFundamentalHz, expectedFundamentalLowerHz, expectedFundamentalUpperHz, 1e-8)
+            << "Sawtooth at " << expectedFundamentalHz << " Hz";
+    }
+}
+
+HART_TEST ("Metrics - Quinn's Second Estimator vs Loudest Bin Frequency - DC")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using Spectrum = hart::Spectrum;
+    using hart::centsToHz;
+    using hart::loudestBinFrequency;
+    using hart::quinns2;
+    using std::pow;
+
+    auto dcSignal = SignalFunction (
+        [] (AudioBuffer& buffer)
+        {
+            buffer.setNumFrames (1);
+
+            for (size_t channel = 0; channel < buffer.getNumChannels(); ++channel)
+                buffer[channel][0] = 0.1;
+        },
+        "DC signal at -20 dB"
+        );
+
+    AudioBuffer output;
+    processAudioWith (GainDb (0_dB))
+        .withInputSignal (std::move (dcSignal))
+        .inMono()
+        .saveOutputTo (output)
+        .assertTrue (PeaksAt (-20_dB))
+        .process();
+
+    const Spectrum dcSpectrum (output);
+    const double estimatedFundamentalHzA = loudestBinFrequency (dcSpectrum);
+
+    const size_t expectedBinIndex = dcSpectrum.findClosestBin (0_Hz);
+    const double expectedBinFrequency = dcSpectrum.getBinFrequencyHz (expectedBinIndex);
+    const double binHalfWidthHz = 0.5 * dcSpectrum.getBinWidthHz();
+    const double expectedFundamentalLowerHz = expectedBinFrequency - binHalfWidthHz;
+    const double expectedFundamentalUpperHz = expectedBinFrequency + binHalfWidthHz;
+
+    HART_EXPECT_FLOAT_IN_RANGE (estimatedFundamentalHzA, expectedFundamentalLowerHz, expectedFundamentalUpperHz, 1e-8)
+        << "loudestBinFrequency() works correctly at near DC frequencies";
+
+    const double estimatedFundamentalHzB = quinns2 (dcSpectrum);
+    HART_EXPECT_TRUE (std::isnan (estimatedFundamentalHzB))
+        << "quinns2() is undefined at near DC frequencies";
+}
+
+HART_TEST ("Metrics - Quinn's Second Estimator vs Loudest Bin Frequency - Nyquist Signal")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using Spectrum = hart::Spectrum;
+    using hart::centsToHz;
+    using hart::loudestBinFrequency;
+    using hart::quinns2;
+    using std::pow;
+
+    auto nyquistSignal = SignalFunction (
+        [] (AudioBuffer& buffer)
+        {
+            buffer.setNumFrames (2);
+
+            for (size_t channel = 0; channel < buffer.getNumChannels(); ++channel)
+            {
+                buffer[channel][0] = 1.0;
+                buffer[channel][1] = -1.0;
+            }
+        },
+        "Nyquist signal at unity gain"
+        );
+
+    AudioBuffer output;
+    processAudioWith (GainDb (0_dB))
+        .withInputSignal (std::move (nyquistSignal))
+        .inMono()
+        .saveOutputTo (output)
+        .assertTrue (PeaksAt (0_dB))
+        .process();
+
+    const Spectrum dcSpectrum (output);
+    const double estimatedFundamentalHzA = loudestBinFrequency (dcSpectrum);
+
+    const double nyquistFrequencyHz = 0.5 * hart::CLIConfig::getInstance().getDefaultSampleRateHz();
+    const size_t expectedBinIndex = dcSpectrum.findClosestBin (nyquistFrequencyHz);
+    const double expectedBinFrequency = dcSpectrum.getBinFrequencyHz (expectedBinIndex);
+    const double binHalfWidthHz = 0.5 * dcSpectrum.getBinWidthHz();
+    const double expectedFundamentalLowerHz = expectedBinFrequency - binHalfWidthHz;
+    const double expectedFundamentalUpperHz = expectedBinFrequency + binHalfWidthHz;
+
+    HART_EXPECT_FLOAT_IN_RANGE (estimatedFundamentalHzA, expectedFundamentalLowerHz, expectedFundamentalUpperHz, 1e-8)
+        << "loudestBinFrequency() works correctly near Nyquist frequency";
+
+    const double estimatedFundamentalHzB = quinns2 (dcSpectrum);
+    HART_EXPECT_TRUE (std::isnan (estimatedFundamentalHzB))
+        << "quinns2() is undefined near Nyquist frequency";
+}
