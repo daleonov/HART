@@ -144,7 +144,7 @@ public:
     /// @brief Finds closest FFT bin to a given frequency
     size_t findClosestBin (double frequencyHz) const
     {
-        if (frequencyHz <= 0.0)
+        if (frequencyHz < 0.0)
             HART_THROW_OR_RETURN (hart::ValueError, "This is one-sided spectrum, frequencyHz should be a positive value", 0);
 
         const size_t bin = roundToSizeT (frequencyHz * m_fftSize / m_sampleRateHz);
