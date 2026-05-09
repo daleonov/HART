@@ -24,6 +24,7 @@ enum class Unit
     dB,  ///< Value of something in decibels. Can represent voltage, power, or a domain-specific unit like "LUFS" or "dB TP"
     frames,  ///< Value of something in frames (samples)
     seconds,  ///< Time stamps, intervals, durations
+    ratio,  ///< Generic ratio
     none  ///< Unitless value
 };
 
@@ -37,6 +38,7 @@ enum class Unit
     constexpr hart::Unit dB = hart::Unit::dB; \
     constexpr hart::Unit frames = hart::Unit::frames; \
     constexpr hart::Unit seconds = hart::Unit::seconds; \
+    constexpr hart::Unit ratio = hart::Unit::ratio; \
     constexpr hart::Unit none = hart::Unit::none;
 
 constexpr double inf_dB = hart::inf;
