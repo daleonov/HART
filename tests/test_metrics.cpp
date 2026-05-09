@@ -639,3 +639,50 @@ HART_TEST ("Lag At Max Cross Correlation")
         )
         .process();
 }
+
+HART_TEST ("Loudest Bin Magnitude")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using Spectrum = hart::Spectrum;
+    using Channel = hart::Channel;
+    using hart::loudestBinMagnitude;
+    using hart::ratioToDecibels;
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Silence")
+        .withInputSignal (Silence())
+        .inMono()
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (loudestBinMagnitude (Spectrum (output)).as (linear).get(), 0.0, 1e-8); }, "The loudest bin is zero")
+        .process();
+
+    std::array<std::pair<double, double>, 3> testFrequencyPairs = {{
+        {1_kHz, 500_Hz},
+        {123_Hz, 456_Hz},
+        {10_Hz, 18_kHz}
+    }};
+
+    for (std::pair<double, double> frequencies : testFrequencyPairs)
+    {
+        const double loudFrequencyHz = frequencies.first;
+        const double quietFrequencyHz = frequencies.second;
+
+        AudioBuffer output;
+        processAudioWith (GainDb (0_dB))
+            .withLabel (HART_STR ("Two sine waves: " << loudFrequencyHz << " Hz and " << quietFrequencyHz << " Hz"))
+            .withInputSignal (SineWave (loudFrequencyHz) + (SineWave (quietFrequencyHz) >> GainDb (-3_dB)))
+            .inMono()
+            .saveOutputTo (output)
+            .process();
+
+        const Spectrum spectrum (output);
+        const double measuredMagnitudeLinear = loudestBinMagnitude (spectrum).as (linear);
+        const double expectedMagnitudeLinear = spectrum.getMagnitudeLinear (Channel::left, loudFrequencyHz);
+
+        HART_EXPECT_FLOAT_EQ (measuredMagnitudeLinear, expectedMagnitudeLinear, 1e-8) << "Bin magnitude at correct frequency";
+        HART_EXPECT_GT (measuredMagnitudeLinear, spectrum.getMagnitudeLinear (Channel::left, quietFrequencyHz)) << "Louder than other sine wave";
+
+        HART_EXPECT_FLOAT_EQ (measuredMagnitudeLinear, loudestBinMagnitude (spectrum).get(), 1e-8) << "Implicit unit";
+        HART_EXPECT_FLOAT_EQ (measuredMagnitudeLinear, loudestBinMagnitude (spectrum).as (native).get(), 1e-8) << "Native unit";
+        HART_EXPECT_FLOAT_EQ (ratioToDecibels (measuredMagnitudeLinear), loudestBinMagnitude (spectrum).as (dB).get(), 1e-8) << "Decibels";
+    }
+}
