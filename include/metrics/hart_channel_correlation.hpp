@@ -7,6 +7,7 @@
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
 #include "metrics/hart_metric_query.hpp"
+#include "hart_slice.hpp"
 #include "hart_units.hpp"  // Unit
 #include "hart_utils.hpp"  // nan()
 

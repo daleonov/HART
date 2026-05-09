@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>  // min()
 #include <utility>  // pair
 #include <vector>
 
@@ -7,6 +8,7 @@
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
 #include "metrics/hart_metric_query.hpp"
+#include "hart_slice.hpp"
 #include "hart_utils.hpp"  // nan(), floatsEqual()
 #include "hart_units.hpp"  // Unit
 

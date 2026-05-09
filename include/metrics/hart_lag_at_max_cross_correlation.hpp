@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>  // min()
 #include <cmath>  // abs(), sqrt()
 #include <utility>  // pair
 #include <vector>
