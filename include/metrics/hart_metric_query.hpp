@@ -64,7 +64,6 @@ public:
     MetricQuery (
         SingleChannelMetricEvaluator evaluator,
         size_t totalNumChannels,
-        size_t totalLength,
         std::vector<size_t>&& defaultChannelsToProcess
         )
     {
@@ -92,7 +91,6 @@ public:
         ChannelPairMetricEvaluator evaluator,
         size_t totalNumChannelsA,
         size_t totalNumChannelsB,
-        size_t totalLength,
         std::vector<std::pair<size_t, size_t>>&& defaultChannelPairsToProcess
         )
     {

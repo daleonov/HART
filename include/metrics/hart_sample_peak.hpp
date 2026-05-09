@@ -71,7 +71,6 @@ MetricQuery<double> samplePeak (const AudioBuffer<SampleType>& audioBuffer)
     return MetricQuery<double> (
         std::move (evaluator),
         audioBuffer.getNumChannels(),
-        audioBuffer.getNumFrames(),
         std::move (defaultChannelsToProcess)
     );
 }

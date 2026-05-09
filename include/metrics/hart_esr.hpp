@@ -88,7 +88,6 @@ MetricQuery<double> esr (const AudioBuffer<SampleType>& referenceBuffer, const A
         std::move (evaluator),
         referenceBuffer.getNumChannels(),
         estimatedBuffer.getNumChannels(),
-        referenceBuffer.getNumFrames(),
         std::move (defaultChannelPairs)
     );
 }

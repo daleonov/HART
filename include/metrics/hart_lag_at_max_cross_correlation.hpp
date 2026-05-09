@@ -262,7 +262,6 @@ MetricQuery<double> lagAtMaxCrossCorrelation (
         std::move (evaluator),
         bufferA.getNumChannels(),
         bufferB.getNumChannels(),
-        std::min (bufferA.getNumFrames(), bufferB.getNumFrames()),
         std::move (defaultChannelPairs)
     );
 }

@@ -134,7 +134,6 @@ MetricQuery<double>  channelCorrelation (const AudioBuffer<SampleType>& buffer)
         std::move (evaluator),
         numChannels,
         numChannels,
-        buffer.getNumFrames(),
         std::move (defaultChannelPairsToProcess)
     );
 }

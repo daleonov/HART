@@ -116,7 +116,6 @@ MetricQuery<double> crestFactor (const AudioBuffer<SampleType>& buffer)
     return MetricQuery<double> (
         std::move (evaluator),
         buffer.getNumChannels(),
-        buffer.getNumFrames(),
         std::move (defaultChannelsToProcess)
     );
 }
