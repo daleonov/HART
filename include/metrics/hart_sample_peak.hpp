@@ -31,18 +31,18 @@ MetricQuery<double> samplePeak (const AudioBuffer<SampleType>& audioBuffer)
 {
     typename MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
         [&audioBuffer]
-        (size_t channel, size_t sliceStart, size_t sliceStop, Unit requestedUnit)
+        (size_t channel, Slice slice, Unit requestedUnit)
         -> double
     {
-        hassert (sliceStart < sliceStop);  // Should be handled by MetricQuery
+        if (slice.isEmpty())
+            return hart::nan<double>();
 
-        const size_t numFrames = audioBuffer.getNumFrames();
-
-        if (sliceStart >= numFrames)
-            HART_THROW_OR_RETURN (hart::IndexError, "Slice start is out of range", hart::nan<double>());
-
-        if (sliceStop > numFrames)
-            HART_THROW_OR_RETURN (hart::IndexError, "Slice end is out of range", hart::nan<double>());
+        const auto sliceFrameIndices = audioBuffer.getFrameIndices (slice);
+        const size_t sliceStart = sliceFrameIndices.first;
+        const size_t sliceStop = sliceFrameIndices.second;
+        hassert (sliceStop > sliceStart);
+        hassert (sliceStop - sliceStart != 0);
+        hassert (sliceStop <= audioBuffer.getNumFrames());
 
         const SampleType* samples = audioBuffer[channel];
         SampleType peakLinear = 0.0;

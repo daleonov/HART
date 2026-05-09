@@ -2,7 +2,9 @@
 
 #include "hart_accurate_sum.hpp"
 #include "hart_audio_buffer.hpp"
+#include "hart_exceptions.hpp"
 #include "hart_metrics_common.hpp"  // CorrelationSearchMode
+#include "hart_slice.hpp"
 #include "hart_utils.hpp"  // floatsEqual()
 
 namespace hart
@@ -108,11 +110,10 @@ MetricQuery<double> lagAtMaxCrossCorrelation (
 
     typename MetricQuery<double>::ChannelPairMetricEvaluator evaluator =
         [&bufferA, &bufferB, maxLagSeconds, minAbsBestCorrelation, searchMode]
-        (size_t channelA, size_t channelB, size_t sliceStart, size_t sliceStop, Unit requestedUnit)
+        (size_t channelA, size_t channelB, Slice slice, Unit requestedUnit)
         -> double
     {
         // Should be checked by MetricQuery
-        hassert (sliceStart < sliceStop);
         hassert (channelA < bufferA.getNumChannels());
         hassert (channelB < bufferB.getNumChannels());
 
@@ -130,29 +131,37 @@ MetricQuery<double> lagAtMaxCrossCorrelation (
                 || ! bufferB.hasSampleRate()
                 )
             {
-                HART_THROW_OR_RETURN (hart::SampleRateError, "Audio buffers must have sample rate metadata to convert lag to seconds", {});
+                HART_THROW_OR_RETURN (hart::SampleRateError, "Audio buffers must have sample rate metadata to convert lag to seconds", hart::nan<double>());
             }
 
             if (hart::floatsEqual (bufferA.getSampleRateHz(), 0.0)
                 || hart::floatsEqual (bufferB.getSampleRateHz(), 0.0)
                 )
             {
-                HART_THROW_OR_RETURN (hart::SampleRateError, "Audio buffers must have non-zero sample rates to convert lag to seconds", {});
+                HART_THROW_OR_RETURN (hart::SampleRateError, "Audio buffers must have non-zero sample rates to convert lag to seconds", hart::nan<double>());
             }
         }
 
-        const double sampleRateHz = bufferA.getSampleRateHz();
-        const size_t maxLagFrames = static_cast<size_t> (std::round (maxLagSeconds * sampleRateHz));
-        const size_t numFramesA = bufferA.getNumFrames();
-        const size_t numFramesB = bufferB.getNumFrames();
+        // This might be a bit too strict. So, if a legit case with two buffers with
+        // mismatched lengths presents itself, remove this check and handle it properly.
+        if (bufferA.getNumFrames() != bufferB.getNumFrames())
+            HART_THROW_OR_RETURN (hart::SizeError, "Audio buffers must have matching n umber of frames", hart::nan<double>());
 
-        if (sliceStop > numFramesA || sliceStop > numFramesB)
-            HART_THROW_OR_RETURN (hart::IndexError, "Slice is out of range", hart::nan<double>());
+        if (slice.isEmpty())
+            return hart::nan<double>();
+
+        const auto sliceFrameIndices = bufferA.getFrameIndices (slice);
+        const size_t sliceStart = sliceFrameIndices.first;
+        const size_t sliceStop = sliceFrameIndices.second;
+        hassert (sliceStop > sliceStart);
+        hassert (sliceStop <= bufferA.getNumFrames());
+        hassert (sliceStop <= bufferB.getNumFrames());
 
         const size_t numFrames = sliceStop - sliceStart;
+        hassert (numFrames != 0);
 
-        if (numFrames == 0)
-            return hart::nan<double>();
+        const double sampleRateHz = bufferA.getSampleRateHz();
+        const size_t maxLagFrames = static_cast<size_t> (std::round (maxLagSeconds * sampleRateHz));
 
         const SampleType* x = bufferA[channelA] + sliceStart;
         const SampleType* y = bufferB[channelB] + sliceStart;

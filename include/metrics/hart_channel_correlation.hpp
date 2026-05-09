@@ -71,13 +71,9 @@ MetricQuery<double>  channelCorrelation (const AudioBuffer<SampleType>& buffer)
 {
     typename MetricQuery<double>::ChannelPairMetricEvaluator evaluator =
         [&buffer]
-        (size_t channelA, size_t channelB, size_t sliceStart, size_t sliceStop, Unit requestedUnit)
+        (size_t channelA, size_t channelB, Slice slice, Unit requestedUnit)
         -> double
     {
-        // Those cases are expected be handled by MetricQuery
-        hassert (sliceStart < sliceStop);
-        hassert (sliceStop <= buffer.getNumFrames());
-
         const double nan = hart::nan<double>();
 
         if (channelA >= buffer.getNumChannels())
@@ -88,6 +84,16 @@ MetricQuery<double>  channelCorrelation (const AudioBuffer<SampleType>& buffer)
 
         if (requestedUnit != Unit::native && requestedUnit != Unit::none)
             HART_THROW_OR_RETURN (hart::UnitError, "Channel correlation cannot be calculated in a requested unit", nan);
+
+        if (slice.isEmpty())
+            return hart::nan<double>();
+
+        const auto sliceFrameIndices = buffer.getFrameIndices (slice);
+        const size_t sliceStart = sliceFrameIndices.first;
+        const size_t sliceStop = sliceFrameIndices.second;
+        hassert (sliceStart < sliceStop);
+        hassert (sliceStop - sliceStart != 0);
+        hassert (sliceStop <= buffer.getNumFrames());
 
         // If channel A and B point to the same channel, we still want to go through the whole thing,
         // as it can be either 1.0 or NaN depending on the contents

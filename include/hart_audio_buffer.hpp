@@ -7,7 +7,8 @@
 #include "hart_exceptions.hpp"
 #include "hart_precision.hpp"  // hzPrecision
 #include "hart_preparation.hpp"
-#include "hart_utils.hpp"  // nan(), floatsEqual()
+#include "hart_slice.hpp"
+#include "hart_utils.hpp"  // nan(), floatsEqual(), roundToSizeT()
 
 /// @defgroup DataStructures Data Structures
 /// @brief Custom data structures and containers
@@ -617,6 +618,52 @@ public:
     {
         _processWith (dsp, blockSizeFrames, dspPreparation);
         return std::move (*this);
+    }
+
+    /// @brief Returns a pair of indices representing a provided slice
+    /// @param slice A Slice instance. Valid slice types are `Slice::Type::whole`
+    /// `Slice::Type::frames` and `Slice::Type::time`
+    /// @retval first Index representing the beginning of the range, inclusive
+    /// @retval second Index representing the end of the range, non-inclusive
+    std::pair<size_t, size_t> getFrameIndices (const Slice& slice) const
+    {
+        const size_t numFrames = getNumFrames();
+
+        switch (slice.type)
+        {
+            case Slice::Type::whole:
+            {
+                return {0, numFrames};
+            }
+
+            case Slice::Type::frames:
+            {
+                const size_t startFrame = static_cast<size_t> (slice.start);
+                const size_t stopFrame = static_cast<size_t> (slice.stop);
+
+                return {
+                    std::min (startFrame, numFrames),
+                    std::min (stopFrame, numFrames)
+                };
+            }
+
+            case Slice::Type::time:
+            {
+                const double sampleRateHz = getSampleRateHz();
+                const size_t startFrame = roundToSizeT (slice.start * sampleRateHz);
+                const size_t stopFrame = roundToSizeT (slice.stop * sampleRateHz);
+
+                return {
+                    std::min (startFrame, numFrames),
+                    std::min (stopFrame, numFrames)
+                };
+            }
+
+            default:
+            {
+                HART_THROW_OR_RETURN (hart::UnitError, "Slice type cannot be interpreted as frame range", std::make_pair (0, numFrames));
+            }
+        }
     }
 
 private:

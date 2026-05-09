@@ -7,6 +7,7 @@
 #include "metrics/hart_metrics_common.hpp"  // ReducerResultType
 #include "hart_exceptions.hpp"
 #include "hart_reducers.hpp"  // first
+#include "hart_slice.hpp"
 #include "hart_units.hpp"  // Unit
 #include "hart_utils.hpp"  // make_unique()
 
@@ -41,7 +42,7 @@ public:
     ///  - `channel` - number of channel to calculate metric (for metrics that operate per channel), see `ch()`
     ///  - `sliceStart`, `sliceStop` - the range of data to calculate the metric on, see `slice()`
     ///  - `requestedUnit` - the unit that the metric should be calculated in, see `as()`
-    using SingleChannelMetricEvaluator = std::function<ValueType (size_t channel, size_t sliceStart, size_t sliceStop, Unit requestedUnit)>;
+    using SingleChannelMetricEvaluator = std::function<ValueType (size_t channel, Slice slice, Unit requestedUnit)>;
 
     /// @brief A lambda function (or a callable object) that calculates a specific metric for a given pair of channels
     /// @details Arguments:
@@ -49,7 +50,7 @@ public:
     ///  - `channelB` - number of right-hand-side channel to calculate metric (for metrics that operate per channel), see `ch()`
     ///  - `sliceStart`, `sliceStop` - the range of data to calculate the metric on, see `slice()`
     ///  - `requestedUnit` - the unit that the metric should be calculated in, see `as()`
-    using ChannelPairMetricEvaluator = std::function<ValueType (size_t channelA, size_t channelB, size_t sliceStart, size_t sliceStop, Unit requestedUnit)>;
+    using ChannelPairMetricEvaluator = std::function<ValueType (size_t channelA, size_t channelB, Slice slice, Unit requestedUnit)>;
 
     /// @brief Create a metric query object for a metric that operates on one channel at a time
     /// @details This ctor in meant to be invoked by the metric functions,
@@ -70,8 +71,7 @@ public:
         m_query->singleChannelMetricEvaluator = std::move (evaluator);
         m_query->totalNumChannelsA = totalNumChannels;
         m_query->totalNumChannelsB = 0;
-        m_query->sliceStart = 0;
-        m_query->sliceStop = totalLength;
+        m_query->slice = Slice::whole();
         m_query->requestedUnit = Unit::native;
         m_query->channels = std::move (defaultChannelsToProcess);
     }
@@ -99,8 +99,7 @@ public:
         m_query->channelPairMetricEvaluator = std::move (evaluator);
         m_query->totalNumChannelsA = totalNumChannelsA;
         m_query->totalNumChannelsB = totalNumChannelsB;
-        m_query->sliceStart = 0;
-        m_query->sliceStop = totalLength;
+        m_query->slice = Slice::whole();
         m_query->requestedUnit = Unit::native;
         m_query->channelPairs = std::move (defaultChannelPairsToProcess);
     }
@@ -170,18 +169,17 @@ public:
     }
 
     /// @brief Requests to perform a metric on a specific range inside of data
-    /// @details The actual meaning of the slice depends on what kind of data
-    /// the metric is performed on. For example, for time-domain AudioBuffer
-    /// it's the range of frames, for frequency-domain data it's range of bins.
-    /// @param sliceStart Start ofn the slice, inclusive
-    /// @param sliceStop End of the slice, non-inclusive
+    /// @param slice Slice representing a range of data, see `hart::Slice`
     /// @throws hart::SizeError If the the slice is empty
-    MetricQuery slice (size_t sliceStart, size_t sliceStop) const
+    MetricQuery at (Slice slice) const
     {
         MetricQuery copy (*this);
         copy.m_query = hart::make_unique<Query> (*m_query);
-        copy.m_query->sliceStart = sliceStart;
-        copy.m_query->sliceStop = sliceStop;
+
+        if (slice.isEmpty())
+            HART_THROW_OR_RETURN (hart::SizeError, "Requested slice is empty", copy);
+
+        copy.m_query->slice = slice;
         return copy;
     }
 
@@ -233,8 +231,7 @@ private:
         std::vector<std::pair<size_t, size_t>> channelPairs;
         size_t totalNumChannelsA = 0;
         size_t totalNumChannelsB = 0;
-        size_t sliceStart = 0;
-        size_t sliceStop = 0;
+        Slice slice {Slice::whole()};
         Unit requestedUnit = Unit::native;
         mutable bool cacheValid = false;
         mutable std::vector<ValueType> cachedValues;
@@ -272,9 +269,6 @@ private:
         if (m_query->cacheValid)
             return;
 
-        if (m_query->sliceStop < m_query->sliceStart)
-            HART_THROW_OR_RETURN_VOID (hart::SizeError, "Requested slices start is greater than its stop");
-
         m_query->cachedValues.clear();
 
         if (getEvaluatorType() == EvaluatorType::singleChannels)
@@ -295,8 +289,7 @@ private:
             m_query->cachedValues.push_back (
                 m_query->singleChannelMetricEvaluator (
                     channel,
-                    m_query->sliceStart,
-                    m_query->sliceStop,
+                    m_query->slice,
                     m_query->requestedUnit
                 )
             );
@@ -314,8 +307,7 @@ private:
                 m_query->channelPairMetricEvaluator (
                     channelPair.first,
                     channelPair.second,
-                    m_query->sliceStart,
-                    m_query->sliceStop,
+                    m_query->slice,
                     m_query->requestedUnit
                 )
             );

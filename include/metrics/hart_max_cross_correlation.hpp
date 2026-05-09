@@ -2,7 +2,9 @@
 
 #include "hart_accurate_sum.hpp"
 #include "hart_audio_buffer.hpp"
+#include "hart_exceptions.hpp"
 #include "hart_metrics_common.hpp"  // CorrelationSearchMode
+#include "hart_utils.hpp"  // roundToSizeT()
 
 namespace hart
 {
@@ -111,32 +113,33 @@ MetricQuery<double> maxCrossCorrelation (
     if ((bufferA.hasSampleRate() || bufferB.hasSampleRate()) && bufferA.getSampleRateHz() != bufferB.getSampleRateHz())
         HART_THROW_OR_RETURN (hart::SampleRateError, "Audio buffers must have equal sample rates", {});
 
-    const double sampleRateHz = bufferA.getSampleRateHz();
-    const size_t maxLagFrames = static_cast<size_t> (std::round (maxLagSeconds * sampleRateHz));
-
     typename MetricQuery<double>::ChannelPairMetricEvaluator evaluator =
-        [&bufferA, &bufferB, maxLagFrames, searchMode]
-        (size_t channelA,size_t channelB, size_t sliceStart, size_t sliceStop, Unit requestedUnit)
+        [&bufferA, &bufferB, maxLagSeconds, searchMode]
+        (size_t channelA,size_t channelB, Slice slice, Unit requestedUnit)
         -> double
     {
         // Should be checked by MetricQuery
-        hassert (sliceStart < sliceStop);
         hassert (channelA < bufferA.getNumChannels());
         hassert (channelB < bufferB.getNumChannels());
 
         if (requestedUnit != Unit::native && requestedUnit != Unit::none)
             HART_THROW_OR_RETURN (hart::UnitError, "Cross-correlation does not support requested unit", hart::nan<double>());
 
-        const size_t numFramesA = bufferA.getNumFrames();
-        const size_t numFramesB = bufferB.getNumFrames();
+        if (slice.isEmpty())
+            return hart::nan<double>();
 
-        if (sliceStop > numFramesA || sliceStop > numFramesB)
-            HART_THROW_OR_RETURN (hart::IndexError, "Slice is out of range", hart::nan<double>());
+        const auto sliceFrameIndices = bufferA.getFrameIndices (slice);
+        const size_t sliceStart = sliceFrameIndices.first;
+        const size_t sliceStop = sliceFrameIndices.second;
+        hassert (sliceStop > sliceStart);
+        hassert (sliceStop <= bufferA.getNumFrames());
+        hassert (sliceStop <= bufferB.getNumFrames());
 
         const size_t numFrames = sliceStop - sliceStart;
+        hassert (numFrames != 0);
 
-        if (numFrames == 0)
-            return hart::nan<double>();
+        const double sampleRateHz = bufferA.getSampleRateHz();
+        const size_t maxLagFrames = roundToSizeT (maxLagSeconds * sampleRateHz);
 
         const SampleType* x = bufferA[channelA] + sliceStart;
         const SampleType* y = bufferB[channelB] + sliceStart;

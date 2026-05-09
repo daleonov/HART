@@ -10,6 +10,7 @@
 #include "hart_exceptions.hpp"
 #include "hart_metrics_common.hpp"
 #include "hart_reducers.hpp"
+#include "hart_slice.hpp"
 #include "hart_utils.hpp"  // nan(), inf, ratioToDecibels()
 
 namespace hart
@@ -51,24 +52,28 @@ namespace hart
 ///   - Returns `NaN` if the audio buffer contains zero frames.
 ///   - Returns `inf` if the selected channel is silent, making RMS equal to (or close to) zero.
 /// @tparam SampleType Floating point sample type of the audio buffer, typically `float` or `double`
-/// @throws hart::IndexError if the channel index is out of bounds
+/// @throws hart::IndexError if the channel index is out of bounds, or slice boundary is out of range
 /// @ingroup Metrics
 template <typename SampleType>
 MetricQuery<double> crestFactor (const AudioBuffer<SampleType>& buffer)
 {
     typename MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
         [&buffer]
-        (size_t channel, size_t sliceStart, size_t sliceStop, Unit requestedUnit)
+        (size_t channel, Slice slice, Unit requestedUnit)
         -> double
     {
-        // Should be handled by MetricQuery
-        hassert (sliceStart < sliceStop);
         hassert (channel < buffer.getNumChannels());
 
-        const size_t numFrames = sliceStop - sliceStart;
-
-        if (numFrames == 0)
+        if (slice.isEmpty())
             return hart::nan<double>();
+
+        const auto sliceFrameIndices = buffer.getFrameIndices (slice);
+        const size_t sliceStart = sliceFrameIndices.first;
+        const size_t sliceStop = sliceFrameIndices.second;
+        const size_t numFrames = sliceStop - sliceStart;
+        hassert (numFrames != 0);
+        hassert (sliceStart < sliceStop);
+        hassert (sliceStop <= buffer.getNumFrames());
 
         const SampleType* channelData = buffer[channel];
 
