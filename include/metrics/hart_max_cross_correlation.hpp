@@ -194,7 +194,7 @@ MetricQuery<double> maxCrossCorrelation (
                 if (correlation > bestCorrelation)
                     bestCorrelation = correlation;
             }
-            else bestAbsoluteCorrelation:
+            else  // bestAbsoluteCorrelation
             {
                 if (std::abs (correlation) > std::abs (bestCorrelation))
                     bestCorrelation = correlation;
