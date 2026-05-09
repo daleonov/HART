@@ -117,6 +117,31 @@ public:
         return copy;
     }
 
+    /// @brief Requests the metric to be applied to certain channel.
+    /// @details If this method is not called, the channel subset will be
+    /// defined by a specific metric.
+    /// @param channel Zero-based channel index to measure. You may
+    /// use values from @ref hart::Channel or @ref hart::MidSideChannel
+    /// where appropriate.
+    MetricQuery ch (size_t channel) const
+    {
+        MetricQuery copy (*this);
+        copy.m_query = hart::make_unique<Query> (*m_query);
+
+        if (getEvaluatorType() == EvaluatorType::singleChannels)
+        {
+            copy.m_query->channels.clear();
+            copy.m_query->channels.push_back (channel);
+        }
+        else
+        {
+            copy.m_query->channelPairs.clear();
+            copy.m_query->channelPairs.push_back (std::make_pair (channel, channel));
+        }
+
+        return copy;
+    }
+
     /// @brief Requests the metric to be applied to certain channels.
     /// @details If this method is not called, the channel subset will be
     /// defined by a specific metric.
