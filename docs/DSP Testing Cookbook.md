@@ -511,7 +511,7 @@ HART_GENERATE ("Envelope - Gain Envelope Regression")
 
 You can keep them in the same test suite, and even in the same `.cpp` file as your regression test. Running your test binary with `--run-generators` (or `-g`) flag will invoke only those `HART_GENERATE()` tasks, and won't run any `HART_TEST()` ones. And if you run it without this flag, it will do the opposite, so those two types of tasks will never clash, giving you an easy way to update the reference files whenever needed.
 
-## Polarity preverved
+## Polarity preserved
 
 Another thing that is easy to miss is when your DSP flips the polarity (phase) of the signal. It's pretty harmless, until the user decides to mix in some dry signal externally in the DAW, and discovers that your plugin doesn't do a very good job at parallel processing. HART provides a matcher that checks exactly that:
 
