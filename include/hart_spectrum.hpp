@@ -64,6 +64,36 @@ public:
         }
     }
 
+    static Spectrum zeros (size_t numChannels, size_t signalDurationFrames, double sampleRateHz)
+    {
+        Spectrum spectrum;
+
+        if (sampleRateHz < 0)
+            HART_THROW_OR_RETURN_VOID (hart::SampleRateError, "Sample rate should not be negative");
+
+        spectrum.m_sampleRateHz = sampleRateHz;
+
+        // We can allow zero channels or zero frames at some point, but need to add
+        // guards to all methods that might get zero division errors as a result
+
+        if (numChannels == 0)
+            HART_THROW_OR_RETURN_VOID (hart::SizeError, "Number of channels should not be zero");
+
+        if (signalDurationFrames == 0)
+            HART_THROW_OR_RETURN_VOID (hart::SizeError, "Signal duration should not be zero");
+
+        spectrum.m_fftSize = nextPowerOfTwo (signalDurationFrames);
+        spectrum.m_numBins = spectrum.m_fftSize / 2 + 1;
+
+        spectrum.m_numChannels = numChannels;
+        spectrum.m_data.resize (
+            spectrum.m_numChannels,
+            std::vector<std::complex<double>> (spectrum.m_numBins, std::complex<double> (0.0, 0.0))
+            );
+
+        return spectrum;
+    }
+
     /// @brief Returns number of channels
     size_t getNumChannels() const
     {
@@ -197,6 +227,7 @@ public:
     }
 
 private:
+    Spectrum() = default;
 
     static size_t nextPowerOfTwo (size_t x)
     {
