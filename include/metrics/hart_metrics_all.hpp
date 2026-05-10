@@ -9,3 +9,4 @@
 #include "metrics/hart_max_cross_correlation.hpp"
 #include "metrics/hart_quinns2.hpp"
 #include "metrics/hart_sample_peak.hpp"
+#include "metrics/hart_spectral_centroid.hpp"
