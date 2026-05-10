@@ -8,5 +8,6 @@
 #include "metrics/hart_loudest_bin_magnitude.hpp"
 #include "metrics/hart_max_cross_correlation.hpp"
 #include "metrics/hart_quinns2.hpp"
+#include "metrics/hart_rms.hpp"
 #include "metrics/hart_sample_peak.hpp"
 #include "metrics/hart_spectral_centroid.hpp"

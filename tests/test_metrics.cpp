@@ -944,3 +944,40 @@ HART_TEST ("Metrics - Spectral Centroid - Mock Spectra")
             << "Dual frequency centroid at channel " << channel;
     }
 }
+
+HART_TEST ("Metrics - RMS")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::rms;
+    using std::sqrt;
+
+    constexpr double invSqrt2 = 0.7071067811865475;
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Sine wave")
+        .withInputSignal (SineWave ())
+        .inMono()
+        .expectTrue ([invSqrt2] (const AudioBuffer& buffer) { return HART_FLOAT_EQ (rms (buffer).get(), invSqrt2, 1e-6); }, "RMS = 1 / sqrt(2)")
+        .process();
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Sine sweep")
+        .withInputSignal (SineSweep ())
+        .inMono()
+        .expectTrue ([invSqrt2] (const AudioBuffer& buffer) { return HART_FLOAT_EQ (rms (buffer).get(), invSqrt2, 0.01); }, "RMS ~= 1 / sqrt(2)")
+        .process();
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Square (ish) wave")
+        .withInputSignal (SineWave () >> GainDb (30_dB) >> HardClip())
+        .inMono()
+        .expectTrue ([] (const AudioBuffer& buffer) { return HART_FLOAT_EQ (rms (buffer).get(), 1.0, 0.01); }, "RMS ~= 1")
+        .process();
+    
+    constexpr double invSqrt3 = 0.5773502691896258;
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Band-limited sawtooth")
+        .withInputSignal (Sawtooth())
+        .inMono()
+        .expectTrue ([invSqrt3] (const AudioBuffer& buffer) { return HART_FLOAT_EQ (rms (buffer).get(), invSqrt3, 0.01); }, "RMS ~= 1 / sqrt(3)")
+        .process();
+}
