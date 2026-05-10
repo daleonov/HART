@@ -883,3 +883,73 @@ HART_TEST ("Metrics - Quinn's Second Estimator vs Loudest Bin Frequency - Nyquis
     HART_EXPECT_TRUE (std::isnan (estimatedFundamentalHzB))
         << "quinns2() is undefined near Nyquist frequency";
 }
+
+HART_TEST ("Metrics - Spectral Centroid - Mock Spectra")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using Spectrum = hart::Spectrum;
+    using hart::spectralCentroid;
+    using hart::loudestBinFrequency;
+    using hart::roundToSizeT;
+    using hart::nth;
+
+    auto& cliConfig = hart::CLIConfig::getInstance();
+    const double sampleRateHz = cliConfig.getDefaultSampleRateHz();
+    const double signalDurationSeconds = cliConfig.getDefaultRenderDurationSeconds();
+    const size_t signalDurationFrames = roundToSizeT (signalDurationSeconds * sampleRateHz);
+    constexpr int numChannels = 10;
+
+    auto mockSpectrum = Spectrum::zeros (numChannels, signalDurationFrames, sampleRateHz);
+    const size_t numBins = mockSpectrum.getNumBins();
+
+    // Single frequency
+    for (size_t channel = 0; channel < numChannels / 2; ++channel)
+    {
+        const size_t bin = (10 + channel * 100) % numBins;
+        mockSpectrum[channel][bin] = std::complex<double> (1.0, 0.0);
+
+        const double expectedCentroidHz = mockSpectrum.getBinFrequencyHz (bin);
+
+        HART_EXPECT_FLOAT_EQ (
+            spectralCentroid (mockSpectrum).get (nth (channel)),
+            expectedCentroidHz,
+            1e-12
+        )
+        << "Single-frequency centroid at channel " << channel;
+    }
+
+    for (size_t channel = 5; channel < 10; ++channel)
+    {
+        const size_t binA = (50 + (channel - 5) * 40) % numBins;
+        const size_t binB = (binA + (channel - 5) * 100) % numBins;
+
+        constexpr double magnitudeA = 1.0;
+        constexpr double magnitudeB = 3.0;
+
+        spectrum.setBin (
+            channel,
+            binA,
+            std::complex<double> (magnitudeA, 0.0)
+        );
+
+        spectrum.setBin (
+            channel,
+            binB,
+            std::complex<double> (magnitudeB, 0.0)
+        );
+
+        const double freqA = spectrum.getBinFrequencyHz (binA);
+        const double freqB = spectrum.getBinFrequencyHz (binB);
+
+        const double expectedCentroidHz =
+            (freqA * magnitudeA + freqB * magnitudeB)
+            / (magnitudeA + magnitudeB);
+
+        HART_EXPECT_FLOAT_EQ (
+            spectralCentroid (spectrum).get (nth (channel)),
+            expectedCentroidHz,
+            1e-12
+        )
+            << "Dual frequency centroid at channel " << channel;
+    }
+}
