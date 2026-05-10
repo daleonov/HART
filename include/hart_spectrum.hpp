@@ -162,8 +162,17 @@ public:
         return getBinMagnitude (channel, findClosestBin (frequencyHz));
     }
 
-    /// @brief Returns pointer to magnitudes of a specific channel
+    /// @brief Returns pointer to read-only magnitudes of a specific channel
     const std::complex<double>* operator[] (size_t channel) const
+    {
+        if (channel >= m_numChannels)
+            HART_THROW_OR_RETURN (hart::IndexError, "Channel index is out of range", hart::nan<double>());
+
+        return m_data[channel].data();
+    }
+
+    /// @brief Returns pointer to mutable magnitudes of a specific channel
+    std::complex<double>* operator[] (size_t channel)
     {
         if (channel >= m_numChannels)
             HART_THROW_OR_RETURN (hart::IndexError, "Channel index is out of range", hart::nan<double>());
