@@ -1,12 +1,12 @@
 #pragma once
 
 #include <cmath>  // abs(), sqrt()
-#include <vector>
 
 #include "hart_accurate_sum.hpp"
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
 #include "metrics/hart_metric_query.hpp"
+#include "metrics/hart_metrics_common.hpp"  // ChannelSubsets
 #include "hart_slice.hpp"
 #include "hart_units.hpp"  // Unit
 #include "hart_utils.hpp"  // nan(), inf, ratioToDecibels()
@@ -108,15 +108,11 @@ MetricQuery<double> crestFactor (const AudioBuffer<SampleType>& buffer)
         }
     };
 
-    std::vector<size_t> defaultChannelsToProcess (buffer.getNumChannels());
-
-    for (size_t i = 0; i < defaultChannelsToProcess.size(); ++i)
-        defaultChannelsToProcess[i] = i;
-
+    const size_t numChannels = buffer.getNumChannels();
     return MetricQuery<double> (
         std::move (evaluator),
-        buffer.getNumChannels(),
-        std::move (defaultChannelsToProcess)
+        numChannels,
+        ChannelSubsets::allChannels (numChannels)
     );
 }
 

@@ -1,12 +1,10 @@
 #pragma once
 
-#include <utility>  // pair
-#include <vector>
-
 #include "hart_accurate_sum.hpp"
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
 #include "metrics/hart_metric_query.hpp"
+#include "metrics/hart_metrics_common.hpp"  // ChannelSubsets
 #include "hart_slice.hpp"
 #include "hart_units.hpp"  // Unit
 #include "hart_utils.hpp"  // nan()
@@ -124,18 +122,11 @@ MetricQuery<double>  channelCorrelation (const AudioBuffer<SampleType>& buffer)
     };
 
     const size_t numChannels = buffer.getNumChannels();
-    std::vector<std::pair<size_t, size_t>> defaultChannelPairsToProcess;
-    defaultChannelPairsToProcess.reserve (numChannels * (numChannels - 1) / 2);
-
-    for (size_t channelA = 0; channelA < numChannels; ++channelA)
-        for (size_t channelB = channelA + 1; channelB < numChannels; ++channelB)
-            defaultChannelPairsToProcess.emplace_back (channelA, channelB);
-
     return MetricQuery<double> (
         std::move (evaluator),
         numChannels,
         numChannels,
-        std::move (defaultChannelPairsToProcess)
+        ChannelSubsets::upperTriangleChannelPairs (numChannels)
     );
 }
 

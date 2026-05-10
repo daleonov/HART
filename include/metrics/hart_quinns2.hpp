@@ -3,10 +3,10 @@
 #include <algorithm>  // max()
 #include <cmath>  // log(), sqrt(), isnan()
 #include <complex>  // complex, norm()
-#include <vector>
 
 #include "hart_exceptions.hpp"
 #include "metrics/hart_metric_query.hpp"
+#include "metrics/hart_metrics_common.hpp"  // ChannelSubsets
 #include "hart_slice.hpp"
 #include "hart_spectrum.hpp"
 #include "hart_units.hpp"  // Unit
@@ -141,16 +141,11 @@ inline MetricQuery<double> quinns2 (const Spectrum& spectrum)
         return peakFreqAdjusted;
     };
 
-    std::vector<size_t> defaultChannelsToProcess (
-        spectrum.getNumChannels());
-
-    for (size_t i = 0; i < defaultChannelsToProcess.size(); ++i)
-        defaultChannelsToProcess[i] = i;
-
+    const size_t numChannels = spectrum.getNumChannels();
     return MetricQuery<double> (
         std::move (evaluator),
-        spectrum.getNumChannels(),
-        std::move (defaultChannelsToProcess)
+        numChannels,
+        ChannelSubsets::allChannels (numChannels)
     );
 }
 

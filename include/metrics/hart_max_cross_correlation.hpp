@@ -2,14 +2,12 @@
 
 #include <algorithm>  // min()
 #include <cmath>  // abs()
-#include <utility>  // pair
-#include <vector>
 
 #include "hart_accurate_sum.hpp"
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
 #include "metrics/hart_metric_query.hpp"
-#include "metrics/hart_metrics_common.hpp"  // CorrelationSearchMode
+#include "metrics/hart_metrics_common.hpp"  // CorrelationSearchMode, ChannelSubsets
 #include "hart_slice.hpp"
 #include "hart_units.hpp"  // Unit
 #include "hart_utils.hpp"  // roundToSizeT()
@@ -211,18 +209,12 @@ MetricQuery<double> maxCrossCorrelation (
         return bestCorrelation;
     };
 
-    std::vector<std::pair<size_t, size_t>> defaultChannelPairs;
     const size_t numPairs = std::min (bufferA.getNumChannels(), bufferB.getNumChannels());
-    defaultChannelPairs.reserve (numPairs);
-
-    for (size_t channel = 0; channel < numPairs; ++channel)
-        defaultChannelPairs.emplace_back (channel, channel);
-
     return MetricQuery<double> (
         std::move (evaluator),
         bufferA.getNumChannels(),
         bufferB.getNumChannels(),
-        std::move (defaultChannelPairs)
+        ChannelSubsets::diagonalChannelPairs (numPairs)
     );
 }
 

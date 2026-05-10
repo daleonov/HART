@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>  // min()
+#include <utility>  // pair
 #include <vector>
 
 #include "hart_audio_buffer.hpp"
@@ -10,6 +11,43 @@ namespace hart
 
 /// @defgroup Metrics Metrics
 /// @brief Common audio-related metrics
+
+/// @brief Helpers to generate common default channel subsets
+struct ChannelSubsets
+{
+    static std::vector<size_t> allChannels (size_t numChannels)
+    {
+        std::vector<size_t> channelIndices (numChannels);
+
+        for (size_t i = 0; i < channelIndices.size(); ++i)
+            channelIndices[i] = i;
+        
+            return channelIndices;
+    }
+
+    static std::vector<std::pair<size_t, size_t>> upperTriangleChannelPairs (size_t numChannels)
+    {
+        std::vector<std::pair<size_t, size_t>> channelPairIndices;
+        channelPairIndices.reserve (numChannels * (numChannels - 1) / 2);
+
+        for (size_t channelA = 0; channelA < numChannels; ++channelA)
+            for (size_t channelB = channelA + 1; channelB < numChannels; ++channelB)
+                channelPairIndices.emplace_back (channelA, channelB);
+
+        return channelPairIndices;
+    }
+
+    static std::vector<std::pair<size_t, size_t>> diagonalChannelPairs (size_t numChannels)
+    {
+    std::vector<std::pair<size_t, size_t>> channelPairIndices;
+    channelPairIndices.reserve (numChannels);
+
+    for (size_t channel = 0; channel < numChannels; ++channel)
+        channelPairIndices.emplace_back (channel, channel);
+
+        return channelPairIndices;
+    }
+};
 
 /// @brief A helper to determine the return type of a reducer function
 /// @ingroup Metrics

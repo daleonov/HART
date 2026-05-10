@@ -1,13 +1,12 @@
 #pragma once
 
 #include <algorithm>  // min()
-#include <utility>  // pair
-#include <vector>
 
 #include "hart_accurate_sum.hpp"
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
 #include "metrics/hart_metric_query.hpp"
+#include "metrics/hart_metrics_common.hpp"  // ChannelSubsets
 #include "hart_slice.hpp"
 #include "hart_utils.hpp"  // nan(), floatsEqual()
 #include "hart_units.hpp"  // Unit
@@ -91,19 +90,12 @@ MetricQuery<double> esr (const AudioBuffer<SampleType>& referenceBuffer, const A
         return noisePower.getValue() / signalPower.getValue();
     };
 
-    std::vector<std::pair<size_t, size_t>> defaultChannelPairs;
     const size_t numPairs = std::min (referenceBuffer.getNumChannels(), estimatedBuffer.getNumChannels());
-    defaultChannelPairs.reserve (numPairs);
-
-    for (size_t channel = 0; channel < numPairs; ++channel)
-        defaultChannelPairs.emplace_back (channel, channel);
-
-    hassert (estimatedBuffer.getNumFrames() == referenceBuffer.getNumFrames());
     return MetricQuery<double> (
         std::move (evaluator),
         referenceBuffer.getNumChannels(),
         estimatedBuffer.getNumChannels(),
-        std::move (defaultChannelPairs)
+        ChannelSubsets::diagonalChannelPairs (numPairs)
     );
 }
 

@@ -2,11 +2,11 @@
 
 #include <algorithm>  // max()
 #include <cmath>  // abs()
-#include <vector>
 
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
 #include "metrics/hart_metric_query.hpp"
+#include "metrics/hart_metrics_common.hpp"  // ChannelSubsets
 #include "hart_slice.hpp"
 #include "hart_units.hpp"  // Unit
 #include "hart_utils.hpp"  // nan
@@ -64,15 +64,11 @@ MetricQuery<double> samplePeak (const AudioBuffer<SampleType>& audioBuffer)
         }
     };
 
-    std::vector<size_t> defaultChannelsToProcess (audioBuffer.getNumChannels());
-
-    for (size_t i = 0; i < defaultChannelsToProcess.size(); ++i)
-        defaultChannelsToProcess[i] = i;
-
+    const size_t numChannels = audioBuffer.getNumChannels();
     return MetricQuery<double> (
         std::move (evaluator),
-        audioBuffer.getNumChannels(),
-        std::move (defaultChannelsToProcess)
+        numChannels,
+        ChannelSubsets::allChannels (numChannels)
     );
 }
 
