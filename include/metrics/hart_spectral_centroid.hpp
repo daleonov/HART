@@ -56,7 +56,7 @@ namespace SpectralCentroid
 inline MetricQuery<double> spectralCentroid (const Spectrum& spectrum, SpectralCentroid::Weighting weighting = SpectralCentroid::Weighting::magnitude)
 {
     typename MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
-        [&spectrum]
+        [&spectrum, weighting]
         (size_t channel, const Slice& slice, Unit requestedUnit)
         -> double
     {
@@ -79,7 +79,7 @@ inline MetricQuery<double> spectralCentroid (const Spectrum& spectrum, SpectralC
         AccurateSum<double> numerator;
         AccurateSum<double> denominator;
 
-        if (SpectralCentroid::Weighting = SpectralCentroid::Weighting::magnitude)
+        if (weighting == SpectralCentroid::Weighting::magnitude)
         {
             for (size_t bin = startBin; bin < stopBin; ++bin)
             {
@@ -90,7 +90,7 @@ inline MetricQuery<double> spectralCentroid (const Spectrum& spectrum, SpectralC
                 denominator += magnitudeLinear;
             }
         }
-        else  // SpectralCentroid::Weighting = SpectralCentroid::Weighting::power
+        else  // weighting == SpectralCentroid::Weighting::power
         {
             for (size_t bin = startBin; bin < stopBin; ++bin)
             {

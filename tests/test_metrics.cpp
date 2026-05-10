@@ -926,27 +926,18 @@ HART_TEST ("Metrics - Spectral Centroid - Mock Spectra")
         constexpr double magnitudeA = 1.0;
         constexpr double magnitudeB = 3.0;
 
-        spectrum.setBin (
-            channel,
-            binA,
-            std::complex<double> (magnitudeA, 0.0)
-        );
+        mockSpectrum[channel][binA] = std::complex<double> (magnitudeA, 0.0);
+        mockSpectrum[channel][binB] = std::complex<double> (magnitudeB, 0.0);
 
-        spectrum.setBin (
-            channel,
-            binB,
-            std::complex<double> (magnitudeB, 0.0)
-        );
-
-        const double freqA = spectrum.getBinFrequencyHz (binA);
-        const double freqB = spectrum.getBinFrequencyHz (binB);
+        const double freqA = mockSpectrum.getBinFrequencyHz (binA);
+        const double freqB = mockSpectrum.getBinFrequencyHz (binB);
 
         const double expectedCentroidHz =
             (freqA * magnitudeA + freqB * magnitudeB)
             / (magnitudeA + magnitudeB);
 
         HART_EXPECT_FLOAT_EQ (
-            spectralCentroid (spectrum).get (nth (channel)),
+            spectralCentroid (mockSpectrum).get (nth (channel)),
             expectedCentroidHz,
             1e-12
         )
