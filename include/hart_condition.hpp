@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "hart_stringify.hpp"
+#include "hart_utils.hpp"  // addCents()
 
 namespace hart
 {
@@ -181,6 +182,58 @@ public:
         stringRepresentationStream << "HART_FLOAT_NOT_EQUAL (" << hart::toString (lhs) << ", " << hart::toString (rhs) << ", " << hart::toString (tolerance) << ")";
         return Condition (
             lhs - tolerance > rhs || rhs > lhs + tolerance,
+            tokenRepresentationStream.str(),
+            stringRepresentationStream.str(),
+            file,
+            line
+            );
+    }
+
+    ///@private
+    static Condition
+    frequenciesEqual (
+        double observedFrequencyHz,
+        double expectedFrequencyHz,
+        double toleranceCents,
+        const char* observedFrequencyTokens,
+        const char* expectedFrequencyTokens,
+        const char* toleranceTokens,
+        const char* file,
+        int line
+        )
+    {
+        std::ostringstream tokenRepresentationStream;
+        std::ostringstream stringRepresentationStream;
+        tokenRepresentationStream << "HART_FREQUENCIES_EQUAL (" << observedFrequencyTokens << ", " << expectedFrequencyTokens << ", " << toleranceTokens << ')';
+        stringRepresentationStream << "HART_FREQUENCIES_EQUAL (" << hart::toString (observedFrequencyHz) << ", " << hart::toString (expectedFrequencyHz) << ", " << hart::toString (toleranceCents) << ')';
+        return Condition (
+            (observedFrequencyHz >= addCents (expectedFrequencyHz, -toleranceCents)) && (observedFrequencyHz <= addCents (expectedFrequencyHz, toleranceCents)),
+            tokenRepresentationStream.str(),
+            stringRepresentationStream.str(),
+            file,
+            line
+            );
+    }
+
+    ///@private
+    static Condition
+    frequenciesNotEqual (
+        double observedFrequencyHz,
+        double expectedFrequencyHz,
+        double toleranceCents,
+        const char* observedFrequencyTokens,
+        const char* expectedFrequencyTokens,
+        const char* toleranceTokens,
+        const char* file,
+        int line
+        )
+    {
+        std::ostringstream tokenRepresentationStream;
+        std::ostringstream stringRepresentationStream;
+        tokenRepresentationStream << "HART_FREQUENCIES_NOT_EQUAL (" << observedFrequencyTokens << ", " << expectedFrequencyTokens << ", " << toleranceTokens << ')';
+        stringRepresentationStream << "HART_FREQUENCIES_NOT_EQUAL (" << hart::toString (observedFrequencyHz) << ", " << hart::toString (expectedFrequencyHz) << ", " << hart::toString (toleranceCents) << ')';
+        return Condition (
+            ! ((observedFrequencyHz >= addCents (expectedFrequencyHz, -toleranceCents)) && (observedFrequencyHz <= addCents (expectedFrequencyHz, toleranceCents))),
             tokenRepresentationStream.str(),
             stringRepresentationStream.str(),
             file,

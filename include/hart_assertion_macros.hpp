@@ -76,6 +76,30 @@
 #define HART_ASSERT_FLOAT_NE(lhs, rhs, tolerance) \
     HART_ASSERT_FLOAT_NOT_EQUAL (lhs, rhs, tolerance)
 
+#define HART_EXPECT_FREQUENCIES_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents) \
+    HART_EXPECT (HART_FREQUENCIES_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents))
+
+#define HART_ASSERT_FREQUENCIES_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents) \
+    HART_ASSERT (HART_FREQUENCIES_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents))
+
+#define HART_EXPECT_FREQ_EQ(observedFrequencyHz, expectedFrequencyHz, toleranceCents) \
+    HART_EXPECT_FREQUENCIES_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents)
+
+#define HART_ASSERT_FREQ_EQ(observedFrequencyHz, expectedFrequencyHz, toleranceCents) \
+    HART_ASSERT_FREQUENCIES_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents)
+
+#define HART_EXPECT_FREQUENCIES_NOT_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents) \
+    HART_EXPECT (HART_FREQUENCIES_NOT_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents))
+
+#define HART_ASSERT_FREQUENCIES_NOT_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents) \
+    HART_ASSERT (HART_FREQUENCIES_NOT_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents))
+
+#define HART_EXPECT_FREQ_NE(observedFrequencyHz, expectedFrequencyHz, toleranceCents) \
+    HART_EXPECT_FREQUENCIES_NOT_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents)
+
+#define HART_ASSERT_FREQ_NE(observedFrequencyHz, expectedFrequencyHz, toleranceCents) \
+    HART_ASSERT_FREQUENCIES_NOT_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents)
+
 #define HART_EXPECT_GREATER_THAN(lhs, rhs) \
     HART_EXPECT (HART_GREATER_THAN (lhs, rhs))
 

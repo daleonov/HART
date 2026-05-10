@@ -38,6 +38,18 @@
 #define HART_FLOAT_NE(lhs, rhs, tolerance) \
     HART_FLOAT_NOT_EQUAL (lhs, rhs, tolerance)
 
+#define HART_FREQUENCIES_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents) \
+    ::hart::Condition::frequenciesEqual ((observedFrequencyHz), (expectedFrequencyHz), (toleranceCents), #observedFrequencyHz, #expectedFrequencyHz, #toleranceCents, __FILE__, __LINE__)
+
+#define HART_FREQ_EQ(observedFrequencyHz, expectedFrequencyHz, toleranceCents) \
+    HART_FREQUENCIES_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents)
+
+#define HART_FREQUENCIES_NOT_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents) \
+    ::hart::Condition::frequenciesNotEqual ((observedFrequencyHz), (expectedFrequencyHz), (toleranceCents), #observedFrequencyHz, #expectedFrequencyHz, #toleranceCents, __FILE__, __LINE__)
+
+#define HART_FREQ_NE(observedFrequencyHz, expectedFrequencyHz, toleranceCents) \
+    HART_FREQUENCIES_NOT_EQUAL(observedFrequencyHz, expectedFrequencyHz, toleranceCents)
+
 #define HART_GREATER_THAN(lhs, rhs) \
     ::hart::Condition::greaterThan ((lhs), (rhs), #lhs, #rhs, __FILE__, __LINE__)
 
