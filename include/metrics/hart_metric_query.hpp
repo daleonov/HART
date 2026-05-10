@@ -31,6 +31,9 @@ namespace hart
 /// const size_t resultJ = samplePeak (multiChannelBuffer).get (argmax());  // Get the index of the loudest channel
 /// const vector<double> resultK = samplePeak (multiChannelBuffer).as (dB).get (collect());  // Get vector of per-channel peak values in dB
 /// @endcode
+///
+/// For a more detailed "how-to", see @ref UsingMetricsAndReducers. 
+///
 /// If you create your own metric functions, it's strongly encouraged for them to return this class instance,
 /// rather that just a POD value, as this class handles multi-channel setups, slices etc.
 /// @ingroup Metrics

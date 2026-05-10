@@ -13,6 +13,7 @@ namespace hart
 
 /// @brief A helper to determine the return type of a reducer function
 /// @ingroup Metrics
+/// @private
 template <typename Reducer, typename Iterator>
 struct ReducerResult
 {
@@ -27,12 +28,15 @@ struct ReducerResult
 
 /// @brief An alias to get the return type of a reducer function in a less verbose post-C++11 manner
 /// @ingroup Metrics
+/// @private
 template <typename Reducer, typename Iterator>
 using ReducerResultType =
     typename ReducerResult<Reducer, Iterator>::type;
 
+// TODO: Replace this method with std::vector generator(s)
 /// @brief A helper to get an iterable of channel indices to process
 /// @ingroup Metrics
+/// @private
 template <typename SampleType>
 std::vector<size_t> getChannelIndicesToProcess (const AudioBuffer<SampleType>& buffer, std::initializer_list<size_t> channels)
 {
@@ -47,9 +51,11 @@ std::vector<size_t> getChannelIndicesToProcess (const AudioBuffer<SampleType>& b
     return indices;
 }
 
+// TODO: Replace this method with std::vector generator(s)
 /// @brief A helper to get an iterable of channel indices to process for a pair of buffers
 /// @details If buffers' channel count is mismatched, returns the shortest subset
 /// @ingroup Metrics
+/// @private
 template <typename SampleType>
 std::vector<size_t> getChannelIndicesToProcess (const AudioBuffer<SampleType>& bufferA, const AudioBuffer<SampleType>& bufferB, std::initializer_list<size_t> channels)
 {

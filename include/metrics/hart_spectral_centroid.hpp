@@ -15,9 +15,45 @@
 namespace hart
 {
 
+namespace SpectralCentroid
+{
+    enum class Weighting
+    {
+        magnitude,
+        power
+    };
+
+}  // namespace SpectralCentroid
+
 /// @brief Calculates spectral centroid
+/// @details Commonly used to numerically express amound of "brightness" of a sound.
+///
+/// You have an option to pick one of two common weighting methods:
+///
+/// 1. Magnitude-weighted:
+/// @f[
+/// C_{mag}=\frac{\sum_{k=0}^{N-1} f_k |X_k|}{\sum_{k=0}^{N-1} |X_k|}
+/// @f]
+///
+/// (C_mag = sum(f_k * abs(X_k)) / sum(abs(X_k))),
+///
+/// 2. Power-weighted:
+/// @f[
+/// C_{pow}=\frac{\sum_{k=0}^{N-1} f_k |X_k|^2}{\sum_{k=0}^{N-1} |X_k|^2}
+/// @f]
+///
+/// C_pow = sum(f_k * abs(X_k)^2) / sum(abs(X_k)^2)
+///
+/// Where f<sub>k</sub> is a center frequency of each bin, and X<sub>k</sub> is a magnitude of this bin.
+/// In both cases the result is measured in Hertz, so accepted units are Unit::native and Unit::Hz,
+/// which are the same.
+///
+/// See @ref UsingMetricsAndReducers for how to use metrics that return a `MetricQuery` object line this one.
+/// @param spectrum Spectrum of a single to operate on
+/// @param weighting Type of weighting (see description above)
+/// @return  Chainable `MetricQuery`, which calculates per-channel spectral centroid values in Hz
 /// @ingroup Metrics
-inline MetricQuery<double> spectralCentroid (const Spectrum& spectrum)
+inline MetricQuery<double> spectralCentroid (const Spectrum& spectrum, SpectralCentroid::Weighting weighting = SpectralCentroid::Weighting::magnitude)
 {
     typename MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
         [&spectrum]
@@ -43,13 +79,28 @@ inline MetricQuery<double> spectralCentroid (const Spectrum& spectrum)
         AccurateSum<double> numerator;
         AccurateSum<double> denominator;
 
-        for (size_t bin = startBin; bin < stopBin; ++bin)
+        if (SpectralCentroid::Weighting = SpectralCentroid::Weighting::magnitude)
         {
-            const double magnitudeLinear = spectrum.getBinMagnitude (channel, bin);
-            const double frequencyHz = spectrum.getBinFrequencyHz (bin);
+            for (size_t bin = startBin; bin < stopBin; ++bin)
+            {
+                const double magnitudeLinear = spectrum.getBinMagnitude (channel, bin);
+                const double frequencyHz = spectrum.getBinFrequencyHz (bin);
 
-            numerator += magnitudeLinear * frequencyHz;
-            denominator += magnitudeLinear;
+                numerator += magnitudeLinear * frequencyHz;
+                denominator += magnitudeLinear;
+            }
+        }
+        else  // SpectralCentroid::Weighting = SpectralCentroid::Weighting::power
+        {
+            for (size_t bin = startBin; bin < stopBin; ++bin)
+            {
+                const double magnitudeLinear = spectrum.getBinMagnitude (channel, bin);
+                const double powerLinear = magnitudeLinear * magnitudeLinear;
+                const double frequencyHz = spectrum.getBinFrequencyHz (bin);
+
+                numerator += powerLinear * frequencyHz;
+                denominator += powerLinear;
+            }
         }
 
         if (floatsEqual (denominator.getValue(), 0.0))

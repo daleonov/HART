@@ -15,9 +15,22 @@
 namespace hart
 {
 
-// TODO: Add more detailed doc for esr()
-
 /// @brief Calculates error-to-signal ratio (ESR)
+/// @details ESR is a useful way to express the degree of similarity between
+/// two signals or waveforms, calculated as:
+/// 
+/// @f[
+/// ESR=\frac{\sum_{k=0}^{N-1} (x - y) ^ 2}{\sum_{k=0}^{N-1} x^2}$$
+/// @f]
+///
+/// (sum ((x - y) ** 2) / sum (x ** 2))
+///
+/// Where x is a signal represented by @p referenceBuffer and y is represented
+/// by @p estimatedBuffer. It's a ratio, so appropriate units are `Unit::native`
+/// and `Unit::ratio`. ESR = 0 means two signals are identical.
+/// @param referenceBuffer A buffer representing x in the formula above
+/// @param estimatedBuffer A buffer representing y in the formula above
+/// @return  Chainable `MetricQuery`, which calculates per-channel ESR values
 template <typename SampleType>
 MetricQuery<double> esr (const AudioBuffer<SampleType>& referenceBuffer, const AudioBuffer<SampleType>& estimatedBuffer)
 {
