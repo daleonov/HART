@@ -134,8 +134,8 @@ inline static size_t roundToSizeT (SampleType x)
     return static_cast<size_t> (x + (SampleType) 0.5);
 }
 
-/// @brief Converts cents to Hz
-inline double centsToHz (double baseFrequencyHz, double cents)
+/// @brief Anns an offset in cents to a frequency in Hz
+inline double addCents (double baseFrequencyHz, double cents)
 {
     return baseFrequencyHz * std::pow (2.0, cents / 1200.0);
 }
