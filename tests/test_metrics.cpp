@@ -1082,3 +1082,60 @@ HART_TEST ("Metrics - Zero Crossing Rate - Very quiet noise detection")
             )
         .process();
 }
+
+HART_TEST ("Metrics - Spectral Flatness")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using Spectrum = hart::Spectrum;
+    using hart::spectralFlatness;
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Pure tone")    
+        .withInputSignal (SineWave())
+        .expectTrue (
+            [] (const AudioBuffer& output)
+                { return HART_FLOAT_IN_RANGE (spectralFlatness (Spectrum (output)).get(), 0.0, 0.1, 1e-6); },
+            "0.0 <= Spectral Flatness <= 0.1"
+            )
+        .process();
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Not-so-pure tone")    
+        .withInputSignal (SineWave() >> GainDb (40_dB) >> HardClip())
+        .expectTrue (
+            [] (const AudioBuffer& output)
+                { return HART_FLOAT_IN_RANGE (spectralFlatness (Spectrum (output)).get(), 0.1, 1.0, 1e-6); },
+            "0.1 <= Spectral Flatness <= 1.0"
+            )
+        .process();
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Spiky spectrum")    
+        .withInputSignal (Sawtooth())
+        .expectTrue (
+            [] (const AudioBuffer& output)
+                { return HART_FLOAT_IN_RANGE (spectralFlatness (Spectrum (output)).get(), 0.0, 0.2, 1e-6); },
+            "0.0 <= Spectral Flatness <= 0.2"
+            )
+        .process();
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("White noise")    
+        .withInputSignal (WhiteNoise())
+        .expectTrue (
+            [] (const AudioBuffer& output)
+                { return HART_FLOAT_IN_RANGE (spectralFlatness (Spectrum (output)).get(), 0.8, 1.0, 1e-6); },
+            "0.8 <= Spectral Flatness <= 1.0"
+            )
+        .process();
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Silence")    
+        .withInputSignal (Silence())
+        .expectTrue (
+            [] (const AudioBuffer& output)
+                { return HART_TRUE (std::isnan (spectralFlatness (Spectrum (output)).get())); },
+            "Spectral Flatness is NaN"
+            )
+        .process();
+}
