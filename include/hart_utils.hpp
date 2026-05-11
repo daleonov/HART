@@ -113,6 +113,30 @@ inline static SampleType ratioToDecibels (SampleType valueLinear)
     return static_cast<SampleType> (20 * std::log10 (valueLinear));
 }
 
+/// @brief Converts dB to linear value (power)
+/// @param valueDb Value in decibels
+/// @return Value in linear domain
+template <typename SampleType>
+inline static SampleType decibelsToPower (SampleType valueDb)
+{
+    if (valueDb < -120)
+        return 0;
+
+    return std::pow (static_cast<SampleType> (10), valueDb / static_cast<SampleType> (10));
+}
+
+/// @brief Converts linear value (power) to dB
+/// @param valueLinear Value in linear domain
+/// @return Value in decibels
+template <typename SampleType>
+inline static SampleType powerToDecibels (SampleType valueLinear)
+{
+    if (valueLinear < 1e-12)
+        return -120;
+
+    return static_cast<SampleType> (10 * std::log10 (valueLinear));
+}
+
 /// @brief Compares two floating point numbers within a given tolerance
 template <typename SampleType>
 inline static SampleType floatsEqual (SampleType a, SampleType b, SampleType epsilon = (SampleType) 1e-8)
