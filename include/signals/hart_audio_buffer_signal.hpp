@@ -2,6 +2,8 @@
 
 #include "hart_audio_buffer.hpp"
 #include "signals/hart_signal.hpp"
+#include "hart_slice.hpp" 
+
 #include <memory>
 #include <sstream>
 

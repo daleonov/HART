@@ -6,7 +6,9 @@
 #include <algorithm>
 #include <utility>  // swap(), make_pair(), pair
 
+#include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
+#include "hart_slice.hpp" 
 #include "hart_utils.hpp"  // nan(), roundToSizeT()
 
 namespace hart
