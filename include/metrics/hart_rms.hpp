@@ -62,7 +62,7 @@ MetricQuery<double> rms (const AudioBuffer<SampleType>& buffer)
 
         for (size_t frame = sliceStart; frame < sliceStop; ++frame)
         {
-            const double x = channelData[frame];
+            const SampleType x = channelData[frame];
             sumSquares += x * x;
         }
 
