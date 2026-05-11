@@ -971,3 +971,114 @@ HART_TEST ("Metrics - RMS")
         .expectTrue ([invSqrt3] (const AudioBuffer& buffer) { return HART_FLOAT_EQ (rms (buffer).get(), invSqrt3, 0.01); }, "RMS ~= 1 / sqrt(3)")
         .process();
 }
+
+HART_TEST ("Metrics - Zero Crossing Rate - Basics")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::zcr;
+
+    for (const double expectedFrequencyHz : {222_Hz, 440_Hz, 5000_Hz, 15000_Hz})
+    {
+        processAudioWith (GainDb (0_dB))
+            .withLabel ("Sine wave")
+            .withInputSignal (SineWave (expectedFrequencyHz))
+            .inMono()
+            .expectTrue (
+                [expectedFrequencyHz]
+                    (const AudioBuffer& buffer)
+                    {return HART_FREQ_EQ (zcr (buffer).get() * 0.5, expectedFrequencyHz, 25_cents);},
+                "1/2 * ZCR = Sine wave frequency, within 2 cents"
+                )
+            .process();
+
+        processAudioWith (GainDb (0_dB))
+            .withLabel ("Sawtooth")
+            .withInputSignal (Sawtooth (expectedFrequencyHz))
+            .inMono()
+            .expectTrue (
+                [expectedFrequencyHz]
+                    (const AudioBuffer& buffer)
+                    {return HART_FREQ_EQ (zcr (buffer).get() * 0.5, expectedFrequencyHz, 25_cents);},
+                "1/2 * ZCR = Sawtooth frequency, within 2 cents"
+                )
+            .process();
+    }
+
+    const double sampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Nyquist signal")
+        .withInputSignal (NyquistSignal())
+        .inMono()
+        .expectTrue (
+            [sampleRateHz]
+                (const AudioBuffer& buffer)
+                {return HART_FREQ_EQ (zcr (buffer).get(), sampleRateHz, 2_cents);},
+            "ZCR = Sample Rate, within 2 cents"
+            )
+        .process();
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Silence")
+        .withInputSignal (Silence())
+        .inMono()
+        .expectTrue (
+            [sampleRateHz]
+                (const AudioBuffer& buffer)
+                {return HART_FLOAT_EQ (zcr (buffer).get(), 0.0, 1e-8);},
+            "ZCR = 0"
+            )
+        .process();
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("DC signal")
+        .withInputSignal (DC (1.0f))
+        .inMono()
+        .expectTrue (
+            [sampleRateHz]
+                (const AudioBuffer& buffer)
+                {return HART_FLOAT_EQ (zcr (buffer).get(), 0.0, 1e-8);},
+            "ZCR = 0"
+            )
+        .process();
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Unit")
+        .withInputSignal (SineWave (1234_Hz))
+        .inMono()
+        .expectTrue (
+            [] (const AudioBuffer& buffer)
+            {
+                return HART_FLOAT_EQ (
+                    zcr (buffer).as (native).get(),
+                    zcr (buffer).as (Hz).get(),
+                    1e-8
+                    );
+            },
+            "Native unit is Hz"
+            )
+        .process();
+}
+
+HART_TEST ("Metrics - Zero Crossing Rate - Very quiet noise detection")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::zcr;
+
+    const double sampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Unit")
+        .withInputSignal (Silence() >> AdditiveNoise (0_dB) >> GainLinear (1e-10))  // -200 dB sample peak
+        .inMono()
+        .expectTrue (EqualsTo (Silence(), 1e-6))  // -120 dB threshold - goes under the radar
+        .expectTrue (
+            [] (const AudioBuffer& buffer)
+                { return HART_FLOAT_NE (zcr (buffer).get(), 0.0, 1e-6); },
+            "ZCR is not zero..."
+            )
+        .expectTrue (
+            [sampleRateHz] (const AudioBuffer& buffer)
+                { return HART_GT (zcr (buffer).get(), 0.1 * sampleRateHz); },
+            "...in fact, ZCR is pretty high!"
+            )
+        .process();
+}
