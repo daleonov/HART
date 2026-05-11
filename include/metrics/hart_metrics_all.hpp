@@ -11,3 +11,4 @@
 #include "metrics/hart_rms.hpp"
 #include "metrics/hart_sample_peak.hpp"
 #include "metrics/hart_spectral_centroid.hpp"
+#include "metrics/hart_zcr.hpp"
