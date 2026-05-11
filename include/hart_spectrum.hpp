@@ -282,13 +282,13 @@ private:
             {
                 std::complex<double> w (1.0, 0.0);
 
-                for (size_t j = 0; j < len / 2; ++j)
+                for (size_t jj = 0; jj < len / 2; ++jj)
                 {
-                    const std::complex<double> u = data[i + j];
-                    const std::complex<double> v = data[i + j + len / 2] * w;
+                    const std::complex<double> u = data[i + jj];
+                    const std::complex<double> v = data[i + jj + len / 2] * w;
 
-                    data[i + j] = u + v;
-                    data[i + j + len / 2] = u - v;
+                    data[i + jj] = u + v;
+                    data[i + jj + len / 2] = u - v;
 
                     w *= wlen;
                 }
