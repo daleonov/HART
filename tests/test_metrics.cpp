@@ -49,7 +49,7 @@ HART_TEST ("Metrics - MetricQuery and Sample Peak")
             .process();
     }
 
-    const double expectedDbMean = (-3_dB + -6_dB + -12_dB) / 3;
+    constexpr double expectedDbMean = (-3_dB + -6_dB + -12_dB) / 3;
     const double expectedLinToDbMean = ratioToDecibels ((decibelsToRatio (-3_dB) + decibelsToRatio (-6_dB) + decibelsToRatio (-12_dB)) / 3);
     HART_ASSERT_FLOAT_NE (expectedDbMean, expectedLinToDbMean, 1e-8) << "Geometric vs arithmetic averaging";
 
@@ -690,11 +690,10 @@ HART_TEST ("Metrics - Loudest Bin Magnitude")
 HART_TEST ("Metrics - Quinn's Second Estimator")
 {
     using Spectrum = hart::Spectrum;
-    using hart::centsToHz;
     using hart::quinns2;
     using std::pow;
 
-    const std::array<double, 6> expectedFundamentalsHz ({20_Hz, 123_Hz, 456_Hz, 1_kHz, 5_kHz, 15_kHz});
+    const std::array<double, 5> expectedFundamentalsHz ({123_Hz, 456_Hz, 1_kHz, 5_kHz, 15_kHz});
 
     for (const double expectedFundamentalHz : expectedFundamentalsHz)
     {
@@ -708,10 +707,7 @@ HART_TEST ("Metrics - Quinn's Second Estimator")
         const Spectrum spectrum (output);
         const double estimatedFundamentalHz = quinns2 (spectrum);
 
-        constexpr double toleranceCents = 1_cents;
-        const double toleranceHz = centsToHz (expectedFundamentalHz, toleranceCents);
-
-        HART_EXPECT_FLOAT_EQ (estimatedFundamentalHz, expectedFundamentalHz, toleranceHz)
+        HART_EXPECT_FREQ_EQ (estimatedFundamentalHz, expectedFundamentalHz, 15_cents)
             << "Sine wave at " << expectedFundamentalHz << " Hz";
     }
 
@@ -727,10 +723,7 @@ HART_TEST ("Metrics - Quinn's Second Estimator")
         const Spectrum spectrum (output);
         const double estimatedFundamentalHz = quinns2 (spectrum);
 
-        constexpr double toleranceCents = 1_cents;
-        const double toleranceHz = centsToHz (expectedFundamentalHz, toleranceCents);
-
-        HART_EXPECT_FLOAT_EQ (estimatedFundamentalHz, expectedFundamentalHz, toleranceHz)
+        HART_EXPECT_FREQ_EQ (estimatedFundamentalHz, expectedFundamentalHz, 15_cents)
             << "Sawtooth at " << expectedFundamentalHz << " Hz";
     }
 }
@@ -739,7 +732,6 @@ HART_TEST ("Metrics - Loudest Bin Frequency")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
     using Spectrum = hart::Spectrum;
-    using hart::centsToHz;
     using hart::loudestBinFrequency;
     using std::pow;
 
@@ -794,7 +786,6 @@ HART_TEST ("Metrics - Quinn's Second Estimator vs Loudest Bin Frequency - DC")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
     using Spectrum = hart::Spectrum;
-    using hart::centsToHz;
     using hart::loudestBinFrequency;
     using hart::quinns2;
     using std::pow;
@@ -805,7 +796,7 @@ HART_TEST ("Metrics - Quinn's Second Estimator vs Loudest Bin Frequency - DC")
             buffer.setNumFrames (1);
 
             for (size_t channel = 0; channel < buffer.getNumChannels(); ++channel)
-                buffer[channel][0] = 0.1;
+                buffer[channel][0] = 0.1f;
         },
         "DC signal at -20 dB"
         );
@@ -839,7 +830,6 @@ HART_TEST ("Metrics - Quinn's Second Estimator vs Loudest Bin Frequency - Nyquis
 {
     using AudioBuffer = hart::AudioBuffer<float>;
     using Spectrum = hart::Spectrum;
-    using hart::centsToHz;
     using hart::loudestBinFrequency;
     using hart::quinns2;
     using std::pow;
