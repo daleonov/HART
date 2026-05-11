@@ -40,7 +40,11 @@ HART_TEST ("Silence in - Silence out")
     processAudioWith (MyDspWrapper())
         .withInputSignal (Silence())
         .expectTrue (EqualsTo (Silence()))
-        .expectTrue ([] (const AudioBuffer& buffer) { return HART_GRATER_THAN (zcr (buffer).get(), 0_Hz); }, "ZCR is not zero Hz")
+        .expectTrue (
+            [] (const AudioBuffer& buffer)
+                { return HART_FLOAT_EQ (zcr (buffer).get(), 0_Hz, 1e-8); },
+            "ZCR is zero Hz"
+            )
         .process();
 }
 ```
