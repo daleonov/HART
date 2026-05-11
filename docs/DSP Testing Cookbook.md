@@ -30,6 +30,23 @@ HART_TEST ("Silence in - Silence out")
 }
 ```
 
+Looks pretty dumb and simple? We can make it a little more robust. `EqualsTo()` compares signals sample-by sample withing a cetrain tolerance, and we have a tiny amount of noise, below that tolerance threshols, it can run under the radar. You could also use something like `PeaksBelow (-oo_dB)`, but it has the same flaw in this context. But you can check for zero crossing rate. If the noise is below the threshold, it will still cross the zero every now and then, exposing the sneaky noise. With this in mind:
+
+```cpp
+HART_TEST ("Silence in - Silence out")
+{
+    using hart::zcr;  // Zero Crossing Rate metric
+
+    processAudioWith (MyDspWrapper())
+        .withInputSignal (Silence())
+        .expectTrue (EqualsTo (Silence()))
+        .expectTrue ([] (const AudioBuffer& buffer) { return HART_GRATER_THAN (zcr (buffer).get(), 0_Hz); }, "ZCR is not zero Hz")
+        .process();
+}
+```
+
+It's also a good example of how you can take advantage of function-based matchers and built-in \ref Metrics to create highly-customized matchers like this ZCR check.
+
 ## Outputs audio
 
 If a previous test passes, it's good news - unless your DSP always outputs silence, regardless of the input. To ensure it's not the case, it's a good idea to play something through it, and check if it's not outputting silence, when it's supposed to produce some meaningful audio.
