@@ -9,6 +9,7 @@
 #include <sstream>
 #include <vector>
 
+#include "hart_analysis_context.hpp"
 #include "hart_audio_buffer.hpp"
 #include "hart_condition.hpp"
 #include "dsp/hart_dsp_all.hpp"
@@ -859,7 +860,8 @@ private:
             auto& assertionLevel = check.signalAssertionLevel;
             auto& matcher = check.matcher;
 
-            const bool matchPassed = matcher->match (inputAudio, outputAudio);
+            const AnalysisContext<SampleType> analysisContext (inputAudio, outputAudio);
+            const bool matchPassed = matcher->match (analysisContext);
 
             if (matchPassed != check.shouldPass)
             {
