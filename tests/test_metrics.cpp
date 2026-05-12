@@ -782,6 +782,47 @@ HART_TEST ("Metrics - Loudest Bin Frequency")
     }
 }
 
+HART_TEST ("Metrics - Interpolated Peak Frequency")
+{
+    using Spectrum = hart::Spectrum;
+    using hart::quinns2;
+    using std::pow;
+
+    const std::array<double, 5> expectedFundamentalsHz ({123_Hz, 456_Hz, 1_kHz, 5_kHz, 15_kHz});
+
+    for (const double expectedFundamentalHz : expectedFundamentalsHz)
+    {
+        AudioBuffer output;
+        processAudioWith (GainDb (0_dB))
+            .withInputSignal (SineWave (expectedFundamentalHz))
+            .inMono()
+            .saveOutputTo (output)
+            .process();
+
+        const Spectrum spectrum (output);
+        const double estimatedFundamentalHz = interpolatedPeakFrequency (spectrum);
+
+        HART_EXPECT_FREQ_EQ (estimatedFundamentalHz, expectedFundamentalHz, 15_cents)
+            << "Sine wave at " << expectedFundamentalHz << " Hz";
+    }
+
+    for (const double expectedFundamentalHz : expectedFundamentalsHz)
+    {
+        AudioBuffer output;
+        processAudioWith (GainDb (0_dB))
+            .withInputSignal (Sawtooth (expectedFundamentalHz))
+            .inMono()
+            .saveOutputTo (output)
+            .process();
+
+        const Spectrum spectrum (output);
+        const double estimatedFundamentalHz = interpolatedPeakFrequency (spectrum);
+
+        HART_EXPECT_FREQ_EQ (estimatedFundamentalHz, expectedFundamentalHz, 15_cents)
+            << "Sawtooth at " << expectedFundamentalHz << " Hz";
+    }
+}
+
 HART_TEST ("Metrics - Quinn's Second Estimator vs Loudest Bin Frequency - DC")
 {
     using AudioBuffer = hart::AudioBuffer<float>;

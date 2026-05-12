@@ -1,0 +1,128 @@
+#pragma once
+
+#include <algorithm>  // max()
+#include <complex>  // complex, norm()
+
+#include "hart_exceptions.hpp"
+#include "metrics/hart_metric_query.hpp"
+#include "metrics/hart_metrics_common.hpp"  // ChannelSubsets
+#include "hart_slice.hpp"
+#include "hart_spectrum.hpp"
+#include "hart_units.hpp"  // Unit
+#include "hart_utils.hpp"  // nan(), floatsEqual(), floatsNotEqual()
+
+namespace hart
+{
+
+/// @brief Returns the center frequency of the loudest FFT bin
+/// @details
+/// Finds the maximum-magnitude FFT bin independently for each channel.
+/// Use reducers to combine multi-channel results (see @ref Reducers).
+///
+/// Supports `Unit::Hz` (native/default) unit, so requesting a unit
+/// explicitly via `MetricQuery::as()` is not required.
+///
+/// This metric operates on FFT bins exactly as stored in the Spectrum.
+/// In a not-so-likely event where multiple bins have exactly the same
+/// magnitube, the lowest frequency will be returned.
+/// This is not intended for precise pitch tracking, but still useful
+/// for some types of tests, based around looking for peaks in a band
+/// of frequencies, but not a specific frequency.
+///
+/// For more precise peak frequency estimation, consider using
+/// Quinn's second estimator (`hart::quinns2()` metric) instead.
+///
+/// Usage examples:
+/// @code
+/// // Loudest bin frequency in Hz
+/// const double loudestFreqHz = loudestBinFrequency (monoSpectrum).get();
+///
+/// // Loudest bin frequency, but only inside a frequency range
+/// const double loudestMidBanFreqHz =
+///     loudestBinFrequency (monoSpectrum)
+///         .at (Slice::frequency (500_Hz, 2000_Hz))
+///         .get();
+///
+/// // Loudest bin frequency, but only inside a specific channel subset.
+///  Calculated per chanel, then averaged.
+/// const double loudestFreqHz =
+///     loudestBinMagnitude (multiChannelSpectrum)
+///         .ch ({0, 2, 4})
+///         .get (mean());
+///
+/// @endcode
+///
+/// @param spectrum Input frequency-domain spectrum
+/// @throws hart::UnitError if unsupported unit is requested
+/// @ingroup Metrics
+inline MetricQuery<double> interpolatedPeakFrequency (const Spectrum& spectrum)
+{
+    if (spectrum.getFFTSize() == 0)
+        HART_THROW_OR_RETURN (hart::SizeError, "Cannot estimate peak frequency, if FFT size is zero", {});
+
+    typename MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
+        [&spectrum]
+        (size_t channel, const Slice& slice, Unit requestedUnit)
+        -> double
+    {
+        hassert (channel < spectrum.getNumChannels());
+
+        if (requestedUnit != Unit::native && requestedUnit != Unit::Hz)
+            HART_THROW_OR_RETURN (hart::UnitError, "Unsupported unit", hart::nan<double>());
+
+        const double sampleRateHz = spectrum.getSampleRateHz();
+
+        if (floatsEqual (sampleRateHz, 0.0))
+            return hart::nan<double>();
+
+        const std::pair<size_t, size_t> binIndices = spectrum.getBinIndices (slice);
+        const size_t startBin = binIndices.first;
+        const size_t stopBin = binIndices.second;
+
+        if (slice.isEmpty() || stopBin - startBin == 0)
+            return hart::nan<double>();
+
+        hassert (startBin < stopBin);
+        hassert (stopBin <= spectrum.getNumBins());
+
+        const std::complex<double>* bins = spectrum[channel];
+        double maxSquaredMagnitude = 0.0;
+        size_t strongestBin = 0;
+
+        for (size_t currentBin = startBin; currentBin < stopBin; ++currentBin)
+        {
+            const double currentSquaredMagnitude = std::norm (bins[currentBin]);
+
+            if (currentSquaredMagnitude > maxSquaredMagnitude)
+            {
+                maxSquaredMagnitude = currentSquaredMagnitude;
+                strongestBin = currentBin;
+            }
+        }
+
+        // Not defined for boundary bins
+        if (strongestBin == 0 || strongestBin == spectrum.getNumBins() - 1)
+            return hart::nan<double>();
+
+        // Parabolic interpolation on magnitude
+        const double ym1 = spectrum.getBinMagnitude (channel, strongestBin - 1);
+        const double y0  = spectrum.getBinMagnitude (channel, strongestBin);
+        const double yp1 = spectrum.getBinMagnitude (channel, strongestBin + 1);
+
+        const double delta = 0.5 * (ym1 - yp1) / (ym1 - 2.0 * y0 + yp1 + 1e-30);
+        const double preciseBin = static_cast<double> (strongestBin) + delta;
+
+        const double fftSize = static_cast<double> (spectrum.getFFTSize());
+        hassert (floatsNotEqual (fftSize, 0.0));
+        return preciseBin * sampleRateHz / static_cast<double> (fftSize);
+    };
+
+    const size_t numChannels = spectrum.getNumChannels();
+    return MetricQuery<double> (
+        std::move (evaluator),
+        numChannels,
+        ChannelSubsets::allChannels (numChannels)
+    );
+}
+
+}  // namespace hart
