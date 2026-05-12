@@ -66,7 +66,7 @@ MetricQuery<double> rms (const AudioBuffer<SampleType>& buffer)
             sumSquares += x * x;
         }
 
-        const double rmsLinear = std::sqrt (sumSquares.get<double>() / numFrames);
+        const double rmsLinear = std::sqrt (sumSquares.template get<double>() / numFrames);
 
         switch (requestedUnit)
         {
