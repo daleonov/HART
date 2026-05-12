@@ -39,7 +39,7 @@ public:
         {
             SampleType* channelData = output[channel];
 
-            for (size_t frame = 0; frame < output.getNumFrames(); ++frame)
+            for (size_t frame = 0; frame < numFrames; ++frame)
                 channelData[frame] = m_dcValueLinear;
         }
     }

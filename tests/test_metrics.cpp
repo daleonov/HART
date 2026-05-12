@@ -876,7 +876,6 @@ HART_TEST ("Metrics - Quinn's Second Estimator vs Loudest Bin Frequency - Nyquis
 
 HART_TEST ("Metrics - Spectral Centroid - Mock Spectra")
 {
-    using AudioBuffer = hart::AudioBuffer<float>;
     using Spectrum = hart::Spectrum;
     using hart::spectralCentroid;
     using hart::loudestBinFrequency;
@@ -1022,9 +1021,8 @@ HART_TEST ("Metrics - Zero Crossing Rate - Basics")
         .withInputSignal (Silence())
         .inMono()
         .expectTrue (
-            [sampleRateHz]
-                (const AudioBuffer& buffer)
-                {return HART_FLOAT_EQ (zcr (buffer).get(), 0.0, 1e-8);},
+            [] (const AudioBuffer& buffer)
+                { return HART_FLOAT_EQ (zcr (buffer).get(), 0.0, 1e-8); },
             "ZCR = 0"
             )
         .process();
@@ -1034,9 +1032,8 @@ HART_TEST ("Metrics - Zero Crossing Rate - Basics")
         .withInputSignal (DC (1.0f))
         .inMono()
         .expectTrue (
-            [sampleRateHz]
-                (const AudioBuffer& buffer)
-                {return HART_FLOAT_EQ (zcr (buffer).get(), 0.0, 1e-8);},
+            [] (const AudioBuffer& buffer)
+                { return HART_FLOAT_EQ (zcr (buffer).get(), 0.0, 1e-8); },
             "ZCR = 0"
             )
         .process();
