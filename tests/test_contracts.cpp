@@ -524,3 +524,109 @@ HART_TEST ("Metric contracts - Single channel")
     metric().at (Slice::time (5_ms, 15_ms)).get();
     metric.verify();
 }
+
+HART_TEST ("Metric contracts - Channel pair")
+{
+    using Slice = hart::Slice;
+    constexpr hart::Unit seconds = hart::Unit::seconds;
+    constexpr hart::Unit linear = hart::Unit::linear;
+
+    auto metric = ChannelPairMetricContractChecker()
+        .withLabel ("All default");
+
+    metric().get();
+    metric.verify();
+
+    metric.clear()
+        .withReportedNumChannels (10, 10)
+        .withLabel ("Multi-channel");
+
+    metric().get();
+    metric.verify();
+
+    metric.clear()
+        .withDefaultChannelPairs ({{1, 1}, {3, 2}, {5, 5}, {7, 4}})
+        .withReportedNumChannels (10, 10)
+        .withLabel ("Obscure default channel subset");
+
+    metric().get();
+    metric.verify();
+
+    metric.clear()
+        .withExpectedChannelPairs ({{3, 3}})
+        .withReportedNumChannels (10, 10)
+        .withLabel ("Expecting specific single channel pair, as a single value");
+
+    metric().ch (3).get();
+    metric.verify();
+
+    metric.clear()
+        .withExpectedChannelPairs ({{3, 3}})
+        .withReportedNumChannels (10, 10)
+        .withLabel ("Expecting specific single channel pair, as a list of one single value");
+
+    metric().ch ({3}).get();
+    metric.verify();
+
+    metric.clear()
+        .withExpectedChannelPairs ({{3, 3}})
+        .withReportedNumChannels (10, 10)
+        .withLabel ("Expecting specific single channel pair, as an explicit list of one matched pair");
+
+    metric().ch ({{3, 3}}).get();
+    metric.verify();
+
+    metric.clear()
+        .withExpectedChannelPairs ({{3, 1}})
+        .withReportedNumChannels (10, 10)
+        .withLabel ("Expecting specific single channel pair, as an explicit list of one unmatched pair");
+
+    metric().ch ({{3, 1}}).get();
+    metric.verify();
+
+    metric.clear()
+        .withExpectedChannelPairs ({{3, 3}, {1, 1}})
+        .withReportedNumChannels (10, 10)
+        .withLabel ("Expecting two specific single channel pairs, as an implicit list of two matched pairs");
+
+    // This is indeed 2 pairs, not to be confused with
+    // .ch({{3, 1}}), which is one unmatched pair.
+    metric().ch ({3, 1}).get();
+    metric.verify();
+
+    metric.clear()
+        .withExpectedChannelPairs ({{2, 4}, {0, 6}, {8, 8}})
+        .withReportedNumChannels (10, 10)
+        .withLabel ("Expecting multiple specific channel pairs");
+
+    metric().ch ({{2, 4}, {0, 6}, {8, 8}}).get();
+    metric.verify();
+
+    metric.clear()
+        .withExpectedUnit (seconds)
+        .withLabel ("Expecting specific (seconds) unit");
+
+    metric().as (seconds).get();
+    metric.verify();
+
+    metric.clear()
+        .withExpectedUnit (linear)
+        .withLabel ("Expecting specific (linear) unit");
+
+    metric().as (linear).get();
+    metric.verify();
+
+    metric.clear()
+        .withExpectedSlice (Slice::freq (111_Hz, 2.222_kHz))
+        .withLabel ("Expecting specific slice in Hz");
+
+    metric().at (Slice::freq (111_Hz, 2.222_kHz)).get();
+    metric.verify();
+
+    metric.clear()
+        .withExpectedSlice (Slice::bins (100, 500))
+        .withLabel ("Expecting specific slice in bins");
+
+    metric().at (Slice::bins (100, 500)).get();
+    metric.verify();
+}
