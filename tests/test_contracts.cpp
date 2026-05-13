@@ -2,6 +2,7 @@
 #include "dsp_contract_checker.hpp"
 #include "envelope_contract_checker.hpp"
 #include "matcher_contract_checker.hpp"
+#include "metric_contract_checkers.hpp"
 #include "signal_contract_checker.hpp"
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
@@ -448,4 +449,78 @@ HART_TEST ("Envelope contracts")
         .withDuration (100_ms)
         .withBlockSize (4410)
         .process();
+}
+
+HART_TEST ("Metric contracts - Single channel")
+{
+    using Slice = hart::Slice;
+    constexpr hart::Unit dB = hart::Unit::dB;
+    constexpr hart::Unit Hz = hart::Unit::Hz;
+
+    auto metric = SingleChannelMetricContractChecker()
+        .withLabel ("All default");
+
+    metric().get();
+    metric.verify();
+
+    metric.clear()
+        .withReportedNumChannels (10)
+        .withLabel ("Multi-channel");
+
+    metric().get();
+    metric.verify();
+
+    metric.clear()
+        .withDefaultChannels ({1, 3, 5, 7})
+        .withReportedNumChannels (10)
+        .withLabel ("Obscure default channel subset");
+
+    metric().get();
+    metric.verify();
+
+    metric.clear()
+        .withDefaultChannels ({1, 3, 5, 7})
+        .withExpectedChannels ({3})
+        .withReportedNumChannels (10)
+        .withLabel ("Expecting specific single channel, ignoring defaults");
+
+    metric().ch (3).get();
+    metric.verify();
+
+    metric.clear()
+        .withDefaultChannels ({1, 3, 5, 7})
+        .withExpectedChannels ({2, 4, 0, 6, 8})
+        .withReportedNumChannels (10)
+        .withLabel ("Expecting specific channels, ignoring defaults");
+
+    metric().ch ({2, 4, 0, 6, 8}).get();
+    metric.verify();
+
+    metric.clear()
+        .withExpectedUnit (Hz)
+        .withLabel ("Expecting specific (Hz) unit");
+
+    metric().as (Hz).get();
+    metric.verify();
+
+    metric.clear()
+        .withExpectedUnit (dB)
+        .withLabel ("Expecting specific (dB) unit");
+
+    metric().as (dB).get();
+    metric.verify();
+
+    metric.clear()
+        .withExpectedSlice (Slice::frames (123, 456))
+        .withLabel ("Expecting specific slice in frames");
+
+    metric().at (Slice::frames (123, 456)).get();
+    metric.verify();
+
+    metric.clear()
+        .withExpectedSlice (Slice::time (5_ms, 15_ms))
+        .withLabel ("Expecting specific slice in seconds");
+
+    metric().at (Slice::time (5_ms, 15_ms)).get();
+    metric.verify();
 }
