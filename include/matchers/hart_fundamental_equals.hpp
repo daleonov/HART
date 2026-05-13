@@ -6,8 +6,10 @@
 #include <sstream>
 
 #include "hart_exceptions.hpp"
+#include "metrics/hart_interpolated_peak_frequency.hpp"
 #include "matchers/hart_matcher.hpp"
 #include "hart_precision.hpp"
+#include "hart_reducers.hpp"  // mean()
 #include "hart_utils.hpp"
 
 namespace hart
@@ -41,68 +43,19 @@ public:
         m_sampleRateHz = sampleRateHz;
     }
 
-    bool match (const AudioBuffer<SampleType>& /* inputAudio */, const AudioBuffer<SampleType>& observedOutputAudio) override
+    bool match (AnalysisContext<SampleType> context) override
     {
-        const size_t numFrames = observedOutputAudio.getNumFrames();
-
-        if (numFrames < 64)
+        if (context.outputAudio().getNumFrames() < 64)
             HART_THROW_OR_RETURN (hart::SizeError, "Audio is too short for fundamental detection", false);
 
-        if (! this->m_channelsToMatch.anyTrue())
+        ChannelFlags channelsToCheck = this->getChannelFlags();
+        channelsToCheck.resize (context.outputAudio().getNumChannels());  // TODO: Do it in the parent class implementation
+
+        if (! channelsToCheck.anyTrue())
             return true;  // Nothing to check
 
-        // If multiple channels are to be checked, sum them to mono
-        // Switching to double here, to make things more simple (and precise)
-        std::vector<double> observedAudioMono (numFrames, 0.0);
-        const double numChannelsSelected = static_cast<double> (this->m_channelsToMatch.numTrue());
-
-        for (size_t channel = 0; channel < observedOutputAudio.getNumChannels(); ++channel)
-        {
-            if (! this->appliesToChannel (channel))
-                continue;
-
-            for (size_t frame = 0; frame < numFrames; ++frame)
-                observedAudioMono[frame] += static_cast<double> (observedOutputAudio[channel][frame]) / numChannelsSelected;
-        }
-
-        // Next power of 2 after numFrames
-        size_t fftSize = 1;
-
-        while (fftSize < numFrames)
-            fftSize <<= 1;
-
-        // Zero-pad and FFT
-        std::vector<std::complex<double>> spectrum (fftSize, 0.0);
-
-        for (size_t i = 0; i < numFrames; ++i) 
-            spectrum[i] = observedAudioMono[i];
-
-        calculateFFTInPlace (spectrum);
-
-        // Find strongest bin (skip DC and Nyquist frequency)
-        double maxPower = -1.0;
-        size_t strongestBin = 0;
-
-        for (size_t bin = 2; bin < fftSize / 2; ++bin)
-        {
-            const double power = std::norm (spectrum[bin]);
-
-            if (power > maxPower)
-            {
-                maxPower = power;
-                strongestBin  = bin;
-            }
-        }
-
-        // Parabolic interpolation on magnitude
-        const double ym1 = std::abs (spectrum[strongestBin - 1]);
-        const double y0  = std::abs (spectrum[strongestBin]);
-        const double yp1 = std::abs (spectrum[strongestBin + 1]);
-
-        const double delta = 0.5 * (ym1 - yp1) / (ym1 - 2.0 * y0 + yp1 + 1e-30);
-        const double preciseBin = static_cast<double> (strongestBin) + delta;
-
-        m_observedHz = preciseBin * m_sampleRateHz / static_cast<double> (fftSize);
+        // TODO: It's not the best fundamental frequency estimator. Implement something like McLeod at some point for it.
+        m_observedHz = interpolatedPeakFrequency (context.outputSpectrum()).ch (channelsToCheck).get (mean());
         const double deviationCents = 1200.0 * std::log2 (m_observedHz / m_expectedFundamentalHz);
 
         if (std::abs (deviationCents) > m_toleranceCents)
