@@ -13,9 +13,8 @@ public:
     SingleChannelMetricContractChecker& clear()
     {
         m_label.clear();
-        m_expectedCustomChannels.clear();
+        m_expectedChannels.clear();
         m_defaultChannels.clear();
-        m_expectedChannels = m_defaultChannels;
         m_expectedUnit = hart::Unit::native;
         m_expectedSlice = hart::Slice::whole();
         m_reportedNumChannels = 1;
@@ -28,8 +27,8 @@ public:
     SingleChannelMetricContractChecker& withExpectedChannels (std::vector<size_t>&& channels)
     {
         m_expectDefaultChannels = false;
-        m_expectedCustomChannels = std::move (channels);
-        m_observedChannels.reserve (m_expectedCustomChannels.size());
+        m_expectedChannels = std::move (channels);
+        m_observedChannels.reserve (m_expectedChannels.size());
         return *this;
     }
 
@@ -89,7 +88,11 @@ public:
         if (m_defaultChannels.empty())
             m_defaultChannels = std::move (hart::ChannelSubsets::allChannels (m_reportedNumChannels));
 
-        m_expectedChannels = m_expectDefaultChannels ? m_defaultChannels : m_expectedCustomChannels;
+        if (m_expectDefaultChannels)
+        {
+            hassert (m_expectedChannels.empty());
+            m_expectedChannels.assign (m_defaultChannels.begin(), m_defaultChannels.end());
+        }
 
         return hart::MetricQuery<double> (
             std::move (evaluator),
@@ -108,9 +111,8 @@ public:
 
 private:
     std::string m_label;
-    std::vector<size_t> m_expectedCustomChannels;
+    std::vector<size_t> m_expectedChannels;
     std::vector<size_t> m_defaultChannels;
-    std::vector<size_t>& m_expectedChannels = m_defaultChannels;
     hart::Unit m_expectedUnit = hart::Unit::native;
     hart::Slice m_expectedSlice = hart::Slice::whole();
     size_t m_reportedNumChannels = 1;
@@ -125,9 +127,8 @@ public:
     ChannelPairMetricContractChecker& clear()
     {
         m_label.clear();
-        m_expectedCustomChannelPairs.clear();
+        m_expectedChannelPairs.clear();
         m_defaultChannelPairs.clear();
-        m_expectedChannelPairs = m_defaultChannelPairs;
         m_expectedUnit = hart::Unit::native;
         m_expectedSlice = hart::Slice::whole();
         m_reportedNumChannelsA = 1;
@@ -141,8 +142,8 @@ public:
     ChannelPairMetricContractChecker& withExpectedChannelPairs (std::vector<std::pair<size_t, size_t>>&& channelPairs)
     {
         m_expectDefaultChannelPairs = false;
-        m_expectedCustomChannelPairs = std::move (channelPairs);
-        m_observedChannelPairs.reserve (m_expectedCustomChannelPairs.size());
+        m_expectedChannelPairs = std::move (channelPairs);
+        m_observedChannelPairs.reserve (m_expectedChannelPairs.size());
         return *this;
     }
 
@@ -208,7 +209,11 @@ public:
             m_defaultChannelPairs = hart::ChannelSubsets::diagonalChannelPairs (numChannels);
         }
 
-        m_expectedChannelPairs = m_expectDefaultChannelPairs ? m_defaultChannelPairs : m_expectedCustomChannelPairs;
+        if (m_expectDefaultChannelPairs)
+        {
+            hassert (m_expectedChannelPairs.empty());
+            m_expectedChannelPairs.assign (m_defaultChannelPairs.begin(), m_defaultChannelPairs.end());
+        }
 
         return hart::MetricQuery<double> (
             std::move (evaluator),
@@ -231,9 +236,8 @@ public:
 
 private:
     std::string m_label;
-    std::vector<std::pair<size_t, size_t>> m_expectedCustomChannelPairs;
+    std::vector<std::pair<size_t, size_t>> m_expectedChannelPairs;
     std::vector<std::pair<size_t, size_t>> m_defaultChannelPairs;
-    std::vector<std::pair<size_t, size_t>>& m_expectedChannelPairs = m_defaultChannelPairs;
     hart::Unit m_expectedUnit = hart::Unit::native;
     hart::Slice m_expectedSlice = hart::Slice::whole();
     size_t m_reportedNumChannelsA = 1;
