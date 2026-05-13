@@ -90,8 +90,11 @@ public:
         return numInputChannels == numOutputChannels;
     }
 
-    bool match (const AudioBuffer<SampleType>& inputAudio, const AudioBuffer<SampleType>& observedOutputAudio) override
+    bool match (AnalysisContext<SampleType> context) override
     {
+        const AudioBuffer<SampleType>& inputAudio = context.inputAudio();
+        const AudioBuffer<SampleType>& observedOutputAudio = context.outputAudio();
+
         hassert (inputAudio.getNumChannels() == observedOutputAudio.getNumChannels());
         hassert (inputAudio.getNumFrames() == observedOutputAudio.getNumFrames());
         hassert (inputAudio.getSampleRateHz() == observedOutputAudio.getSampleRateHz());

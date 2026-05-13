@@ -38,8 +38,9 @@ public:
 
     void prepare (double /*sampleRateHz*/, size_t /* numInputChannels */, size_t /* numOutputChannels */, size_t /* maxBlockSizeFrames */) override {}
 
-    bool match (const AudioBuffer<SampleType>& /* inputAudio */, const AudioBuffer<SampleType>& observedOutputAudio) override
+    bool match (AnalysisContext<SampleType> context) override
     {
+        const AudioBuffer<SampleType>& observedOutputAudio = context.outputAudio();
         SampleType observedPeakLinear = 0;
         size_t frameOfObservedPeakLinear = 0;
         size_t channelOfObservedPeakLinear = 0;

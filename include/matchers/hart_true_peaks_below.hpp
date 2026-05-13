@@ -96,8 +96,10 @@ public:
         m_TruePeakLinear = (SampleType) 0;
     }
 
-    bool match (const AudioBuffer<SampleType>& /* inputAudio */, const AudioBuffer<SampleType>& observedOutputAudio) override
+    bool match (AnalysisContext<SampleType> context) override
     {
+        const AudioBuffer<SampleType>& observedOutputAudio = context.outputAudio();
+
         const size_t numChannels = observedOutputAudio.getNumChannels();
         const size_t numFrames = observedOutputAudio.getNumFrames();
         const size_t ratio = getRatio();

@@ -71,16 +71,21 @@ public:
     {
     }
 
-    bool match (const AudioBuffer<SampleType>& inputAudio, const AudioBuffer<SampleType>& observedOutputAudio) override
+    bool match (AnalysisContext<SampleType> context) override
     {
         if (m_matcherFunctionForOutputOnly != nullptr)
         {
+            const AudioBuffer<SampleType>& observedOutputAudio = context.outputAudio();
+
             m_condition = std::move (m_matcherFunctionForOutputOnly (observedOutputAudio));
             return m_condition.getResult();
         }
 
         if (m_matcherFunctionForInputAndOutput != nullptr)
         {
+            const AudioBuffer<SampleType>& inputAudio = context.inputAudio();
+            const AudioBuffer<SampleType>& observedOutputAudio = context.outputAudio();
+
             m_condition = std::move (m_matcherFunctionForInputAndOutput (inputAudio, observedOutputAudio));
             return m_condition.getResult();
         }

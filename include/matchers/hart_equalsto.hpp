@@ -109,8 +109,10 @@ public:
         m_referenceSignal->prepareWithDSPChain (sampleRateHz, numOutputChannels, maxBlockSizeFrames);
     }
 
-    bool match (const AudioBuffer<SampleType>& /* inputAudio */, const AudioBuffer<SampleType>& observedOutputAudio) override
+    bool match (AnalysisContext<SampleType> context) override
     {
+        const AudioBuffer<SampleType>& observedOutputAudio = context.outputAudio();
+
         if (observedOutputAudio.getNumFrames() <= m_maxBlockSizeFrames)
         {
             // Usual block-wise rendering

@@ -18,8 +18,10 @@ class NoDenormals:
     public Matcher<SampleType, NoDenormals<SampleType>>
 {
 public:
-    bool match (const AudioBuffer<SampleType>& /* inputAudio */, const AudioBuffer<SampleType>& observedOutputAudio) override
+    bool match (AnalysisContext<SampleType> context) override
     {
+        const AudioBuffer<SampleType>& observedOutputAudio = context.outputAudio();
+
         for (size_t channel = 0; channel < observedOutputAudio.getNumChannels(); ++channel)
         {
             if (! this->appliesToChannel (channel))
