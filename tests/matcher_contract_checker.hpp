@@ -76,8 +76,11 @@ public:
         m_prepareCalled = true;
     }
 
-    bool match (const hart::AudioBuffer<float>& inputAudio, const hart::AudioBuffer<float>& observedOutputAudio) override
+    bool match (hart::AnalysisContext<float> context) override
     {
+        const hart::AudioBuffer<float>& inputAudio = context.inputAudio();
+        const hart::AudioBuffer<float>& observedOutputAudio = context.outputAudio();
+
         HART_EXPECT_EQ (std::this_thread::get_id(), m_threadIdWhereInstanceWasConstructed);
         HART_EXPECT_TRUE (m_prepareCalled);
 
