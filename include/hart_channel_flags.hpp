@@ -92,7 +92,7 @@ public:
 
     /// @brief Checks how many channels are marked with `true`
     /// @return Amount of flags set to `true`
-    size_t numTrue()
+    size_t numTrue() const noexcept
     {
         size_t res = 0;
 
