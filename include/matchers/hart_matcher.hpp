@@ -289,6 +289,13 @@ protected:
         return m_channelsToMatch[channel];
     }
 
+    /// @brief Returns flags for the channels that the matcher should apply to
+    /// @details Handy to use with @ref Metrics
+    ChannelFlags getChannelFlags() const
+    {
+        return m_channelsToMatch;
+    }
+
 private:
     void _atChannels (std::initializer_list<size_t> channelsToMatch)
     {
