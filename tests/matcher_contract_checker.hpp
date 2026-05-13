@@ -99,6 +99,10 @@ public:
         else
             HART_EXPECT_EQ (observedOutputAudio.getNumFrames(), m_expectedNumFramesChecked);
 
+        const auto channelFlags = getChannelFlags();
+        const size_t maxNumberOfChannels = std::max (inputAudio.getNumChannels(), observedOutputAudio.getNumChannels());
+        HART_EXPECT_EQ (channelFlags.size(), maxNumberOfChannels);
+
         ++m_numMatchCalls;
         m_numFramesChecked += observedOutputAudio.getNumFrames();
 

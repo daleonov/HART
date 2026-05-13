@@ -843,7 +843,7 @@ private:
             if (! check.matcher->supportsChannelLayout (m_numInputChannels, m_numOutputChannels))
                 HART_THROW_OR_RETURN (hart::ChannelLayoutError, "Matcher not support requested number of channels", false);
 
-            check.matcher->prepare (m_sampleRateHz, m_numInputChannels, m_numOutputChannels, m_blockSizeFrames);
+            check.matcher->prepareWithActiveChannels (m_sampleRateHz, m_numInputChannels, m_numOutputChannels, m_blockSizeFrames);
             check.shouldSkip = false;
         }
 

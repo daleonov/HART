@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>  // max()
 #include <memory>
 #include <string>
 
@@ -124,9 +125,47 @@ public:
     /// @return This object, moved and wrapped in a smart pointer
     virtual std::unique_ptr<MatcherBase<SampleType>> move() = 0;
 
+protected:
+    ChannelFlags m_channelsToMatch {true};
+
+    /// @brief Indicates whether this matcher should check a specific channel
+    /// @details You might want to use it in the @ref match() callback.
+    /// See @ref atChannels(), @ref atChannel(), @ref atAllChannels(), @ref atAllChannelsExcept().
+    bool appliesToChannel (size_t channel)
+    {
+        return this->m_channelsToMatch[channel];
+    }
+
+    /// @brief Returns flags for the channels that the matcher should apply to
+    /// @details Handy to use with @ref Metrics. Guaranteed to have number of
+    /// channels equal to `max (numInputChannels, numOutputChannels)`.
+    ChannelFlags getChannelFlags() const
+    {
+        return this->m_channelsToMatch;
+    }
+
+public:
+    /// @brief Prepare for processing, meant to be called by a host
+    /// @details For internal use by hosts
+    void prepareWithActiveChannels (double sampleRateHz, size_t numInputChannels, size_t numOutputChannels, size_t maxBlockSizeFrames)
+    {
+        m_channelsToMatch.resize (std::max (numInputChannels, numOutputChannels));
+        prepare (sampleRateHz, numInputChannels, numOutputChannels, maxBlockSizeFrames);
+    }
+    
     /// @brief Makes a text representation of this Matcher with optional "atChannels" appendix
-    /// @details For internal use by hosts, don't override it in custom matchers.
-    virtual void representWithActiveChannels (std::ostream& stream) const = 0;
+    /// @details For internal use by hosts
+    void representWithActiveChannels (std::ostream& stream) const
+    {
+        this->represent (stream);
+
+        if (m_channelsToMatch.allTrue())
+            return;
+
+        stream << ".atChannels (";
+        m_channelsToMatch.representAsInitializerList (stream);
+        stream << ')';
+    }
 };
 
 /// @brief Base for audio matchers
@@ -264,76 +303,44 @@ public:
         return static_cast<Derived&&> (*this);
     }
 
-    // TODO: Move to MatcherBase together with m_channelsToMatch to make it non-virtual?
-    void representWithActiveChannels (std::ostream& stream) const override
-    {
-        this->represent (stream);
-
-        if (m_channelsToMatch.allTrue())
-            return;
-
-        stream << ".atChannels (";
-        m_channelsToMatch.representAsInitializerList (stream);
-        stream << ')';
-    }
-
-protected:
-    // TODO: Resize m_channelsToMatch() in host's version of prepare() method
-    ChannelFlags m_channelsToMatch {true};
-
-    /// @brief Indicates whether this matcher should check a specific channel
-    /// @details You might want to use it in the @ref match() callback.
-    /// See @ref atChannels(), @ref atChannel(), @ref atAllChannels(), @ref atAllChannelsExcept().
-    bool appliesToChannel (size_t channel)
-    {
-        return m_channelsToMatch[channel];
-    }
-
-    /// @brief Returns flags for the channels that the matcher should apply to
-    /// @details Handy to use with @ref Metrics
-    ChannelFlags getChannelFlags() const
-    {
-        return m_channelsToMatch;
-    }
-
 private:
     void _atChannels (std::initializer_list<size_t> channelsToMatch)
     {
-        m_channelsToMatch.setAllTo (false);
+        this->m_channelsToMatch.setAllTo (false);
 
         for (size_t channel : channelsToMatch)
         {
-            if (channel >= m_channelsToMatch.size())
+            if (channel >= this->m_channelsToMatch.size())
                 HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
 
-            m_channelsToMatch[channel] = true;
+            this->m_channelsToMatch[channel] = true;
         }
     }
 
     void _atChannel (size_t channelToMatch)
     {
-        if (channelToMatch >= m_channelsToMatch.size())
+        if (channelToMatch >= this->m_channelsToMatch.size())
             HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
 
-        m_channelsToMatch.setAllTo (false);
-        m_channelsToMatch[channelToMatch] = true;
+        this->m_channelsToMatch.setAllTo (false);
+        this->m_channelsToMatch[channelToMatch] = true;
     }
 
     void _atAllChannels()
     {
-        m_channelsToMatch.setAllTo (true);
+        this->m_channelsToMatch.setAllTo (true);
     }
 
     void _atAllChannelsExcept (std::initializer_list<size_t> channelsToSkip)
     {
-        m_channelsToMatch.setAllTo (true);
+        this->m_channelsToMatch.setAllTo (true);
 
         for (size_t channel : channelsToSkip)
         {
-            if (channel >= m_channelsToMatch.size())
+            if (channel >= this->m_channelsToMatch.size())
                 HART_THROW_OR_RETURN_VOID (hart::ValueError, "Channel exceeds max number of channels");
 
-            m_channelsToMatch[channel] = false;
+            this->m_channelsToMatch[channel] = false;
         }
     }
 };
