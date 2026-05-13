@@ -38,8 +38,11 @@ namespace hart
 /// - The absolute value of correlation is used, so polarity inversions do not affect the result.
 /// @tparam SampleType Floating point sample type, typically `float` or `double`
 /// @ingroup Matchers
+/// @deprecated Use `hart::crossCorrelation()` metric instead
 template <typename SampleType>
-class CorrelationAbove :
+class 
+HART_DEPRECATED("Use hart::crossCorrelation() metric instead")
+CorrelationAbove :
     public Matcher<SampleType, CorrelationAbove<SampleType>>
 {
 public:
