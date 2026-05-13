@@ -52,7 +52,7 @@ public:
             if (! m_hasUserLabel)
             {
                 m_hasUserLabel = true;
-                m_messageStream << "\nLabel: \" ";
+                m_messageStream << "\nLabel: \"";
             }
 
             m_messageStream << value;
