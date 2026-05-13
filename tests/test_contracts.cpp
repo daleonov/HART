@@ -496,6 +496,19 @@ HART_TEST ("Metric contracts - Single channel")
     metric().ch ({2, 4, 0, 6, 8}).get();
     metric.verify();
 
+    hart::ChannelFlags channelFlags (false, 10);
+    channelFlags[5] = true;
+    channelFlags[7] = true;
+    channelFlags[9] = true;
+
+    metric.clear()
+        .withExpectedChannels ({5, 7, 9})
+        .withReportedNumChannels (10)
+        .withLabel ("Expecting specific channels, via channel flags");
+
+    metric().ch (channelFlags).get();
+    metric.verify();
+
     metric.clear()
         .withExpectedUnit (Hz)
         .withLabel ("Expecting specific (Hz) unit");
@@ -600,6 +613,19 @@ HART_TEST ("Metric contracts - Channel pair")
         .withLabel ("Expecting multiple specific channel pairs");
 
     metric().ch ({{2, 4}, {0, 6}, {8, 8}}).get();
+    metric.verify();
+
+    hart::ChannelFlags channelFlags (false, 10);
+    channelFlags[2] = true;
+    channelFlags[4] = true;
+    channelFlags[6] = true;
+
+    metric.clear()
+        .withExpectedChannelPairs ({{2, 2}, {4, 4}, {6, 6}})
+        .withReportedNumChannels (10, 10)
+        .withLabel ("Expecting multiple specific channel pairs, via channel flags");
+
+    metric().ch (channelFlags).get();
     metric.verify();
 
     metric.clear()

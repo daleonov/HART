@@ -5,6 +5,7 @@
 #include <utility>  // pair
 #include <vector>
 
+#include "hart_channel_flags.hpp"
 #include "hart_exceptions.hpp"
 #include "metrics/hart_metrics_common.hpp"  // ReducerResultType
 #include "hart_reducers.hpp"  // first
@@ -192,6 +193,38 @@ public:
         copy.m_query->channelPairs.clear();
         copy.m_query->channels.reserve (channels.size());
         copy.m_query->channelPairs.assign (channels.begin(), channels.end());
+        return copy;
+    }
+
+    /// @brief Requests the metric to be applied to certain channels.
+    /// @details This method is meant to be called by the matchers, as the selected
+    /// channels are stored in a ChannelFrags object.
+    /// @param channelFlags set of per-channel flags. Channels marked as `true`
+    /// will be included, ones marked as `false` will be skipped.
+    MetricQuery ch (const ChannelFlags& channelFlags) const
+    {
+        MetricQuery copy (*this);
+        copy.m_query = hart::make_unique<Query> (*m_query);
+
+        if (getEvaluatorType() == EvaluatorType::singleChannels)
+        {
+            copy.m_query->channels.clear();
+            copy.m_query->channels.reserve (channelFlags.numTrue());
+
+            for (size_t channel = 0; channel < channelFlags.size(); ++ channel)
+                if (channelFlags[channel] == true)
+                    copy.m_query->channels.push_back (channel);
+        }
+        else
+        {
+            copy.m_query->channelPairs.clear();
+            copy.m_query->channelPairs.reserve (channelFlags.numTrue());
+
+            for (size_t channel = 0; channel < channelFlags.size(); ++ channel)
+                if (channelFlags[channel] == true)
+                    copy.m_query->channelPairs.emplace_back (channel, channel);
+        }
+
         return copy;
     }
 
