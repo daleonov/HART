@@ -19,7 +19,9 @@ namespace hart
 /// @note Tip: To check if the audio peaks @em above some level, just flip your assertion, e.g.
 /// @code expectFalse (PeaksBelow (-3_Db)) @endcode or @code assertFalse (PeaksBelow (-3_Db)) @endcode
 /// @attention It checks the sample peaks, not the inter-sample peaks (a popular metric in audio
-/// mastering community). For inter-sample peak checking, see @ref `TruePeaksBelow`.
+/// mastering community). For inter-sample peak checking, see `TruePeaksBelow` and `truePeak()`.
+/// For more versatile expressions, check the `samplePeak()` metric.
+/// @ingroup Matchers
 template<typename SampleType>
 class PeaksBelow:
     public Matcher<SampleType, PeaksBelow<SampleType>>

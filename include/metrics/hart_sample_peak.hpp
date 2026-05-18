@@ -24,7 +24,7 @@ namespace hart
 /// HART_EXPECT_LT (samplePeak (stereoBuffer).as (dB).get (max()), -3_dB) << "Loudest channel peaks below 3 dB";
 /// @endcode
 /// @note It doesn't estimate inter-sample peaks. For true (inter-sample) peaks,
-/// consider using the `hart::TruePeaksBelow` matcher.
+/// consider using the `truePeak()` metric or `TruePeaksBelow` matcher.
 /// @param audioBuffer Buffer to measure sample peaks in.
 /// @throws hart::IndexError if slice's boundary is out of audio buffer's range
 /// @throws hart::UnitError if unsupported unit is requested
