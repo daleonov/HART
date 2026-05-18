@@ -1,61 +1,85 @@
-# Overview
+@page Overview Overview
 
-## What is HART?
+# What is HART?
 
-HART is a testing framework for audio DSP. It's a header-only library, and compatible with C++11.
+HART is C++ audio DSP testing framework. Unlike common unit testing frameworks, it's made specifically for testing audio output of the DSP code. It helps with tests like:
 
-- Create a simple test signal: `auto mySignal = SineWave (440_Hz);`
-- Create automation for any DSP: `auto myEnvelopeCurve = SegmentedEnvelope (-10_dB).hold (5_ms).rampTo (0_dB, 25_ms)`
-- Create an effect for a signal with sample-accurate automation: `auto myGain = GainDb ().withEnvelope (GainDb::gainDb, myEnvelopeCurve);`
-- Add DSP chain to a signal: `auto envelope = SineWave (440_Hz) >> HardClip (-6_dB) >> MyCustomDSP() >> GainDb().withEnvelope (GainDb::gainDb, myEnvelopeCurve) >> LPF (1.2_kHz);`
+ - Checking various audio properties of audio output, like dynamic range, stereo width, true peaks etc
+ - Regression (cancellation) testing against pre-recorded "golden" outputs
+ - Measuring actual latency vs reported latency
+ - Ensuring consistency across different sample rates and block sizes
 
-## Test case example
+...and much more. For examples of test cases, see @ref DSPTestingCookbook.
+
+# Can you use HART in your project?
+
+Here's a few facts about HART that will hopefully answer that question:
+
+ - C++11 compatible
+ - Header only
+ - CMake support
+ - Standalone framework - no JUCE, gtest, Catch2 etc required
+ - Free, open-source, MIT license
+ - Minimal dependencies, already included in repo
+ - All classes are thoroughly documented, with a few extra articles on top
+ - Compatible with all major desktop platforms and compilers
+ - Not vibe-coded
+
+# What will testing with HART give you?
+
+There are a number of tests that a lot of digital audio vendors do manually, like:
+
+ - Catching regression during DSP code refactors and optimisations
+ - Making sure the audio is consistent across different sample rates and block sizes
+ - Detecting various issues like accidentally collapsing stereo to mono or post-instantiation glitches
+ - Ensuring all the controls do what they're supposed to do
+ - CPU performance benchmarking
+
+HART can help you automate these sort of tests, freeing your critical listening time to the tests that matter the most, as in "does this sound good?" or "does it sound like that thing we're modelling?".
+
+# How do you integrate HART in your workflow?
+
+ - It doesn't require you to modify your existing DSP code, it interfaces with it by wrapping it, see @ref TestingYourDspInHart
+ - HART test suites are intended to be a standalone binary, that you run as a part of your pipeline, see @ref SettingUpYourProjectToUseHART
+ - You can start by adding simple tests that apply to pretty much every type of DSP effect, see @ref DSPTestingCookbook
+
+# Need help with integrating HART?
+
+HART is completely free to use, and you're welcome to start using it any moment. But if your team is (understandably) busy with something else, I can offer some hands-on help or consulting for integrating HART into your company's pipeline. My contacts are on [my github page](https://github.com/daleonov), so feel free to reach out. Best ways would probably be gmail or LinkedIn.
+
+# Test examples
+
+Here's a couple of examples of validating audio behaviour or a DSP effect. For more examples, see @ref DSPTestingCookbook.
 
 ```cpp
-HART_TEST_WITH_TAGS ("My Test Name", "[my][test][tags]")
+HART_TEST_WITH_TAGS ("OutputLimiter - Limits sample peaks", "[limiter][basics]")
 {
-	// Create effect automation
-    const auto myEnvelopeCurve = SegmentedEnvelope (-10_dB)
-        .hold (5_ms)
-        .rampTo (0_dB, 25_ms, SegmentedEnvelope::Shape::sCurve)
-        .hold (5_ms)
-        .rampTo (-10_dB, 35_ms, SegmentedEnvelope::Shape::linear);
+    for (double inputLevelDb : {-3_dB, -0.5_dB, 0_dB, 0.5_dB, 3_dB, 12_dB, 30_dB})
+    {
+        processAudioWith (OutputLimiterHartWrapper())
+            .withLabel (HART_STR ("Input level " << inputLevelDb << " dB"))
+            .withInputSignal (WhiteNoise() >> GainDb (inputLevelDb))
+            .inStereo()
+            .expectTrue (PeaksBelow (-1_dB))
+            .expectTrue (TruePeaksBelow (0_dB))
+            .process();
+    }
+}
 
-    // Play wav file through your effect and test the output
-    processAudioWith (MyEffect().withEnvelope (GainLinear::someAutomatedParam, myEnvelopeCurve))
-        .withLabel ("Pre-recorded wav test")
-        .withInputSignal (WavFile ("my_test_input.wav"))
-        .withSampleRate (48000_Hz)
-        .withBlockSize (2048)
-        .withValue (MyEffect::someOtherParam, -oo_dB)
-        .withValue (MyEffect::andAnotherParam, 3.5_kHz)
-        .withDuration (75_ms)
-        .assertTrue (PeaksBelow (-1_dB))
-        .expectTrue (EqualsTo (WavFile ("my_test_reference_output.wav")))
-        .process();
+HART_TEST_WITH_TAGS ("OutputLimiter - Doesn't collapse stereo to mono", "[limiter][stereo]")
+{
+    using hart::channelCorrelation;
+    using std::abs;
 
-    // Create test signal instead of using pre-rendered wav
-    const auto myTestSignal = SineWave (2.2_kHz) >> GainDb().withEnvelope (GainDb::gainDb, SegmentedEnvelope) >> HardClip (-3_dB) >> HPF (100_Hz);
-
-    // Play generated signal through your effect, save input and output audio if fails
-    processAudioWith (MyEffect())
-        .withLabel ("Generated signal test")
-        .withValue (MyEffect::someParam, 67_percent)
+    processAudioWith (OutputLimiterHartWrapper())
+        .withInputSignal (WhiteNoise())
         .inStereo()
-        .withInputSignal (myTestSignal)
-        .saveInputTo ("my_failed_test_input.wav")
-        .saveOutputTo ("my_failed_test_output.wav")
-        .expectTrue (PeaksAt (-3_dB))
-        .expectFalse (equalsTo (SineWave (2.2_kHz) >> HardClip (-3_dB) >> GainDb (+1_dB)))
+        .expectTrue ([] (const auto& output) { return HART_LT (abs (channelCorrelation (output)), 0.5); }, "Output L and R channels are different")
         .process();
-
-    // Traditional unit test assertions are also supported
-    HART_ASSERT_TRUE (MyEffect().isAwesome());
-    HART_EXPECT_TRUE (someValue == someOtherValue);
 }
 ```
 
-## Output example
+# Output example
 
 On pass:
 
@@ -131,9 +155,3 @@ Expected sample value: 0.310784 (-10.2 dB), difference: 0.001190 (-58.5 dB)
 [ PASSED ] 6/8
 [ FAILED ] 2/8
 ```
-
-## What's next?
-
-See @ref TestingYourDspInHart to learn how to use it.
-
-Github repo: https://github.com/daleonov/HART
