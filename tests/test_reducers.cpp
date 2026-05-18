@@ -103,6 +103,7 @@ HART_TEST ("Reducers - Numeric")
     using hart::max;
     using hart::mean;
     using hart::min;
+    using hart::range;
     using hart::sum;
 
     const std::vector<double> values { 2.0, 4.0, 6.0, 8.0 };
@@ -111,6 +112,7 @@ HART_TEST ("Reducers - Numeric")
     HART_EXPECT_TRUE (min() (values.begin(), values.end()) == 2.0);
     HART_EXPECT_TRUE (floatsEqual (mean() (values.begin(), values.end()), 5.0));
     HART_EXPECT_TRUE (floatsEqual (sum() (values.begin(), values.end()), 20.0));
+    HART_EXPECT_FLOAT_EQ (range() (values.begin(), values.end()), 6.1, 1e-8);
 }
 
 HART_TEST ("Reducers - Collect")

@@ -321,6 +321,22 @@ private:
     const Interpolation m_interpolation;
 };
 
+/// @brief Returns the difference between largest and smallest values in the range
+struct range
+{
+    template <typename IteratorType>
+    IteratedValueType<IteratorType>
+    operator() (IteratorType begin, IteratorType end) const
+    {
+        if (begin == end)
+            HART_THROW_OR_RETURN (hart::SizeError, "The range is empty", hart::nan<IteratedValueType<IteratorType>>());
+
+        const auto largestValue = *std::max_element (begin, end);
+        const auto smallestValue = *std::min_element (begin, end);
+        return largestValue - smallestValue;
+    }
+};
+
 /// @brief Returns the number of elements (values) in the range
 struct size
 {
