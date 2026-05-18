@@ -1177,3 +1177,60 @@ HART_TEST ("Metrics - Spectral Flatness")
             )
         .process();
 }
+
+HART_TEST ("Metrics - True Peak")
+{
+    using hart::truePeak;
+    using hart::samplePeak;
+    using hart::min;
+    using hart::max;
+    using hart::range;
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using FilterQuality = hart::TruePeak<float>::FilterQuality;
+    using Oversampling = hart::Oversampling;
+
+    for (const double levelDb : {-12_dB, -3_dB, -0.5_dB, 0_dB, 3_dB})
+    {
+        processAudioWith (GainDb (levelDb))
+            .withLabel ("Sine wave's sample peaks ~= true peaks")
+            .withInputSignal (SineWave())
+            .inMono()
+            .assertTrue (PeaksAt (levelDb))
+            .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (truePeak (output).as (dB).get(), samplePeak (output).as (dB).get(), 0.01); }, "True peak ~= sample peak")
+            .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (truePeak (output, Oversampling::x8, FilterQuality::medium).as (dB).get(), samplePeak (output).as (dB).get(), 0.01); }, "True peak ~= sample peak")
+            .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (truePeak (output, Oversampling::x16, FilterQuality::high).as (dB).get(), samplePeak (output).as (dB).get(), 0.01); }, "True peak ~= sample peak")
+            .process();
+
+        processAudioWith (GainDb (levelDb))
+            .withLabel ("White Noise true peaks way above sample peaks")
+            .withInputSignal (WhiteNoise())
+            .expectTrue (PeaksAt (levelDb))
+            .expectTrue ([] (const AudioBuffer& output) { return HART_GT (truePeak (output).as (dB).get(), 0.1_dB + samplePeak (output).as (dB).get()); }, "True peak > sample peak + 0.1dB")
+            .expectTrue ([] (const AudioBuffer& output) { return HART_GT (truePeak (output, Oversampling::x8, FilterQuality::medium).as (dB).get(), 0.1_dB + samplePeak (output).as (dB).get()); }, "True peak > sample peak + 0.1dB")
+            .expectTrue ([] (const AudioBuffer& output) { return HART_GT (truePeak (output, Oversampling::x16, FilterQuality::high).as (dB).get(), 0.1_dB + samplePeak (output).as (dB).get()); }, "True peak > sample peak + 0.1dB")
+            .process();
+    }
+
+    auto multiChannelDSP = HART_DSP_SEQUENCE (
+        GainDb (-3_dB).atChannels ({0, 1})
+        >> GainDb (-6_dB).atChannel (2)
+        >> GainDb (-12_dB).atChannel (3)
+        >> GainDb (+3_dB).atChannel (4)
+        );
+
+    processAudioWith (std::move (multiChannelDSP))
+        .withLabel ("Multi-channel")
+        .withInputSignal (SineWave())
+        .withInputChannels (5)
+        .withOutputChannels (5)
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (truePeak (output).as (dB).get (range()), +15_dB, 0.01); }, "All channels - Range of TP values")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (truePeak (output).ch (2).as (dB).get(), -6_dB, 0.01); }, "Channel 2")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (truePeak (output).ch (3).as (dB).get(), -12_dB, 0.01); }, "Channel 3")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (truePeak (output).as (dB).get (min()), -12_dB, 0.01); }, "Lowest TP of all channels")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (truePeak (output).as (dB).get (max()), +3_dB, 0.01); }, "Highest TP of all channels")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (truePeak (output).ch ({2, 3}).as (dB).get (max()), -6_dB, 0.01); }, "Lowest TP of channels 2 and 3")
+        .process();
+
+    // TODO: Units
+    // TODO: Slices
+}
