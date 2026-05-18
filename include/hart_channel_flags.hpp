@@ -24,7 +24,7 @@ public:
         if (numChannels > m_maxChannels)
             HART_THROW_OR_RETURN_VOID (hart::SizeError, "Number of channels exceeds maximum possible amount");
 
-        m_numChannels = m_maxChannels;
+        m_numChannels = numChannels;
         setAllTo (defaultValues);
     }
 
@@ -83,7 +83,7 @@ public:
     {
         // TODO: Can it be O(1)?
 
-        for (size_t i = 0; i < m_maxChannels; ++i)
+        for (size_t i = 0; i < m_numChannels; ++i)
             if (m_flags.test (i) == false)
                 return false;
 
@@ -96,7 +96,7 @@ public:
     {
         size_t res = 0;
 
-        for (size_t channel = 0; channel < m_maxChannels; ++channel)
+        for (size_t channel = 0; channel < m_numChannels; ++channel)
             res += m_flags.test (channel);
 
         return res;
@@ -108,7 +108,7 @@ public:
     {
         // TODO: Can it be O(1)?
 
-        for (size_t i = 0; i < m_maxChannels; ++i)
+        for (size_t i = 0; i < m_numChannels; ++i)
             if (m_flags.test (i) == true)
                 return true;
 
