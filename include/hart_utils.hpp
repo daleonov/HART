@@ -176,6 +176,17 @@ SampleType wrapPhase (const SampleType phaseRadians)
     return wrappedPhaseRadians;
 }
 
+/// @brief Finds next power of 2 after a non-negative number x
+static size_t nextPowerOfTwo (size_t x)
+{
+    size_t power = 1;
+
+    while (power < x)
+        power <<= 1;
+
+    return power;
+}
+
 /// @brief Checks if the provided file path is absolute
 inline static bool isAbsolutePath (const std::string& path)
 {

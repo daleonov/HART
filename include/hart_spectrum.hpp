@@ -9,7 +9,7 @@
 #include "hart_audio_buffer.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_slice.hpp" 
-#include "hart_utils.hpp"  // nan(), roundToSizeT()
+#include "hart_utils.hpp"  // nan(), roundToSizeT(), nextPowerOfTwo()
 
 namespace hart
 {
@@ -239,16 +239,6 @@ public:
 
 private:
     Spectrum() = default;
-
-    static size_t nextPowerOfTwo (size_t x)
-    {
-        size_t power = 1;
-
-        while (power < x)
-            power <<= 1;
-
-        return power;
-    }
 
     static void performFFT (std::vector<std::complex<double>>& data)
     {
