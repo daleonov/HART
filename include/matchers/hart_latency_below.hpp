@@ -23,7 +23,8 @@ namespace hart
 /// - `Method::onset` detects latency as a difference between the first threshold crossing
 ///   in the input and output signals.
 /// - `Method::correlation` uses normalized cross-correlation and finds the lag that best
-///   aligns the output waveform to the input.
+///   aligns the output waveform to the input. Very small overlaps near the signal boundary
+///   are ignored so that a tiny slice of matching samples cannot masquerade as a valid lag.
 ///
 /// `SilencePolicy` defines how the matcher behaves when latency cannot be reliably
 /// determined on one or more channels.

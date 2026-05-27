@@ -193,6 +193,14 @@ HART_TEST ("LatencyBelow - Correlation method")
         .expectFalse (LatencyBelow (4.9_ms, Method::correlation))
         .process();
 
+    processAudioWith (HART_DSP_SEQUENCE (HardClip (-40_dB) >> TimeShift (5_ms)))
+        .withLabel ("Imperfectly correlated waveforms")
+        .withDuration (200_ms)
+        .withInputSignal (SineSweep())
+        .expectTrue (LatencyBelow (5.1_ms, Method::correlation))
+        .expectFalse (LatencyBelow (4.9_ms, Method::correlation))
+        .process();
+
     processAudioWith (TimeShift (5_ms))
         .withLabel ("SineSweep into TimeShift - 5 channels")
         .withInputChannels (5)
