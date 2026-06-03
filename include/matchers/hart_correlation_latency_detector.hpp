@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>  // max()
 #include <sstream>
 #include <vector>
 
@@ -69,7 +70,20 @@ public:
             return false;
         }
 
-        const size_t maxLagFrames = numFrames - 1;
+        // Very small overlaps can produce spuriously high normalized correlations near the
+        // signal boundary, so ignore lags that leave only a tiny slice of the buffer aligned.
+        // This keeps the detector from "preferring" an almost-full-duration lag that happens
+        // to correlate well on just a handful of samples.
+        const size_t onePercentOfDurationFrames = (numFrames + 99) / 100;
+        const size_t minOverlapFrames = std::max<size_t> (2, onePercentOfDurationFrames);
+
+        if (numFrames < minOverlapFrames)
+        {
+            m_hadValidData = false;
+            return false;
+        }
+
+        const size_t maxLagFrames = numFrames - minOverlapFrames;
         bool anyValidChannel = false;
         size_t worstLatencyFrames = 0;
         size_t worstChannel = 0;
@@ -107,6 +121,10 @@ public:
                 const size_t inputOverlapBeginFrame = 0;
                 const size_t outputOverlapBeginFrame = lag;
                 const size_t overlapSizeFrames = numFrames - lag;
+
+                if (overlapSizeFrames < minOverlapFrames)
+                    break;
+
                 const size_t inputOverlapEndFrame = inputOverlapBeginFrame + overlapSizeFrames;
                 const size_t outputOverlapEndFrame = outputOverlapBeginFrame + overlapSizeFrames;
                 const double sumSqX = prefixSumsSqX[inputOverlapEndFrame] - prefixSumsSqX[inputOverlapBeginFrame];
