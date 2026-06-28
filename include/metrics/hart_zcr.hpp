@@ -18,6 +18,7 @@ namespace hart
 /// @param buffer Audio buffer to calculate ZCR at
 /// @return Chainable `MetricQuery` object, which calculates RMS as linear ratio
 /// or decibels
+/// @ingroup Metrics
 template <typename SampleType>
 MetricQuery<double> zcr (const AudioBuffer<SampleType>& buffer)
 {

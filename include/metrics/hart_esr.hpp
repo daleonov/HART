@@ -30,6 +30,7 @@ namespace hart
 /// @param referenceBuffer A buffer representing x in the formula above
 /// @param estimatedBuffer A buffer representing y in the formula above
 /// @return  Chainable `MetricQuery`, which calculates per-channel ESR values
+/// @ingroup Metrics
 template <typename SampleType>
 MetricQuery<double> esr (const AudioBuffer<SampleType>& referenceBuffer, const AudioBuffer<SampleType>& estimatedBuffer)
 {

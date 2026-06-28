@@ -36,6 +36,7 @@ namespace hart
 /// @param buffer Audio buffer to calculate RMS at
 /// @return Chainable `MetricQuery` object, which calculates RMS as linear ratio
 /// or decibels
+/// @ingroup Metrics
 template <typename SampleType>
 MetricQuery<double> rms (const AudioBuffer<SampleType>& buffer)
 {
