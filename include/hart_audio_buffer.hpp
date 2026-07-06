@@ -311,6 +311,18 @@ public:
         return tmp;
     }
 
+    /// @brief Creates a new buffer as a sample-wise difference of two existing ones
+    /// @param other Buffer to subtract from with
+    /// @return A new buffer that contains a sample-wise difference of two buffers
+    /// @throws hart::SizeError is buffer lengths (in frames) are mismatched
+    /// @throws hart::ChannelLayoutError is buffer cumbers of channels are mismatched
+    /// @throws hart::SampleRateError is buffer sample rates are mismatched.
+    /// However, if neither of buffers has a sample rate assigned, this operation is allowed.
+    AudioBuffer<SampleType> operator- (const AudioBuffer& other) const
+    {
+        return *this + (other * SampleType (-1));
+    }
+
     /// @brief Appends data from another buffer
     /// @warning This operation will resize the current buffer and potentially invalidate the previous raw data pointers returned by
     /// `getArrayOfReadPointers()`, `getArrayOfWritePointers()` and the "`[]`" operator, so make sure to keep those external pointers up to date.

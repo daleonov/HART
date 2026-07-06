@@ -26,6 +26,35 @@ HART_TEST ("AudioBuffer - Add Two Buffers")
     HART_EXPECT_EQ (audioBufferC + audioBufferD, audioBufferE);
 }
 
+HART_TEST ("AudioBuffer - Subtract Two Buffers")
+{
+    const hart::CLIConfig& cliConfig = hart::CLIConfig::getInstance();
+    const double sampleRateHz = cliConfig.getDefaultSampleRateHz();
+    const double renderDurationSeconds = cliConfig.getDefaultRenderDurationSeconds();
+    const size_t numFrames = hart::roundToSizeT (renderDurationSeconds * sampleRateHz);
+    const size_t numChannels = cliConfig.getDefaultNumInputChannels();
+
+    AudioBuffer audioBufferA = AudioBuffer (numChannels, numFrames, sampleRateHz).fillWith (WhiteNoise());
+    AudioBuffer audioBufferB = AudioBuffer (numChannels, numFrames, sampleRateHz).fillWith (WhiteNoise() >> GainLinear (0.4));
+    AudioBuffer audioBufferC = AudioBuffer (numChannels, numFrames, sampleRateHz).fillWith (WhiteNoise() >> GainLinear (0.6));
+    AudioBuffer audioBufferD = AudioBuffer (numChannels, numFrames, sampleRateHz).fillWith (WhiteNoise() >> GainLinear (-0.6));
+    AudioBuffer audioBufferE = AudioBuffer (numChannels, numFrames, sampleRateHz).fillWith (Silence());
+
+    HART_EXPECT_NE (audioBufferA - audioBufferA, audioBufferA);
+    HART_EXPECT_NE (audioBufferA - audioBufferB, audioBufferA);
+    HART_EXPECT_NE (audioBufferB - audioBufferC, audioBufferD);
+    HART_EXPECT_NE (audioBufferE - audioBufferA, audioBufferA);
+
+    HART_EXPECT_EQ (audioBufferA - audioBufferB, audioBufferC);
+    HART_EXPECT_EQ (audioBufferE - audioBufferC, audioBufferD);
+    HART_EXPECT_EQ (audioBufferE - audioBufferD, audioBufferC);
+    HART_EXPECT_EQ (audioBufferB - audioBufferD, audioBufferA);
+    HART_EXPECT_EQ (audioBufferA - audioBufferE, audioBufferA);
+    HART_EXPECT_EQ (audioBufferA - audioBufferA, audioBufferE);
+    HART_EXPECT_EQ (audioBufferB - audioBufferB, audioBufferC - audioBufferC);
+    HART_EXPECT_EQ (audioBufferA - audioBufferB, audioBufferC - audioBufferE);
+}
+
 HART_TEST ("AudioBuffer - Multiply Buffer by a Number")
 {
     const hart::CLIConfig& cliConfig = hart::CLIConfig::getInstance();
