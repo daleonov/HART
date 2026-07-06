@@ -297,6 +297,20 @@ public:
         return tmp;
     }
 
+    /// @brief Creates a new buffer as a multiplying each sample of existing number by a provided gain value
+    /// @param other gainLinear Gain to multiply each sample by
+    /// @return A new buffer that contains a samples of existing buffer, multiplied by the provided gain
+    AudioBuffer<SampleType> operator* (SampleType gainLinear) const
+    {
+        AudioBuffer<SampleType> tmp (*this);
+        SampleType* rawData = tmp.m_frames.data();
+
+        for (size_t sample = 0; sample < tmp.m_frames.size(); ++sample)
+            rawData[sample] *= gainLinear;
+        
+        return tmp;
+    }
+
     /// @brief Appends data from another buffer
     /// @warning This operation will resize the current buffer and potentially invalidate the previous raw data pointers returned by
     /// `getArrayOfReadPointers()`, `getArrayOfWritePointers()` and the "`[]`" operator, so make sure to keep those external pointers up to date.
