@@ -263,6 +263,40 @@ public:
         return ! equalsTo (other);
     }
 
+    /// @brief Creates a new buffer as a sample-wise sum of two existing ones
+    /// @param other Buffer to sum with
+    /// @return A new buffer that contains a sample-wise sum of two buffers
+    /// @throws hart::SizeError is buffer lengths (in frames) are mismatched
+    /// @throws hart::ChannelLayoutError is buffer cumbers of channels are mismatched
+    /// @throws hart::SampleRateError is buffer sample rates are mismatched.
+    /// However, if neither of buffers has a sample rate assigned, this operation is allowed.
+    AudioBuffer<SampleType> operator+ (const AudioBuffer& other) const
+    {
+        if (getNumFrames() != other.getNumFrames())
+            HART_THROW_OR_RETURN (hart::SizeError, "Cannot add two buffers of mismatched lengths", {});
+        
+        if (getNumChannels() != other.getNumChannels())
+            HART_THROW_OR_RETURN (hart::ChannelLayoutError, "Cannot add two buffers of mismatched numbers of channels", {});
+
+        const bool buffersHaveMismatchedSampleRates = hasSampleRate() && other.hasSampleRate() && hart::floatsNotEqual (getSampleRateHz(), other.getSampleRateHz());
+        const bool oneBufferHasSampleRateButOtherDoesnt = hasSampleRate() ^ other.hasSampleRate();
+
+        // This could be a legit use case, but still not very clean, so let's not allow it until we have a good reason to let it happen
+        if (buffersHaveMismatchedSampleRates || oneBufferHasSampleRateButOtherDoesnt)
+            HART_THROW_OR_RETURN (hart::SampleRateError, "Cannot add two buffers of mismatched sample rates", {});
+
+        AudioBuffer<SampleType> tmp (*this);
+        hassert (tmp.m_frames.size() == other.m_frames.size());
+
+        SampleType* rawDataA = tmp.m_frames.data();
+        const SampleType* rawDataB = other.m_frames.data();
+
+        for (size_t sample = 0; sample < tmp.m_frames.size(); ++sample)
+            rawDataA[sample] += rawDataB[sample];
+        
+        return tmp;
+    }
+
     /// @brief Appends data from another buffer
     /// @warning This operation will resize the current buffer and potentially invalidate the previous raw data pointers returned by
     /// `getArrayOfReadPointers()`, `getArrayOfWritePointers()` and the "`[]`" operator, so make sure to keep those external pointers up to date.
