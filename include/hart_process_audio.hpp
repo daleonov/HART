@@ -552,8 +552,6 @@ public:
 
     /// @brief Enables saving output audio to a provided buffer
     /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the output buffer
-    /// @details Tip: You can use @ref HART_STR() to construct file names using "<<" syntax.
-    /// @warning The target directory has to exist!
     /// @param receivingBuffer An output buffer to receive the data. You can pass an unitialised buffer, among other things, as it will be move-assigned.
     AudioTestBuilder& saveOutputTo (AudioBuffer<SampleType>& receivingBuffer)
     {
@@ -567,8 +565,6 @@ public:
 
     /// @brief Enables saving output audio via provided callback
     /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the output buffer
-    /// @details Tip: You can use @ref HART_STR() to construct file names using "<<" syntax.
-    /// @warning The target directory has to exist!
     /// @param outputBufferSink A callable that accepts a buffer rvalue. The buffer is moved into the provided sink. The test runner takes ownership of the callable object.
     AudioTestBuilder& saveOutputTo (std::function<void (AudioBuffer<SampleType>&&)> outputBufferSink)
     {
