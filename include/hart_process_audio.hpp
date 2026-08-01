@@ -511,6 +511,28 @@ public:
         return assertFalse (MatcherFunction<SampleType> (std::move (matcherFunction), label));
     }
 
+    /// @brief Enables saving input audio to a provided buffer
+    /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the receiving buffer
+    /// @param receivingBuffer A buffer to receive the data. You can pass an unitialised buffer, among other things, as it will be move-assigned.
+    AudioTestBuilder& saveInputTo (AudioBuffer<SampleType>& receivingBuffer)
+    {
+        m_inputBufferSink = [&receivingBuffer] (AudioBuffer<SampleType>&& inputBuffer)
+        {
+            receivingBuffer = std::move (inputBuffer);
+        };
+
+        return *this;
+    }
+
+    /// @brief Enables saving input audio via provided callback
+    /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the receiving 
+    /// @param outputBufferSink A callable that accepts a buffer rvalue. The buffer is moved into the provided sink. The test runner takes ownership of the callable object.
+    AudioTestBuilder& saveInputTo (std::function<void (AudioBuffer<SampleType>&&)> inputBufferSink)
+    {
+        m_inputBufferSink = std::move (inputBufferSink);
+        return *this;
+    }
+
     /// @brief Enables saving output audio to a wav file
     /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the output file
     /// @param path File path - relative or absolute. If relative path is set, it will be appended to the provided `--data-root-path` CLI argument.
@@ -735,6 +757,9 @@ public:
         if (m_savePlotMode == Save::always || (m_savePlotMode == Save::whenFails && atLeastOneCheckFailed))
             plotData (fullInputBuffer, fullOutputBuffer, m_savePlotPath);
 
+        if (m_inputBufferSink != nullptr)
+            m_inputBufferSink (std::move (fullInputBuffer));
+
         if (m_outputBufferSink != nullptr)
             m_outputBufferSink (std::move (fullOutputBuffer));
 
@@ -792,6 +817,7 @@ private:
     std::string m_savePlotPath;
     Save m_savePlotMode = Save::never;
 
+    std::function<void (AudioBuffer<SampleType>&&)> m_inputBufferSink = nullptr;
     std::function<void (AudioBuffer<SampleType>&&)> m_outputBufferSink = nullptr;
     std::function<void (std::unique_ptr<SignalBase<SampleType>>&&)> m_inputSignalSink = nullptr;
 
