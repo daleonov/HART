@@ -1311,3 +1311,34 @@ HART_TEST ("Metrics - RT60 - Odd cases")
     ir = ImpulseResponse (inputAudio, outputAudio);
     HART_EXPECT_NOT_NAN (rt60 (ir).get()) << "Growing response - RT60 reads as a seemily valid value";
 }
+
+HART_TEST ("Metrics - RT60 - Units")
+{
+    using hart::rt60;
+    using hart::max;
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using ImpulseResponse = hart::ImpulseResponse<float>;
+
+    const double sampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
+    const double defaultRenderDurationSeconds = hart::CLIConfig::getInstance().getDefaultRenderDurationSeconds();
+    const double expectedDecayTimeSeconds = 50_ms;
+    const double expectedDecayTimeFrames = expectedDecayTimeSeconds * sampleRateHz;
+
+    AudioBuffer inputAudio;
+    AudioBuffer outputAudio;
+
+    processAudioWith (ExponentialDecay())
+        .withValue (ExponentialDecay::decayTimeSeconds, expectedDecayTimeSeconds)
+        .withInputSignal (Impulse())
+        .inMono()
+        .saveInputTo (inputAudio)
+        .saveOutputTo (outputAudio)
+        .withDuration (std::max (defaultRenderDurationSeconds, 1.5 * expectedDecayTimeSeconds))
+        .process();
+    
+    const ImpulseResponse ir (inputAudio, outputAudio);
+    HART_EXPECT_FLOAT_EQ (rt60 (ir).as (seconds).get(), rt60 (ir).get(), 1.0e-8) << "Default unit is seconds";
+    HART_EXPECT_FLOAT_EQ (rt60 (ir).as (seconds).get(), rt60 (ir).as (native).get(), 1.0e-8) << "Native unit is seconds";
+    HART_EXPECT_FLOAT_EQ (rt60 (ir).as (seconds).get(), expectedDecayTimeSeconds, 100_us) << "Seconds are indeed interpreted as seconds";
+    HART_EXPECT_FLOAT_EQ (rt60 (ir).as (frames).get(), expectedDecayTimeFrames, 1.0) << "Supports returning decay time in frames";
+}
