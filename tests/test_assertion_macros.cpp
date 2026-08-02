@@ -42,6 +42,11 @@ HART_TEST ("Assertion Macros - Expect Full")
 
     HART_EXPECT_FLOAT_EQUAL (1.0, 1.0, 0.001);
     HART_EXPECT_FLOAT_NOT_EQUAL (1.0, 1.01, 0.001);
+
+    HART_EXPECT_IS_NAN (hart::nan<float>());
+    HART_EXPECT_IS_NAN (hart::nan<double>());
+    HART_EXPECT_NOT_NAN (123.456f);
+    HART_EXPECT_NOT_NAN (123.456);
 }
 
 HART_TEST ("Assertion Macros - Expect Short")
@@ -122,6 +127,11 @@ HART_TEST ("Assertion Macros - Assert Full")
 
     HART_ASSERT_FLOAT_EQUAL (1.0, 1.0, 0.001);
     HART_ASSERT_FLOAT_NOT_EQUAL (1.0, 1.01, 0.001);
+
+    HART_ASSERT_IS_NAN (hart::nan<float>());
+    HART_ASSERT_IS_NAN (hart::nan<double>());
+    HART_ASSERT_NOT_NAN (123.456f);
+    HART_ASSERT_NOT_NAN (123.456);
 }
 
 HART_TEST ("Assertion Macros - Assert Short")

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>  // isnan()
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -327,6 +328,52 @@ public:
         stringRepresentationStream << "HART_FLOAT_IN_RANGE (" << hart::toString (value) << ", " << hart::toString (minValue) << ", " << hart::toString (maxValue) << ", " << hart::toString (tolerance) << ")";
         return Condition (
             minValue - tolerance <= value && value <= maxValue + tolerance,
+            tokenRepresentationStream.str(),
+            stringRepresentationStream.str(),
+            file,
+            line
+            );
+    }
+
+    /// @private
+    template <typename FloatType>
+    static typename std::enable_if<std::is_floating_point<FloatType>::value, Condition>::type
+    isNaN (
+        FloatType value,
+        const char* valueTokens,
+        const char* file,
+        int line
+        )
+    {
+        std::ostringstream tokenRepresentationStream;
+        std::ostringstream stringRepresentationStream;
+        tokenRepresentationStream << "HART_IS_NAN (" << valueTokens << ')';
+        stringRepresentationStream << "HART_IS_NAN (" << hart::toString (value) << ')';
+        return Condition (
+            std::isnan (value),
+            tokenRepresentationStream.str(),
+            stringRepresentationStream.str(),
+            file,
+            line
+            );
+    }
+
+    /// @private
+    template <typename FloatType>
+    static typename std::enable_if<std::is_floating_point<FloatType>::value, Condition>::type
+    notNaN (
+        FloatType value,
+        const char* valueTokens,
+        const char* file,
+        int line
+        )
+    {
+        std::ostringstream tokenRepresentationStream;
+        std::ostringstream stringRepresentationStream;
+        tokenRepresentationStream << "HART_NOT_NAN (" << valueTokens << ')';
+        stringRepresentationStream << "HART_NOT_NAN (" << hart::toString (value) << ')';
+        return Condition (
+            ! std::isnan (value),
             tokenRepresentationStream.str(),
             stringRepresentationStream.str(),
             file,

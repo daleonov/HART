@@ -124,6 +124,18 @@
 #define HART_ASSERT_GE(lhs, rhs) \
     HART_ASSERT_GREATER_OR_EQUAL (lhs, rhs)
 
+#define HART_EXPECT_IS_NAN(value) \
+    HART_EXPECT (HART_IS_NAN (value))
+
+#define HART_ASSERT_IS_NAN(value) \
+    HART_ASSERT (HART_IS_NAN (value))
+
+#define HART_EXPECT_NOT_NAN(value) \
+    HART_EXPECT (HART_NOT_NAN (value))
+
+#define HART_ASSERT_NOT_NAN(value) \
+    HART_ASSERT (HART_NOT_NAN (value))
+
 #define HART_EXPECT_LESS_THAN(lhs, rhs) \
     HART_EXPECT (HART_LESS_THAN (lhs, rhs))
 

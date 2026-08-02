@@ -80,4 +80,10 @@
 #define HART_FLOAT_IN_RANGE(value, minValue, maxValue, tolerance) \
     ::hart::Condition::floatInRange ((value), (minValue), (maxValue), (tolerance), #value, #minValue, #maxValue, #tolerance, __FILE__, __LINE__)
 
+#define HART_IS_NAN(value) \
+    ::hart::Condition::isNaN ((value), #value, __FILE__, __LINE__)
+
+#define HART_NOT_NAN(value) \
+    ::hart::Condition::notNaN ((value), #value, __FILE__, __LINE__)
+
 /// @}
