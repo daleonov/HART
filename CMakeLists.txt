@@ -27,6 +27,7 @@ set(HART_TEST_SOURCES
         tests/test_dsp_sequence.cpp
         tests/test_envelope.cpp
         tests/test_host.cpp
+        tests/test_impulse_response.cpp
         tests/test_main.cpp
         tests/test_matchers.cpp
         tests/test_metrics.cpp
