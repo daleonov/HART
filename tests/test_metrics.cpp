@@ -1,6 +1,9 @@
+#include <algorithm>  // max()
 #include <cmath>  // abs(), isnan()
 
 #include "hart.hpp"
+#include "exponential_decay.hpp"
+#include "unstable_decay.hpp"
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
 HART_DECLARE_ALIASES_FOR_UNITS;
@@ -1233,4 +1236,78 @@ HART_TEST ("Metrics - True Peak")
 
     // TODO: Units
     // TODO: Slices
+}
+
+HART_TEST ("Metrics - RT60 - Effect with exponentially decaying tail")
+{
+    using hart::rt60;
+    using hart::max;
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using ImpulseResponse = hart::ImpulseResponse<float>;
+
+    const double defaultRenderDurationSeconds = hart::CLIConfig::getInstance().getDefaultRenderDurationSeconds();
+
+    for (const double decayTimeSeconds : {1.234_ms, 10_ms, 42.42_ms, 777_ms})
+    {
+        AudioBuffer inputAudio;
+        AudioBuffer outputAudio;
+
+        processAudioWith (ExponentialDecay())
+            .withValue (ExponentialDecay::decayTimeSeconds, decayTimeSeconds)
+            .withInputSignal (Impulse())
+            .inMono()
+            .saveInputTo (inputAudio)
+            .saveOutputTo (outputAudio)
+            .withDuration (std::max (defaultRenderDurationSeconds, 1.5 * decayTimeSeconds))
+            .process();
+        
+        const ImpulseResponse ir (inputAudio, outputAudio);
+        HART_EXPECT_FLOAT_EQ (rt60 (ir).get(), rt60 (ir, hart::RT60::Method::edt).get(), 1.0e-8) << "Default method is EDT";
+
+        const double toleranceSeconds = 0.01 * decayTimeSeconds;
+        HART_EXPECT_FLOAT_EQ (rt60 (ir, hart::RT60::Method::edt).get(), decayTimeSeconds, toleranceSeconds) << "EDT method";
+        HART_EXPECT_FLOAT_EQ (rt60 (ir, hart::RT60::Method::t20).get(), decayTimeSeconds, toleranceSeconds) << "T20 method";
+        HART_EXPECT_FLOAT_EQ (rt60 (ir, hart::RT60::Method::t30).get(), decayTimeSeconds, toleranceSeconds) << "T30 method";
+    }
+}
+
+HART_TEST ("Metrics - RT60 - Odd cases")
+{
+    using hart::rt60;
+    using hart::max;
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using ImpulseResponse = hart::ImpulseResponse<float>;
+
+    AudioBuffer inputAudio;
+    AudioBuffer outputAudio;
+
+    // Silent output
+    processAudioWith (Mute())
+        .withInputSignal (Impulse())
+        .saveInputTo (inputAudio)
+        .saveOutputTo (outputAudio)
+        .process();
+    
+    ImpulseResponse ir (inputAudio, outputAudio);
+    HART_EXPECT_IS_NAN (rt60 (ir).get()) << "Silent output - RT60 reads as NaN";
+
+    // No decay
+    processAudioWith (GainDb (-3_dB))
+        .withInputSignal (Impulse())
+        .saveInputTo (inputAudio)
+        .saveOutputTo (outputAudio)
+        .process();
+    ir = ImpulseResponse (inputAudio, outputAudio);
+    HART_EXPECT_IS_NAN (rt60 (ir).get()) << "No decay - RT60 reads as NaN";
+
+    // Growing response, instead of decaying to zero.
+    // RT60 assumes a decaying IR, so this example kind of breaks it.
+    // It's recommended to verify a correct response shape/slope before using RT60.
+    processAudioWith (UnstableDecay())
+        .withInputSignal (Impulse())
+        .saveInputTo (inputAudio)
+        .saveOutputTo (outputAudio)
+        .process();
+    ir = ImpulseResponse (inputAudio, outputAudio);
+    HART_EXPECT_NOT_NAN (rt60 (ir).get()) << "Growing response - RT60 reads as a seemily valid value";
 }
