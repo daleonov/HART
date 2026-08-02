@@ -136,7 +136,6 @@ MetricQuery<double> rt60 (const ImpulseResponse<SampleType>& ir, RT60::Method me
         {
             // Signal (IR) didn't reach the appropriate decay point.
             // Consider using a different RT60::Method, or supply a longer IR.
-            hassertfalse;
             return nan;
         }
 
@@ -150,10 +149,7 @@ MetricQuery<double> rt60 (const ImpulseResponse<SampleType>& ir, RT60::Method me
             return nan;
 
         const auto slopeDbPerSecond = (n * sumXY.getValue() - sumX.getValue() * sumY.getValue()) / denominator;
-
-        // Signal gets louder, instead of decaying
-        if (slopeDbPerSecond >= 0.0)
-            return nan;
+        hassert (slopeDbPerSecond < 0.0);  // A valid Schroeder decay fit must have a negative slope
 
         const double sixtyDbDecayTimeSeconds = -60.0 / slopeDbPerSecond;
 
