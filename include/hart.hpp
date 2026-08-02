@@ -13,6 +13,7 @@
 #include "envelopes/hart_envelopes_all.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_expectation_failure_messages.hpp"
+#include "hart_impulse_response.hpp"
 #include "matchers/hart_matchers_all.hpp"
 #include "metrics/hart_metrics_all.hpp"
 #include "hart_preparation.hpp"
