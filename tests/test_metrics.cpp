@@ -1377,3 +1377,66 @@ HART_TEST ("Metrics - Centre Time - Effect with exponentially decaying tail")
         HART_EXPECT_FLOAT_EQ (centreTime (ir).get(), expectedCentreTimeSeconds, toleranceSeconds) << "Centre time at RT60 = " << rt60Seconds;
     }
 }
+
+HART_TEST ("Metrics - Centre Time - Odd cases")
+{
+    using hart::centreTime;
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using ImpulseResponse = hart::ImpulseResponse<float>;
+
+    AudioBuffer inputAudio;
+    AudioBuffer outputAudio;
+
+    // Silent output
+    processAudioWith (Mute())
+        .withInputSignal (Impulse())
+        .saveInputTo (inputAudio)
+        .saveOutputTo (outputAudio)
+        .process();
+    
+    ImpulseResponse ir (inputAudio, outputAudio);
+    HART_EXPECT_IS_NAN (centreTime (ir).get()) << "Silent output - Centre Time reads as NaN";
+
+    // No decay
+    processAudioWith (GainDb (-3_dB))
+        .withInputSignal (Impulse())
+        .saveInputTo (inputAudio)
+        .saveOutputTo (outputAudio)
+        .process();
+
+    ir = ImpulseResponse (inputAudio, outputAudio);
+    HART_EXPECT_FLOAT_EQ (centreTime (ir).get(), 0_s, 1_us) << "No decay - Centre Time reads as zero";
+}
+
+HART_TEST ("Metrics - Centre Time - Units")
+{
+    using hart::centreTime;
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using ImpulseResponse = hart::ImpulseResponse<float>;
+
+    const double sampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
+    const double defaultRenderDurationSeconds = hart::CLIConfig::getInstance().getDefaultRenderDurationSeconds();
+    const double rt60Seconds = 50_ms;
+    
+    constexpr double k = 0.072382413650542;  // 1 / (6 * ln (10));
+    const double expectedCentreTimeSeconds = k * rt60Seconds;
+    const double expectedCentreTimeFrames = expectedCentreTimeSeconds * sampleRateHz;
+
+    AudioBuffer inputAudio;
+    AudioBuffer outputAudio;
+
+    processAudioWith (ExponentialDecay())
+        .withValue (ExponentialDecay::decayTimeSeconds, rt60Seconds)
+        .withInputSignal (Impulse())
+        .inMono()
+        .saveInputTo (inputAudio)
+        .saveOutputTo (outputAudio)
+        .withDuration (std::max (defaultRenderDurationSeconds, 1.5 * rt60Seconds))
+        .process();
+    
+    const ImpulseResponse ir (inputAudio, outputAudio);
+    HART_EXPECT_FLOAT_EQ (centreTime (ir).as (seconds).get(), centreTime (ir).get(), 1.0e-8) << "Default unit is seconds";
+    HART_EXPECT_FLOAT_EQ (centreTime (ir).as (seconds).get(), centreTime (ir).as (native).get(), 1.0e-8) << "Native unit is seconds";
+    HART_EXPECT_FLOAT_EQ (centreTime (ir).as (seconds).get(), expectedCentreTimeSeconds, 100_us) << "Seconds are indeed interpreted as seconds";
+    HART_EXPECT_FLOAT_EQ (centreTime (ir).as (frames).get(), expectedCentreTimeFrames, 1.0) << "Supports returning decay time in frames";
+}
