@@ -39,7 +39,7 @@ jobs:
           - name: Windows AMD64 MSVC
             os: windows-latest
             build_type: Release
-            generator: "Visual Studio 17 2022"
+            generator: "Visual Studio 18 2026"
             cpp_compatibility_test: ON
 
           - name: macOS ARM64 Apple-Clang
