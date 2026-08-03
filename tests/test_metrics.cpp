@@ -1241,7 +1241,6 @@ HART_TEST ("Metrics - True Peak")
 HART_TEST ("Metrics - RT60 - Effect with exponentially decaying tail")
 {
     using hart::rt60;
-    using hart::max;
     using AudioBuffer = hart::AudioBuffer<float>;
     using ImpulseResponse = hart::ImpulseResponse<float>;
 
@@ -1274,7 +1273,6 @@ HART_TEST ("Metrics - RT60 - Effect with exponentially decaying tail")
 HART_TEST ("Metrics - RT60 - Odd cases")
 {
     using hart::rt60;
-    using hart::max;
     using AudioBuffer = hart::AudioBuffer<float>;
     using ImpulseResponse = hart::ImpulseResponse<float>;
 
@@ -1315,7 +1313,6 @@ HART_TEST ("Metrics - RT60 - Odd cases")
 HART_TEST ("Metrics - RT60 - Units")
 {
     using hart::rt60;
-    using hart::max;
     using AudioBuffer = hart::AudioBuffer<float>;
     using ImpulseResponse = hart::ImpulseResponse<float>;
 
@@ -1347,7 +1344,6 @@ HART_TEST ("Metrics - Centre Time - Effect with exponentially decaying tail")
 {
     using hart::centreTime;
     using hart::rt60;
-    using hart::max;
     using AudioBuffer = hart::AudioBuffer<float>;
     using ImpulseResponse = hart::ImpulseResponse<float>;
 
