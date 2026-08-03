@@ -14,7 +14,37 @@
 namespace hart
 {
 
-
+/// @brief Calculates the centre time of an impulse response.
+///
+/// Centre time (center time) is the energy-weighted mean arrival time of the
+/// impulse response. It describes where the energy of the response is centred
+/// in time: responses with more energy occurring later have a larger centre time.
+/// Can be used to verify shape of the decay, in combination with `hart::rt60()`.
+///
+/// Calculated as:
+///
+/// @f[
+/// T_s=\frac{\sum_{n=0}^{N-1} t_n h[n]^2}
+///           {\sum_{n=0}^{N-1} h[n]^2}
+/// @f]
+///
+/// (T_s = sum(t_n * h[n]^2) / sum(h[n]^2)),
+///
+/// where @f$h[n]@f$ is the impulse response sample, and @f$t_n@f$ is its
+/// time position (offset) in seconds.
+///
+/// Supported units are `Unit::seconds`, `Unit::native` (same as seconds) and
+/// `Unit::frames`. If `Unit::frames` is requested, the result will be a fractional
+/// value.
+///
+/// The result is NaN if the impulse response contains no energy.
+///
+/// @tparam SampleType Floating-point sample type of the impulse response.
+/// @param ir Impulse response to analyse.
+///
+/// @return A MetricQuery containing the centre time for each channel.
+/// Either in seconds, or in frames, depending on requested unit.
+/// May return `NaN`.
 /// @ingroup Metrics
 template <typename SampleType>
 MetricQuery<double> centreTime (const ImpulseResponse<SampleType>& ir)
