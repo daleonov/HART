@@ -1342,3 +1342,38 @@ HART_TEST ("Metrics - RT60 - Units")
     HART_EXPECT_FLOAT_EQ (rt60 (ir).as (seconds).get(), expectedDecayTimeSeconds, 100_us) << "Seconds are indeed interpreted as seconds";
     HART_EXPECT_FLOAT_EQ (rt60 (ir).as (frames).get(), expectedDecayTimeFrames, 1.0) << "Supports returning decay time in frames";
 }
+
+HART_TEST ("Metrics - Centre Time - Effect with exponentially decaying tail")
+{
+    using hart::centreTime;
+    using hart::rt60;
+    using hart::max;
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using ImpulseResponse = hart::ImpulseResponse<float>;
+
+    const double defaultRenderDurationSeconds = hart::CLIConfig::getInstance().getDefaultRenderDurationSeconds();
+
+    for (const double rt60Seconds : {1.234_ms, 10_ms, 42.42_ms, 777_ms})
+    {
+        AudioBuffer inputAudio;
+        AudioBuffer outputAudio;
+
+        processAudioWith (ExponentialDecay())
+            .withValue (ExponentialDecay::decayTimeSeconds, rt60Seconds)
+            .withInputSignal (Impulse())
+            .inMono()
+            .saveInputTo (inputAudio)
+            .saveOutputTo (outputAudio)
+            .withDuration (std::max (defaultRenderDurationSeconds, 1.5 * rt60Seconds))
+            .process();
+        
+        const ImpulseResponse ir (inputAudio, outputAudio);
+        const double toleranceSeconds = 0.01 * rt60Seconds;
+        HART_ASSERT_FLOAT_EQ (rt60 (ir).get(), rt60Seconds, toleranceSeconds) << "Effect has a correct RT60 decay time";
+
+        constexpr double k = 0.072382413650542;  // 1 / (6 * ln (10));
+        const double expectedCentreTimeSeconds = k * rt60Seconds;
+
+        HART_EXPECT_FLOAT_EQ (centreTime (ir).get(), expectedCentreTimeSeconds, toleranceSeconds) << "Centre time at RT60 = " << rt60Seconds;
+    }
+}
