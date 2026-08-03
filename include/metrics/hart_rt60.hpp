@@ -11,22 +11,77 @@
 #include "hart_units.hpp"  // Unit
 #include "hart_utils.hpp"  // nan(), floatsEqual()
 
-// TODO: Document it!
-
 namespace hart
 {
 
 namespace RT60
 {
+    /// @brief RT60 estimation method.
+    /// @details
+    /// All methods estimate the time required for the impulse response energy
+    /// to decay by 60 dB. They differ only in which part of the energy decay
+    /// curve is used for the linear fit.
+    ///
+    /// Used as @ref `rt60()` metric argument.
     enum class Method
     {
+        /// Early Decay Time.
+        /// Fits the decay from 0 dB to -10 dB and extrapolates the fitted slope
+        /// to a 60 dB decay. EDT is influenced primarily by the early part of
+        /// the reverberation tail.
+        /// See ISO 3382, Annex A for more in-depth description of EDT.
         edt,
+
+        /// T20 reverberation time estimate.
+        /// Fits the decay from -5 dB to -25 dB and extrapolates the fitted slope
+        /// to a 60 dB decay.
         t20,
+
+        /// T30 reverberation time estimate.
+        /// Fits the decay from -5 dB to -35 dB and extrapolates the fitted slope
+        /// to a 60 dB decay. T30 uses a larger portion of the decay than T20 and
+        /// therefore requires a sufficiently long impulse response.
         t30
     };
 }  // namespace RT60
 
-/// @brief 
+/// @brief Estimates the RT60 reverberation time of an impulse response.
+///
+/// RT60 is the time required for reverberant energy to decay by 60 dB.
+/// The metric is calculated from the impulse response using Schroeder backward
+/// integration, followed by linear regression over the range specified by
+/// @p method. The fitted decay slope is then extrapolated to 60 dB.
+///
+/// EDT, T20 and T30, specified by @p method, are different estimators of the
+/// same RT60 quantity. For an exponential decay they're expected to produce
+/// identical results; for more complex decay curves you can use combination
+/// of those.
+///
+/// Supported units are `Unit::seconds`, `Unit::native` (same as seconds) and
+/// `Unit::frames`. If `Unit::frames` is requested, the result will be a fractional
+/// value.
+///
+/// This metric is based on ISO 3382 standard.
+/// @note Slices aren't yet supported by this metric, and will be ignored.
+/// @attention
+/// The supplied impulse response is assumed to represent a decaying response.
+/// If the requested decay range cannot be observed, or a valid decay slope
+/// cannot be estimated, the result will be `NaN`. Also, note that DSPs that
+/// produce no decay or ringing at all (e. g., a system that just applies linear
+/// gain, or a stateless waveshaper) will result in `NaN`, and not zero.
+///
+/// Also, make sure that provided IR is long enough to contain a portion of slope
+/// specified by @p method, otherwise the estimation will result `NaN`.
+/// See @ref RT60::Method options documentation for details, and ISO 3382 for
+/// a more in-depth description.
+/// @tparam SampleType Floating-point sample type of the impulse response.
+/// @param ir Impulse response to analyze
+/// @param method RT60 estimation method
+///
+/// @return A MetricQuery containing the estimated decay time for each channel.
+/// Either in seconds, or in frames, depending on requested unit. Can be `NaN`.
+///
+/// @see RT60::Method
 /// @ingroup Metrics
 template <typename SampleType>
 MetricQuery<double> rt60 (const ImpulseResponse<SampleType>& ir, RT60::Method method = RT60::Method::edt)
