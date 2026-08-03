@@ -22,7 +22,7 @@ namespace RT60
     /// to decay by 60 dB. They differ only in which part of the energy decay
     /// curve is used for the linear fit.
     ///
-    /// Used as @ref `rt60()` metric argument.
+    /// Used as `hart::rt60()` metric argument.
     enum class Method
     {
         /// Early Decay Time.
