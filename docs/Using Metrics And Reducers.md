@@ -20,8 +20,9 @@ For example, if you want to check something like:
 
 If you're making a quick custom check, it is often enough to pass a lambda to `expectTrue()` or `assertTrue()`, or their inverted counterparts. HART supports function-based matchers with these signatures:
 
-1. `bool matcherFunction (const AudioBuffer<SampleType>& output)`
-2. `bool matcherFunction (const AudioBuffer<SampleType>& input, const AudioBuffer<SampleType>& output)`
+1. `Condition matcherFunction (const AudioBuffer<SampleType>& output)`
+2. `Condition matcherFunction (const AudioBuffer<SampleType>& input, const AudioBuffer<SampleType>& output)`
+3. `Condition matcherFunction (AnalysisContext<SampleType> output)`
 
 Using built-in metrics in both of those forms will let you express some non-trivial matchers in a very human-readable form. For more details on making use of such matchers, refer to `MatcherFunction` and `AudioTestBuilder` documentation. Also, check respective sections in @ref TestingYourDspInHart.
 
@@ -43,14 +44,14 @@ HART_TEST ("MyCompressor - Crest factor is in reasonable range")
         .expectTrue (
             [] (const AudioBuffer& output)
             {
-                HART_LESS_OR_EQUAL (crestFactor (output).as (dB).get(), 20_dB);
+                return HART_LESS_OR_EQUAL (crestFactor (output).as (dB).get(), 20_dB);
             },
             "Crest Factor - Snare transient is not too sharp"
             )
         .expectTrue (
             [] (const AudioBuffer& output)
             {
-                HART_GREATER_OR_EQUAL (crestFactor (output).as (dB).get(), 10_dB);
+                return HART_GREATER_OR_EQUAL (crestFactor (output).as (dB).get(), 10_dB);
             },
             "Crest Factor - Snare transient is not too slammed"
             )
