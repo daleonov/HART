@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "hart_audio_buffer.hpp"
+#include "hart_impulse_response.hpp"
 #include "hart_spectrum.hpp"
 
 namespace hart
@@ -65,11 +66,26 @@ public:
         return *m_cache->outputSpectrum;
     }
 
+    /// @brief Returns an impulse response of the output audio vs input audio
+    const ImpulseResponse<SampleType>& impulseResponse() const
+    {
+        if (m_cache->impulseResponse == nullptr)
+        {
+            m_cache->impulseResponse = std::make_shared<ImpulseResponse<SampleType>> (
+                m_inputAudio,
+                m_outputAudio
+                );
+        }
+
+        return *m_cache->impulseResponse;
+    }
+
 private:
     struct Cache
     {
         mutable std::shared_ptr<Spectrum> inputSpectrum = nullptr;
         mutable std::shared_ptr<Spectrum> outputSpectrum = nullptr;
+        mutable std::shared_ptr<ImpulseResponse<SampleType>> impulseResponse = nullptr;
     };
 
     const AudioBuffer<SampleType>& m_inputAudio;
