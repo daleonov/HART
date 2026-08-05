@@ -341,6 +341,25 @@ public:
     /// @see MatcherFunction
     /// @param matcherFunction Function with signature:
     /// @code
+    /// Condition (AnalysisContext<SampleType> context)
+    /// @endcode
+    ///
+    /// Example:
+    /// @code
+    /// [] (AnalysisContext context) { return HART_LESS_THAN (rt60 (context.outputAudio())).get(), 200_ms); }
+    /// @endcode
+    /// @param label Optional label used in failure reports
+    AudioTestBuilder& expectTrue (std::function<Condition (AnalysisContext<SampleType>)> matcherFunction, const std::string& label = {})
+    {
+        return expectTrue (MatcherFunction<SampleType> (std::move (matcherFunction), label));
+    }
+
+    /// @brief Adds an "expect" check using a function matcher
+    /// @details Intended for simple inline expressions. For anything more than
+    /// that, consider making a custom hart::Matcher subclass and use it instead.
+    /// @see MatcherFunction
+    /// @param matcherFunction Function with signature:
+    /// @code
     /// Condition (const AudioBuffer<SampleType>& output)
     /// @endcode
     ///
@@ -377,6 +396,25 @@ public:
     AudioTestBuilder& expectTrue (std::function<Condition (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
     {
         return expectTrue (MatcherFunction<SampleType> (std::move (matcherFunction), label));
+    }
+
+    /// @brief Adds a reversed "expect" check using a function matcher
+    /// @details Intended for simple inline expressions. For anything more than
+    /// that, consider making a custom hart::Matcher subclass and use it instead.
+    /// @see MatcherFunction
+    /// @param matcherFunction Function with signature:
+    /// @code
+    /// Condition (AnalysisContext<SampleType> context)
+    /// @endcode
+    ///
+    /// Example:
+    /// @code
+    /// [] (AnalysisContext context) { return HART_LESS_THAN (rt60 (context.outputAudio())).get(), 200_ms); }
+    /// @endcode
+    /// @param label Optional label used in failure reports
+    AudioTestBuilder& expectFalse (std::function<Condition (AnalysisContext<SampleType>)> matcherFunction, const std::string& label = {})
+    {
+        return expectFalse (MatcherFunction<SampleType> (std::move (matcherFunction), label));
     }
 
     /// @brief Adds a reversed "expect" check using a function matcher
@@ -429,6 +467,25 @@ public:
     /// @see MatcherFunction
     /// @param matcherFunction Function with signature:
     /// @code
+    /// Condition (AnalysisContext<SampleType> context)
+    /// @endcode
+    ///
+    /// Example:
+    /// @code
+    /// [] (AnalysisContext context) { return HART_LESS_THAN (rt60 (context.outputAudio())).get(), 200_ms); }
+    /// @endcode
+    /// @param label Optional label used in failure reports
+    AudioTestBuilder& assertTrue (std::function<Condition (AnalysisContext<SampleType>)> matcherFunction, const std::string& label = {})
+    {
+        return assertTrue (MatcherFunction<SampleType> (std::move (matcherFunction), label));
+    }
+
+    /// @brief Adds an "assert" check using a function matcher
+    /// @details Intended for simple inline expressions. For anything more than
+    /// that, consider making a custom hart::Matcher subclass and use it instead.
+    /// @see MatcherFunction
+    /// @param matcherFunction Function with signature:
+    /// @code
     /// Condition (const AudioBuffer<SampleType>& output)
     /// @endcode
     ///
@@ -465,6 +522,25 @@ public:
     AudioTestBuilder& assertTrue (std::function<Condition (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> matcherFunction, const std::string& label = {})
     {
         return assertTrue (MatcherFunction<SampleType> (std::move (matcherFunction), label));
+    }
+
+    /// @brief Adds a reversed "assert" check using a function matcher
+    /// @details Intended for simple inline expressions. For anything more than
+    /// that, consider making a custom hart::Matcher subclass and use it instead.
+    /// @see MatcherFunction
+    /// @param matcherFunction Function with signature:
+    /// @code
+    /// Condition (AnalysisContext<SampleType> context)
+    /// @endcode
+    ///
+    /// Example:
+    /// @code
+    /// [] (AnalysisContext context) { return HART_LESS_THAN (rt60 (context.outputAudio())).get(), 200_ms); }
+    /// @endcode
+    /// @param label Optional label used in failure reports
+    AudioTestBuilder& assertFalse (std::function<Condition (AnalysisContext<SampleType>)> matcherFunction, const std::string& label = {})
+    {
+        return assertFalse (MatcherFunction<SampleType> (std::move (matcherFunction), label));
     }
 
     /// @brief Adds a reversed "assert" check using a function matcher
