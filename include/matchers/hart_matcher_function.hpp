@@ -43,6 +43,20 @@ class MatcherFunction:
     public Matcher<SampleType, MatcherFunction<SampleType>>
 {
 public:
+    /// @brief Constructs a matcher from a function that has access to the entire analysis context
+    /// @details This form is recommended for conditions based on `Spectrum` or `ImpulseResponse`,
+    /// as `AnalysisContext` can cache those computationally heavy containers.
+    /// @param matcherFunction A callable with signature:
+    /// @code
+    /// Condition (AnalysisContext<SampleType> analysisContext)
+    /// @endcode
+    /// It should return `true` if the output satisfies the expected condition, `false` otherwise
+    /// @param label Optional human-readable label used in failure reports
+    MatcherFunction (std::function <Condition (AnalysisContext<SampleType> analysisContext)> matcherFunction, const std::string& label = {}) :
+        m_matcherFunctionForAnalysisContext (std::move (matcherFunction)),
+        m_label (label)
+    {
+    }
 
     /// @brief Creates a matcher from a function that compares input and output
     /// @param matcherFunction A callable with signature:
@@ -90,6 +104,12 @@ public:
             return m_condition.getResult();
         }
 
+        if (m_matcherFunctionForAnalysisContext != nullptr)
+        {
+            m_condition = std::move (m_matcherFunctionForAnalysisContext (context));
+            return m_condition.getResult();
+        }
+
         HART_THROW_OR_RETURN (hart::NullPointerError, "Matcher function is a nullptr!", false);
     }
 
@@ -132,6 +152,7 @@ public:
     void prepare (double /* sampleRateHz */, size_t /* numInputChannels */, size_t /* numOutputChannels */, size_t /* maxBlockSizeFrames */) override {}
 
 private:
+    const std::function <Condition (AnalysisContext<SampleType>&)> m_matcherFunctionForAnalysisContext = nullptr;
     const std::function <Condition (const AudioBuffer<SampleType>&, const AudioBuffer<SampleType>&)> m_matcherFunctionForInputAndOutput = nullptr;
     const std::function <Condition (const AudioBuffer<SampleType>&)> m_matcherFunctionForOutputOnly = nullptr;
     const std::string m_label;
