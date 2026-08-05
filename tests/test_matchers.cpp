@@ -40,6 +40,38 @@ HART_TEST ("Detecting denormals")
         .process();
 }
 
+HART_TEST ("Matcher function - For analysis context")
+{
+    using AnalysisContext = hart::AnalysisContext<float>;
+    using hart::centreTime;
+    using hart::max;
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Creating MatcherFunction explicitly")
+        .withInputSignal (SineWave())
+        .expectTrue (MatcherFunction ([] (AnalysisContext) { return true; }, "Always true"))
+        .expectFalse (MatcherFunction ([] (AnalysisContext) { return false; }, "Always false"))
+        .process();
+
+    auto centreTimeBelowOneMs = MatcherFunction (
+        [] (AnalysisContext context) { return HART_LE (centreTime (context.impulseResponse()).get (max()), 1_ms); },
+        "Peaks above unity"
+        );
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Using a named object")
+        .withInputSignal (Impulse())
+        .expectTrue (std::move (centreTimeBelowOneMs))
+        .process();
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Creating MatcherFunction implicitly")
+        .withInputSignal (SineWave())
+        .expectTrue ([] (AnalysisContext) { return true; }, "Always true")
+        .expectFalse ([] (AnalysisContext) { return false; }, "Always false")
+        .process();
+}
+
 HART_TEST ("Matcher function - For output buffer")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
