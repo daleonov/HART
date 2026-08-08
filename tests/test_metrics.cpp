@@ -1238,6 +1238,27 @@ HART_TEST ("Metrics - True Peak")
     // TODO: Slices
 }
 
+HART_TEST ("Metrics - THD")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using Spectrum = hart::Spectrum;
+    using hart::thd;
+
+    const double renderDurationSeconds = hart::CLIConfig::getInstance().getDefaultRenderDurationSeconds();
+    const double sampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
+
+    for (const double frequencyHz : {50_Hz, 440_Hz, 1000_Hz, 3456.78_Hz})
+    {
+        const double coherentFrequencyHz = hart::THD::closestCoherentFrequencyHz (frequencyHz, renderDurationSeconds, sampleRateHz);
+
+        processAudioWith (GainDb (0_dB))
+            .withLabel (HART_STR ("Pure sine at " << coherentFrequencyHz << " Hz"))
+            .withInputSignal (SineWave (coherentFrequencyHz))
+            .expectTrue ([coherentFrequencyHz] (const AudioBuffer& output) { return HART_FLOAT_EQ (hart::thd (Spectrum (output), coherentFrequencyHz).get(), 0.0, 1e-8); }, "THD ~= 0")
+            .process();
+    }
+}
+
 HART_TEST ("Metrics - RT60 - Effect with exponentially decaying tail")
 {
     using hart::rt60;
