@@ -187,6 +187,27 @@ static size_t nextPowerOfTwo (size_t x)
     return power;
 }
 
+/// @brief Finds previous power of 2 after a non-negative number x
+/// @note If x is a power of 2 itself, it will return x
+static size_t previousPowerOfTwo (size_t x)
+{
+    if (x == 0)
+        return 0;
+
+    size_t power = 1;
+
+    while ((power << 1) < x)
+        power <<= 1;
+
+    return power;
+}
+
+// @brief Checks if number is a power of 2
+static bool isPowerOfTwo (size_t x)
+{
+    return (x != 0) && ((x & (x - 1)) == 0);
+}
+
 /// @brief Checks if the provided file path is absolute
 inline static bool isAbsolutePath (const std::string& path)
 {
