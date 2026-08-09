@@ -12,6 +12,7 @@ namespace hart
 
 namespace THD
 {
+    // TODO: Document this helper!
     inline double closestCoherentFrequencyHz (
         double desiredFrequencyHz,
         size_t fftSizeFrames,
@@ -49,6 +50,90 @@ namespace THD
     }
 }  // namespace THD
 
+
+/// @brief Calculates the total harmonic distortion (THD) of a spectrum.
+///
+/// THD is calculated as the RMS sum of the powers of the harmonics relative
+/// to the power of the fundamental:
+///
+/// @f[
+/// \mathrm{THD}
+/// = \sqrt{
+///     \frac{\sum_{h=2}^{H} |X[h k_1]|^2}
+///          {|X[k_1]|^2}
+///   }
+/// @f]
+///
+/// (THD = sqrt(sum(norm(harmonic bins)) / norm(fundamental bin))),
+///
+/// where @f$ k_1 @f$ is the FFT bin containing the fundamental, and @f$ H @f$
+/// is the maximum harmonic number requested. Harmonics at or above the
+/// Nyquist frequency are ignored.
+///
+/// For an accurate measurement, the input should be a pure sine whose
+/// frequency lies exactly at the centre of an FFT bin. The analysed signal
+/// should also contain exactly the same number of frames as the FFT, without
+/// zero padding. Otherwise, truncation and zero padding cause spectral
+/// leakage, which may appear as harmonic energy and artificially increase
+/// the measured THD. You may use the provided helpers to ensure that, namely
+/// `hart::THD::closestCoherentFrequencyHz()` for sine frequency and
+/// `hart::previousPowerOfTwo()` or `hart::nextPowerOfTwo()` for the render
+/// duration in frames.
+///
+/// Since Spectrum uses a power-of-two FFT size, a convenient way to satisfy
+/// these requirements would be:
+///
+/// 1. Choose a power-of-two render length close to the desired duration
+/// 2. Use hart::THD::closestCoherentFrequencyHz() to choose the FFT-bin
+/// frequency closest to the desired fundamental frequency, so that it falls
+/// perfectly in the middle of the FFT bin.
+///
+/// Example:
+///
+/// @code
+/// // Assuming you have specific render duration and input signal frequency in mind:
+/// constexpr double desiredRenderDurationSeconds = 100_ms; // Or any other duration you want
+/// constexpr double desiredFrequencyHz = 1_kHz; // Or any other frequency you want
+///
+/// // Choose a power-of-two render length so Spectrum does not need to
+/// // zero-pad the rendered signal for the FFT
+/// const size_t desiredRenderDurationFrames = hart::roundToSizeT (desiredRenderDurationSeconds * sampleRateHz);
+/// const size_t renderDurationFrames = hart::previousPowerOfTwo (desiredRenderDurationFrames);
+/// const double renderDurationSeconds = static_cast<double> (renderDurationFrames) / sampleRateHz;
+///
+/// // Choose the frequency closest to the requested frequency that lies
+/// // exactly at the centre of an FFT bin.
+/// const double coherentFrequencyHz =
+///     hart::THD::closestCoherentFrequencyHz (
+///         desiredFrequencyHz,
+///         renderDurationFrames,
+///         sampleRateHz
+///         );
+///
+/// processAudioWith (SomeDSP())
+///     .withInputSignal (SineWave (coherentFrequencyHz))  // Corrected frequency...
+///     .withDuration (renderDurationSeconds)  // ...and corrected render duration
+///     .expectTrue (
+///         [coherentFrequencyHz] (const auto& output)
+///         {
+///             return HART_FLOAT_EQ (
+///                 hart::thd (hart::Spectrum (output), coherentFrequencyHz).get(),
+///                 0.0,
+///                 1e-8
+//                  );
+///         },
+///         "THD ~= 0")
+///     .process();
+/// @endcode
+///
+/// @param spectrum Spectrum of the output signal to analyse, assuming the input
+/// was a pure sine wave
+/// @param fundamentalFrequencyHz Frequency of the fundamental in Hz. It must
+/// correspond exactly to an FFT bin frequency. Use `hart::THD::closestCoherentFrequencyHz()`
+/// to obtain an appropriate value.
+/// @param numHarmonics Maximum harmonic number to include in the measurement.
+/// Harmonics at or above Nyquist are ignored.
+/// @return A MetricQuery containing THD as a linear amplitude ratio. May return `NaN`.
 inline MetricQuery<double> thd (const Spectrum& spectrum, double fundamentalFrequencyHz, int numHarmonics = 10)
 {
     typename MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
