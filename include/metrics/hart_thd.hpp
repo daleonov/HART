@@ -12,13 +12,31 @@ namespace hart
 
 namespace THD
 {
-// TODO: Enforce instantiating through the builder only
+
 struct ExperimentSetup
 {
-    double frequencyHz;
-    double durationSeconds;
-    size_t durationFrames;
-    int numHarmonics;
+    const double frequencyHz;
+    const double durationSeconds;
+    const size_t durationFrames;
+    const int numHarmonics;
+
+    ExperimentSetup (const ExperimentSetup&) = default;
+    ExperimentSetup (ExperimentSetup&&) = default;
+    ExperimentSetup& operator= (const ExperimentSetup&) = delete;
+    ExperimentSetup& operator= (ExperimentSetup&&) = delete;
+    ~ExperimentSetup() = default;
+
+private:
+    friend class ExperimentSetupTuner;
+
+    // Supposed to be constructed only via ExperimentSetupTuner
+    ExperimentSetup (double frequencyHz_, double durationSeconds_, size_t durationFrames_, int numHarmonics_) :
+        frequencyHz (frequencyHz_),
+        durationSeconds (durationSeconds_),
+        durationFrames (durationFrames_),
+        numHarmonics (numHarmonics_)
+    {
+    }
 };
 
 class ExperimentSetupTuner
