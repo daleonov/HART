@@ -1244,16 +1244,24 @@ HART_TEST ("Metrics - THD")
     using Spectrum = hart::Spectrum;
     using hart::thd;
 
-    const double renderDurationSeconds = hart::CLIConfig::getInstance().getDefaultRenderDurationSeconds();
+    // Since truncation and zero padding cause spectral leakage, it's encouraged
+    // to avoid it by having the signal duration be exactly a power of two
+    const double defaultRenderDurationSeconds = hart::CLIConfig::getInstance().getDefaultRenderDurationSeconds();
     const double sampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
+    const size_t defaultRenderDurationFrames = hart::roundToSizeT (defaultRenderDurationSeconds * sampleRateHz);
+    const size_t renderDurationFrames = hart::previousPowerOfTwo (defaultRenderDurationFrames);
+    const double renderDurationSeconds = static_cast<double> (renderDurationFrames) / sampleRateHz;
 
     for (const double frequencyHz : {50_Hz, 440_Hz, 1000_Hz, 3456.78_Hz})
     {
-        const double coherentFrequencyHz = hart::THD::closestCoherentFrequencyHz (frequencyHz, renderDurationSeconds, sampleRateHz);
+        // This frequency shall fall exactly in the centre of some FFT bin
+        const double coherentFrequencyHz = hart::THD::closestCoherentFrequencyHz (frequencyHz, renderDurationFrames, sampleRateHz);
 
         processAudioWith (GainDb (0_dB))
             .withLabel (HART_STR ("Pure sine at " << coherentFrequencyHz << " Hz"))
             .withInputSignal (SineWave (coherentFrequencyHz))
+            .withDuration (renderDurationSeconds)
+            .assertTrue ([] (const AudioBuffer& output) { return HART_TRUE (hart::isPowerOfTwo (output.getNumFrames())); }, "Rendered audio size in frames is a power of two")
             .expectTrue ([coherentFrequencyHz] (const AudioBuffer& output) { return HART_FLOAT_EQ (hart::thd (Spectrum (output), coherentFrequencyHz).get(), 0.0, 1e-8); }, "THD ~= 0")
             .process();
     }

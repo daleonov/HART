@@ -4,7 +4,8 @@
 #include <cmath>  // floor(), round(), sqrt()
 
 #include "hart_accurate_sum.hpp"
-#include "hart_utils.hpp"  // nextPowerOfTwo(), roundToSizeT(), floatsNotEqual()
+#include "hart_exceptions.hpp"
+#include "hart_utils.hpp"  // nextPowerOfTwo(), roundToSizeT(), floatsNotEqual(), clamp()
 
 namespace hart
 {
@@ -13,17 +14,38 @@ namespace THD
 {
     inline double closestCoherentFrequencyHz (
         double desiredFrequencyHz,
-        double signalDurationSeconds,
+        size_t fftSizeFrames,
         double sampleRateHz,
         int maxHarmonic = 10
         )
     {
-        const size_t signalDurationFrames = roundToSizeT (signalDurationSeconds * sampleRateHz);
-        const double fftSizeFrames = static_cast<double> (nextPowerOfTwo (signalDurationFrames));
-        const double binWidth = sampleRateHz / fftSizeFrames;
-        const double mMax = std::floor ((fftSizeFrames / 2.0) / maxHarmonic);
-        const double m = hart::clamp (std::round (desiredFrequencyHz / binWidth), 1.0, mMax);
-        return m * binWidth;
+        const double nan = hart::nan<double>();
+
+        if (! isPowerOfTwo (fftSizeFrames))
+            HART_THROW_OR_RETURN (hart::SizeError, "FFT size is expected to be a power of 2", nan);
+
+        if (sampleRateHz < 0.0 || floatsEqual (sampleRateHz, 0.0) || std::isnan (sampleRateHz))
+            HART_THROW_OR_RETURN (hart::SampleRateError, "Invalid sample rate", nan);
+
+        if (desiredFrequencyHz < 0.0 || floatsEqual (desiredFrequencyHz, 0.0) || std::isnan (desiredFrequencyHz))
+            HART_THROW_OR_RETURN (hart::ValueError, "Invalid sample rate", nan);
+
+        if (maxHarmonic < 2)
+            HART_THROW_OR_RETURN (hart::ValueError, "Invalid max harmonic number", nan);
+
+        const double binWidthHz = sampleRateHz / static_cast<double> (fftSizeFrames);
+        const size_t nyquistBin = fftSizeFrames / 2;
+        const size_t maxFundamentalBin = (nyquistBin - 1) / static_cast<size_t> (maxHarmonic);
+
+        const size_t fundamentalBin = hart::clamp (
+            roundToSizeT (desiredFrequencyHz / binWidthHz),
+            (size_t) 1,
+            maxFundamentalBin
+            );
+
+        const double fundamentalFrequencyHz = static_cast<double> (fundamentalBin) * binWidthHz;
+        hassert (floatsNotEqual (fundamentalFrequencyHz, 0.0));
+        return fundamentalFrequencyHz;
     }
 }  // namespace THD
 
@@ -37,6 +59,7 @@ inline MetricQuery<double> thd (const Spectrum& spectrum, double fundamentalFreq
         hassert (channel < spectrum.getNumChannels());
         hassert (! std::isnan (spectrum.getSampleRateHz()));
 
+        // TODO: Add percent unit support?
         if (requestedUnit != Unit::native && requestedUnit != Unit::linear)
             HART_THROW_OR_RETURN (hart::UnitError, "Unsupported unit", hart::nan<double>());
 
@@ -64,9 +87,8 @@ inline MetricQuery<double> thd (const Spectrum& spectrum, double fundamentalFreq
             if (harmonicFrequencyHz >= nyquistFrequencyHz)
                 break;
                 
+            // TODO: Probably just do "harmonicBin = fundamentalBin * harmonic" here
             const size_t harmonicBin = spectrum.findClosestBin (harmonicFrequencyHz);
-            hassert (harmonicFrequencyHz)
-
             harmonicPowerSum += std::norm (spectrum.getBinValue (channel, harmonicBin));
         }
         
