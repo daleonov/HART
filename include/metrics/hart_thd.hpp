@@ -12,8 +12,108 @@ namespace hart
 
 namespace THD
 {
-    // TODO: Document this helper!
-    inline double closestCoherentFrequencyHz (
+// TODO: Enforce instantiating through the builder only
+struct ExperimentSetup
+{
+    double frequencyHz;
+    double durationSeconds;
+    size_t durationFrames;
+    int numHarmonics;
+};
+
+class ExperimentSetupTuner
+{
+public:
+    ExperimentSetupTuner& withFrequency (double desiredFrequencyHz)
+    {
+        if (desiredFrequencyHz < 0.0 || floatsEqual (desiredFrequencyHz, 0.0) || std::isnan (desiredFrequencyHz))
+            HART_THROW_OR_RETURN (hart::ValueError, "Invalid fundamental frequency", *this);
+
+        m_desiredFrequencyHz = desiredFrequencyHz;
+        return *this;
+    }
+
+    ExperimentSetupTuner& withSampleRate (double sampleRateHz)
+    {
+        if (sampleRateHz <= 0.0 || floatsEqual (sampleRateHz, 0.0) || std::isnan (sampleRateHz))
+            HART_THROW_OR_RETURN (hart::SampleRateError, "Invalid sample rate", *this);
+    
+        m_sampleRateHz = sampleRateHz;
+        return *this;
+    }
+
+    ExperimentSetupTuner& withDuration (double desiredDurationSeconds)
+    {
+        if (desiredDurationSeconds < 0.0 || floatsEqual (desiredDurationSeconds, 0.0) || std::isnan (desiredDurationSeconds))
+            HART_THROW_OR_RETURN (hart::ValueError, "Invalid duration", *this);
+
+        m_desiredDurationSeconds = desiredDurationSeconds;
+        m_durationSpecifiedInFrames = false;
+        return *this;
+    }
+
+    ExperimentSetupTuner& withNumFrames (size_t desiredDurationFrames)
+    {
+        if (desiredDurationFrames == 0)
+            HART_THROW_OR_RETURN (hart::ValueError, "Invalid duration", *this);
+        
+        m_desiredDurationFrames = desiredDurationFrames;
+        m_durationSpecifiedInFrames = true;
+        return *this;
+    }
+
+    ExperimentSetupTuner& withNumHarmonics (int desiredNumHarmonics)
+    {
+        if (desiredNumHarmonics < 2)
+            HART_THROW (hart::ValueError, "Invalid number of harmonics");
+
+        m_desiredNumHarmonics = desiredNumHarmonics;
+        return *this;
+    }
+
+    ExperimentSetup tune() const
+    {
+        const size_t requestedDurationFrames =
+            m_durationSpecifiedInFrames
+                ? m_desiredDurationFrames
+                : roundToSizeT (m_desiredDurationSeconds * m_sampleRateHz);
+
+        // TODO: Make closestPowerOfTwo()?
+        const size_t tunedDurationFrames = hart::previousPowerOfTwo (requestedDurationFrames);
+        const double tunedDurationSeconds = static_cast<double> (tunedDurationFrames) / m_sampleRateHz;
+        const size_t nyquistBin = tunedDurationFrames / 2;
+
+        // At least bins 1..numHarmonics must fit strictly below Nyquist.
+        const int maxValidNumHarmonics = static_cast<int> (nyquistBin) - 1;
+
+        const int tunedNumHarmonics = std::min (m_desiredNumHarmonics, maxValidNumHarmonics);
+        hassert (tunedNumHarmonics >= 2);
+
+        const double tunedFrequencyHz =
+            closestCoherentFrequencyHz (
+                m_desiredFrequencyHz,
+                tunedDurationFrames,
+                m_sampleRateHz,
+                tunedNumHarmonics
+            );
+
+        return {
+            tunedFrequencyHz,
+            tunedDurationSeconds,
+            tunedDurationFrames,
+            tunedNumHarmonics
+        };
+    }
+
+private:
+    double m_desiredFrequencyHz = 1000.0;
+    double m_sampleRateHz = CLIConfig::getInstance().getDefaultSampleRateHz();
+    double m_desiredDurationSeconds = CLIConfig::getInstance().getDefaultRenderDurationSeconds();
+    size_t m_desiredDurationFrames = 0;
+    int m_desiredNumHarmonics = 10;
+    bool m_durationSpecifiedInFrames = false;
+
+    static double closestCoherentFrequencyHz (
         double desiredFrequencyHz,
         size_t fftSizeFrames,
         double sampleRateHz,
@@ -55,7 +155,9 @@ namespace THD
         hassert (floatsNotEqual (fundamentalFrequencyHz, 0.0));
         return fundamentalFrequencyHz;
     }
-}  // namespace THD
+};
+
+}  // namespace hart::THD
 
 
 /// @brief Calculates the total harmonic distortion (THD) of a spectrum.
@@ -82,18 +184,13 @@ namespace THD
 /// should also contain exactly the same number of frames as the FFT, without
 /// zero padding. Otherwise, truncation and zero padding cause spectral
 /// leakage, which may appear as harmonic energy and artificially increase
-/// the measured THD. You may use the provided helpers to ensure that, namely
-/// `hart::THD::closestCoherentFrequencyHz()` for sine frequency and
-/// `hart::previousPowerOfTwo()` or `hart::nextPowerOfTwo()` for the render
-/// duration in frames.
+/// the measured THD.
 ///
-/// Since Spectrum uses a power-of-two FFT size, a convenient way to satisfy
-/// these requirements would be:
-///
-/// 1. Choose a power-of-two render length close to the desired duration
-/// 2. Use hart::THD::closestCoherentFrequencyHz() to choose the FFT-bin
-/// frequency closest to the desired fundamental frequency, so that it falls
-/// perfectly in the middle of the FFT bin.
+/// To ensure those conditions are met, you're expected to obtain a "tuned"
+/// experiment setup, obtained through hart::THD::ExperimentSetupTuner,
+/// which will snap all of your desired experiment parameters to the values
+/// optimized for no-spill FFT. Those will be the values you're supposed to
+/// run the entire test render with.
 ///
 /// Example:
 ///
@@ -101,30 +198,21 @@ namespace THD
 /// // Assuming you have specific render duration and input signal frequency in mind:
 /// constexpr double desiredRenderDurationSeconds = 100_ms; // Or any other duration you want
 /// constexpr double desiredFrequencyHz = 1_kHz; // Or any other frequency you want
-///
-/// // Choose a power-of-two render length so Spectrum does not need to
-/// // zero-pad the rendered signal for the FFT
-/// const size_t desiredRenderDurationFrames = hart::roundToSizeT (desiredRenderDurationSeconds * sampleRateHz);
-/// const size_t renderDurationFrames = hart::previousPowerOfTwo (desiredRenderDurationFrames);
-/// const double renderDurationSeconds = static_cast<double> (renderDurationFrames) / sampleRateHz;
-///
-/// // Choose the frequency closest to the requested frequency that lies
-/// // exactly at the centre of an FFT bin.
-/// const double coherentFrequencyHz =
-///     hart::THD::closestCoherentFrequencyHz (
-///         desiredFrequencyHz,
-///         renderDurationFrames,
-///         sampleRateHz
-///         );
+/// 
+/// // Snap the desired parameters to optimal values
+/// const hart::THD::ExperimentSetup setup = hart::THD::ExperimentSetupTuner()
+///     .withFrequency (frequencyHz)
+///     .withDuration (desiredRenderDurationSeconds)
+///     .tune();
 ///
 /// processAudioWith (SomeDSP())
-///     .withInputSignal (SineWave (coherentFrequencyHz))  // Corrected frequency...
-///     .withDuration (renderDurationSeconds)  // ...and corrected render duration
+///     .withInputSignal (SineWave (setup.frequencyHz))  // Corrected frequency...
+///     .withDuration (setup.durationSeconds)  // ...and corrected render duration
 ///     .expectTrue (
-///         [coherentFrequencyHz] (const auto& output)
+///         [setup] (const hart::AudioBuffer<float>& output)
 ///         {
 ///             return HART_FLOAT_EQ (
-///                 hart::thd (hart::Spectrum (output), coherentFrequencyHz).get(),
+///                 hart::thd (hart::Spectrum (output), setup).get(),
 ///                 0.0,
 ///                 1e-8
 //                  );
@@ -135,21 +223,21 @@ namespace THD
 ///
 /// @param spectrum Spectrum of the output signal to analyse, assuming the input
 /// was a pure sine wave
-/// @param fundamentalFrequencyHz Frequency of the fundamental in Hz. It must
-/// correspond exactly to an FFT bin frequency. Use `hart::THD::closestCoherentFrequencyHz()`
-/// to obtain an appropriate value.
-/// @param numHarmonics Maximum harmonic number to include in the measurement.
-/// Harmonics at or above Nyquist are ignored.
+/// @param experimentSetup Optimized experiment setup values obtained through
+/// hart::THD::ExperimentSetupTuner().
 /// @return A MetricQuery containing THD as a linear amplitude ratio. May return `NaN`.
-inline MetricQuery<double> thd (const Spectrum& spectrum, double fundamentalFrequencyHz, int numHarmonics = 10)
+inline MetricQuery<double> thd (const Spectrum& spectrum, THD::ExperimentSetup experimentSetup)
 {
     typename MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
-        [&spectrum, fundamentalFrequencyHz, numHarmonics]
+        [&spectrum, experimentSetup]
         (size_t channel, const Slice& slice, Unit requestedUnit)
         -> double
     {
         hassert (channel < spectrum.getNumChannels());
         hassert (! std::isnan (spectrum.getSampleRateHz()));
+
+        const double fundamentalFrequencyHz = experimentSetup.frequencyHz;
+        const int numHarmonics = experimentSetup.numHarmonics;
 
         // TODO: Add percent unit support?
         if (requestedUnit != Unit::native && requestedUnit != Unit::linear)
