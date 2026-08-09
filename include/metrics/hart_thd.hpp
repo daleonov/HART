@@ -36,7 +36,14 @@ namespace THD
 
         const double binWidthHz = sampleRateHz / static_cast<double> (fftSizeFrames);
         const size_t nyquistBin = fftSizeFrames / 2;
+
+        if (static_cast<size_t> (maxHarmonic) >= nyquistBin)
+            HART_THROW_OR_RETURN (hart::ValueError, "FFT size is too small for the requested number of harmonics", nan);
+
         const size_t maxFundamentalBin = (nyquistBin - 1) / static_cast<size_t> (maxHarmonic);
+
+        hassert (maxFundamentalBin >= 1);
+        hassert (maxFundamentalBin * static_cast<size_t> (maxHarmonic) < nyquistBin);
 
         const size_t fundamentalBin = hart::clamp (
             roundToSizeT (desiredFrequencyHz / binWidthHz),
