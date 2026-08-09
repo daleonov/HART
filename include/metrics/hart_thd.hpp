@@ -37,6 +37,16 @@ private:
         numHarmonics (numHarmonics_)
     {
     }
+
+    /// @brief Invalid default-constructed structure
+    /// @details Supposed to be constructed only when builder encouters any runtime errors
+    ExperimentSetup() :
+        frequencyHz (hart::nan<double>()),
+        durationSeconds (hart::nan<double>()),
+        durationFrames (0),
+        numHarmonics (0)
+    {
+    }
 };
 
 class ExperimentSetupTuner
@@ -98,6 +108,10 @@ public:
 
         // TODO: Make closestPowerOfTwo()?
         const size_t tunedDurationFrames = hart::previousPowerOfTwo (requestedDurationFrames);
+
+        if (tunedDurationFrames < 8)
+            HART_THROW_OR_RETURN (hart::ValueError, "Experiment duration is too short for THD measurement", {});
+
         const double tunedDurationSeconds = static_cast<double> (tunedDurationFrames) / m_sampleRateHz;
         const size_t nyquistBin = tunedDurationFrames / 2;
 
@@ -254,17 +268,34 @@ inline MetricQuery<double> thd (const Spectrum& spectrum, THD::ExperimentSetup e
         hassert (channel < spectrum.getNumChannels());
         hassert (! std::isnan (spectrum.getSampleRateHz()));
 
+        const double nan = hart::nan<double>();
         const double fundamentalFrequencyHz = experimentSetup.frequencyHz;
-        const int numHarmonics = experimentSetup.numHarmonics;
+
+        // Make sure your test's render time is exactly experimentSetup.durationSeconds (or experimentSetup.durationFrames)
+        if (spectrum.getFFTSize() != experimentSetup.durationFrames)
+            HART_THROW_OR_RETURN (hart::ValueError, "FFT size doesn't match duration in the provided experiment setup", nan);
+
+        if (experimentSetup.durationFrames == 0 || floatsEqual (experimentSetup.durationSeconds, 0.0))
+            HART_THROW_OR_RETURN (hart::SizeError, "Experiment setup should not have duration of zero - nothing to analyze", nan);
+
+        const double experimentSetupSampleRateHz = static_cast<double> (experimentSetup.durationFrames) / experimentSetup.durationSeconds;
+
+        // The duration of input signal should be exactly experimentSetup.durationSeconds and experimentSetup.durationFrames
+        if (floatsNotEqual (spectrum.getSampleRateHz(), experimentSetupSampleRateHz))
+            HART_THROW_OR_RETURN (hart::ValueError, "Spectrum's sample rate doesn't match one derived from the provided experiment setup instance", nan);
 
         // TODO: Add percent unit support?
         if (requestedUnit != Unit::native && requestedUnit != Unit::linear)
-            HART_THROW_OR_RETURN (hart::UnitError, "Unsupported unit", hart::nan<double>());
+            HART_THROW_OR_RETURN (hart::UnitError, "Unsupported unit", nan);
 
         if (slice.type != Slice::Type::whole)
-            HART_THROW_OR_RETURN (hart::ValueError, "Cannot calculate THD of a portion of spectrum", hart::nan<double>());
+            HART_THROW_OR_RETURN (hart::ValueError, "Cannot calculate THD of a portion of spectrum", nan);
 
         const size_t fundamentalBin = spectrum.findClosestBin (fundamentalFrequencyHz);
+
+        // The input signal in the experiment should be a sine wave at exactly experimentSetup.frequencyHz
+        if (floatsNotEqual (fundamentalFrequencyHz, spectrum.getBinFrequencyHz (fundamentalBin)))
+            HART_THROW_OR_RETURN (hart::ValueError, "Fundamental frequency in the provided spectrum doesn't match one in experiment setup", nan);
 
         // Might be a bit too strict, but for accurate THD measurement the fundamental must be coherent
         if (floatsNotEqual (fundamentalFrequencyHz, spectrum.getBinFrequencyHz (fundamentalBin)))
@@ -277,6 +308,9 @@ inline MetricQuery<double> thd (const Spectrum& spectrum, THD::ExperimentSetup e
         
         const double nyquistFrequencyHz = spectrum.getSampleRateHz() / 2.0;
         AccurateSum<double> harmonicPowerSum;
+
+        const int numHarmonics = experimentSetup.numHarmonics;
+        hassert (numHarmonics > 2);
         
         for (int harmonic = 2; harmonic <= numHarmonics; ++harmonic)
         {
