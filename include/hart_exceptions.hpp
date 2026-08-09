@@ -48,7 +48,7 @@ class ValueError:
     using std::runtime_error::runtime_error;
 };
 
-/// @brief Thrown when sample rate is mismatched
+/// @brief Thrown when sample rate is mismatched or invalid
 /// @ingroup Exceptions
 class SampleRateError:
     public std::runtime_error
