@@ -26,6 +26,7 @@ enum class Unit
     seconds,  ///< Time stamps, intervals, durations
     Hz,  ///< Hertz
     ratio,  ///< Generic ratio
+    percent,  ///< Percentage
     none  ///< Unitless value
 };
 
@@ -41,6 +42,7 @@ enum class Unit
     constexpr hart::Unit seconds = hart::Unit::seconds; \
     constexpr hart::Unit Hz = hart::Unit::Hz; \
     constexpr hart::Unit ratio = hart::Unit::ratio; \
+    constexpr hart::Unit percent = hart::Unit::percent; \
     constexpr hart::Unit none = hart::Unit::none;
 
 constexpr double inf_dB = hart::inf;
