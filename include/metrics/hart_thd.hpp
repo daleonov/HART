@@ -472,8 +472,7 @@ inline MetricQuery<double> thd (const Spectrum& spectrum, THD::ExperimentSetup e
             if (harmonicFrequencyHz >= nyquistFrequencyHz)
                 break;
                 
-            // TODO: Probably just do "harmonicBin = fundamentalBin * harmonic" here
-            const size_t harmonicBin = spectrum.findClosestBin (harmonicFrequencyHz);
+            const size_t harmonicBin = fundamentalBin * harmonic;
             harmonicPowerSum += std::norm (spectrum.getBinValue (channel, harmonicBin));
         }
         
