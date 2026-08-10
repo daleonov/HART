@@ -405,6 +405,12 @@ private:
 ///     .process();
 /// @endcode
 ///
+/// Supported units:
+/// - `hart::Unit::ratio` - as a ratio
+/// - `hart::Unit::native` - default unit, same as `ratio`
+/// - `hart::Unit::dB` - as decibels, using a "ratio" (not "power") variety of decibels
+/// - `hart::Unit::percent` - as percentage - just ratio multipled by 100, may be fractional
+///
 /// @see hart::THD::ExperimentSetup
 /// @see hart::THD::ExperimentSetupTuner
 /// @param spectrum Spectrum of the output signal to analyse, assuming the input
@@ -439,10 +445,6 @@ inline MetricQuery<double> thd (const Spectrum& spectrum, THD::ExperimentSetup e
         if (floatsNotEqual (spectrum.getSampleRateHz(), experimentSetupSampleRateHz))
             HART_THROW_OR_RETURN (hart::ValueError, "Spectrum's sample rate doesn't match one derived from the provided experiment setup instance", nan);
 
-        // TODO: Add percent unit support?
-        if (requestedUnit != Unit::native && requestedUnit != Unit::linear)
-            HART_THROW_OR_RETURN (hart::UnitError, "Unsupported unit", nan);
-
         if (slice.type != Slice::Type::whole)
             HART_THROW_OR_RETURN (hart::ValueError, "Cannot calculate THD of a portion of spectrum", nan);
 
@@ -475,7 +477,16 @@ inline MetricQuery<double> thd (const Spectrum& spectrum, THD::ExperimentSetup e
             harmonicPowerSum += std::norm (spectrum.getBinValue (channel, harmonicBin));
         }
         
-        return std::sqrt (harmonicPowerSum / fundamentalPower);
+        const double thdRatio = std::sqrt (harmonicPowerSum / fundamentalPower);
+
+        switch (requestedUnit)
+        {
+            case Unit::native:
+            case Unit::ratio: return thdRatio;
+            case Unit::dB: return hart::ratioToDecibels (thdRatio);
+            case Unit::percent: return thdRatio * 100.0;
+            default: HART_THROW_OR_RETURN (hart::UnitError, "Unsupported unit",  hart::nan<double>());
+        }
     };
 
     const size_t numChannels = spectrum.getNumChannels();

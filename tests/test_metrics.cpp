@@ -1238,7 +1238,7 @@ HART_TEST ("Metrics - True Peak")
     // TODO: Slices
 }
 
-HART_TEST ("Metrics - THD")
+HART_TEST ("Metrics - THD - Regular use cases")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
     using Spectrum = hart::Spectrum;
@@ -1274,6 +1274,35 @@ HART_TEST ("Metrics - THD")
             .expectTrue ([setup] (const AudioBuffer& output) { return HART_FLOAT_IN_RANGE (hart::thd (Spectrum (output), setup).get(), 0.2, 0.3, 1.0e-8); }, "0.2 <= THD <= 0.3")
             .process();
     }
+}
+
+HART_TEST ("Metrics - THD - Units")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using Spectrum = hart::Spectrum;
+    using hart::thd;
+    using hart::ratioToDecibels;
+
+    const hart::THD::ExperimentSetup setup = hart::THD::ExperimentSetupTuner()
+        .withFrequency (1_kHz)
+        .tune();
+
+    AudioBuffer outputAudio;
+    processAudioWith (HardClip (-1_dB))
+        .withInputSignal (SineWave (setup.frequencyHz))
+        .withDuration (setup.durationSeconds)
+        .saveOutputTo (outputAudio)
+        .process();
+
+    const Spectrum outputSpectrum (outputAudio);
+    const double thdNative = thd (outputSpectrum, setup);
+    const double thdRatio = thd (outputSpectrum, setup).as (ratio);
+    const double thdDb = thd (outputSpectrum, setup).as (dB);
+    const double thdPercent = thd (outputSpectrum, setup).as (percent);
+
+    HART_EXPECT_FLOAT_EQ (thdNative, thdRatio, 1e-8) << "Ratio is default (native) unit";
+    HART_EXPECT_FLOAT_EQ (thdDb, ratioToDecibels (thdRatio), 1e-8) << "Decibels unit";
+    HART_EXPECT_FLOAT_EQ (thdPercent, 100 * thdRatio, 1e-8) << "Percentage unit";
 }
 
 HART_TEST ("Metrics - RT60 - Effect with exponentially decaying tail")
