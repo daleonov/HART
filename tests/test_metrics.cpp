@@ -1257,6 +1257,22 @@ HART_TEST ("Metrics - THD")
             .assertTrue ([] (const AudioBuffer& output) { return HART_TRUE (hart::isPowerOfTwo (output.getNumFrames())); }, "Rendered audio size in frames is a power of two")
             .expectTrue ([setup] (const AudioBuffer& output) { return HART_FLOAT_EQ (hart::thd (Spectrum (output), setup).get(), 0.0, 1e-8); }, "THD ~= 0")
             .process();
+
+        processAudioWith (HardClip (-0.1_dB))
+            .withLabel (HART_STR ("A little distortion, input frequency " << setup.frequencyHz << " Hz"))
+            .withInputSignal (SineWave (setup.frequencyHz))
+            .withDuration (setup.durationSeconds)
+            .assertTrue ([] (const AudioBuffer& output) { return HART_TRUE (hart::isPowerOfTwo (output.getNumFrames())); }, "Rendered audio size in frames is a power of two")
+            .expectTrue ([setup] (const AudioBuffer& output) { return HART_FLOAT_IN_RANGE (hart::thd (Spectrum (output), setup).get(), 0.002, 0.003, 1.0e-8); }, "0.02 <= THD <= 0.03")
+            .process();
+
+        processAudioWith (HardClip (-6_dB))
+            .withLabel (HART_STR ("Heavier distortion, input frequency " << setup.frequencyHz << " Hz"))
+            .withInputSignal (SineWave (setup.frequencyHz))
+            .withDuration (setup.durationSeconds)
+            .assertTrue ([] (const AudioBuffer& output) { return HART_TRUE (hart::isPowerOfTwo (output.getNumFrames())); }, "Rendered audio size in frames is a power of two")
+            .expectTrue ([setup] (const AudioBuffer& output) { return HART_FLOAT_IN_RANGE (hart::thd (Spectrum (output), setup).get(), 0.2, 0.3, 1.0e-8); }, "0.2 <= THD <= 0.3")
+            .process();
     }
 }
 
