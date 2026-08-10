@@ -70,6 +70,11 @@ private:
         durationFrames (durationFrames_),
         maxHarmonic (maxHarmonic_)
     {
+        hassert (frequencyHz > 0.0);
+        hassert (durationSeconds > 0.0);
+        hassert (durationFrames != 0);
+        hassert (isPowerOfTwo (durationFrames));
+        hassert (maxHarmonic >= 2);
     }
 
     /// @brief Creates invalid default-constructed structure
