@@ -47,10 +47,10 @@ struct ExperimentSetup
     /// Same as `durationSeconds`, but in frames.
     const size_t durationFrames;
 
-    /// @brief Optimized number of harmonics for THD calculation
-    /// @details Based on  desired amount of harmonics specified in the `ExperimentSetupTuner`,
+    /// @brief Optimized highest harmonic for THD calculation
+    /// @details Based on  desired max harmonic specified in the `ExperimentSetupTuner`,
     /// limited to the maximum possible amount, with FFT size in mind.
-    const int numHarmonics;
+    const int maxHarmonic;
 
     ExperimentSetup (const ExperimentSetup&) = default;
     ExperimentSetup (ExperimentSetup&&) = default;
@@ -64,11 +64,11 @@ private:
 
     /// @brief Creates the `ExperimentSetup` structure, filled with the provided values
     /// @note Supposed to be constructed only via ExperimentSetupTuner
-    ExperimentSetup (double frequencyHz_, double durationSeconds_, size_t durationFrames_, int numHarmonics_) :
+    ExperimentSetup (double frequencyHz_, double durationSeconds_, size_t durationFrames_, int maxHarmonic_) :
         frequencyHz (frequencyHz_),
         durationSeconds (durationSeconds_),
         durationFrames (durationFrames_),
-        numHarmonics (numHarmonics_)
+        maxHarmonic (maxHarmonic_)
     {
     }
 
@@ -78,7 +78,7 @@ private:
         frequencyHz (hart::nan<double>()),
         durationSeconds (hart::nan<double>()),
         durationFrames (0),
-        numHarmonics (0)
+        maxHarmonic (0)
     {
     }
 };
@@ -109,7 +109,7 @@ private:
 ///         .withFrequency (1000_Hz)
 ///         .withSampleRate (44100_Hz)
 ///         .withDuration (100_ms)  // or withNumFrames(n)
-///         .withNumHarmonics (10)
+///         .withMaxHarmonic (10)
 ///         .tune();
 ///
 /// // 2. Run the experiment (render the audio), using the tuned values...
@@ -231,14 +231,15 @@ public:
     /// @brief Sets desired number of harmonics for the THD measurement
     /// @details This value will be limited in a way it's always under the Nyquist
     /// bin in the resulting FFT.
-    /// @param desiredNumHarmonics Desired number of harmonics used for the THD calculation
+    /// @param desiredMaxHarmonic Desired highest harmonic used for the THD calculation
+    /// (fundamental is number 1)
     /// @return 
-    ExperimentSetupTuner& withNumHarmonics (int desiredNumHarmonics)
+    ExperimentSetupTuner& withMaxHarmonic (int desiredMaxHarmonic)
     {
-        if (desiredNumHarmonics < 2)
-            HART_THROW (hart::ValueError, "Invalid number of harmonics");
+        if (desiredMaxHarmonic < 2)
+            HART_THROW (hart::ValueError, "Invalid max harmonic number");
 
-        m_desiredNumHarmonics = desiredNumHarmonics;
+        m_desiredMaxHarmonic = desiredMaxHarmonic;
         return *this;
     }
 
@@ -271,22 +272,22 @@ public:
         // At least bins 1..numHarmonics must fit strictly below Nyquist.
         const int maxValidNumHarmonics = static_cast<int> (nyquistBin) - 1;
 
-        const int tunedNumHarmonics = std::min (m_desiredNumHarmonics, maxValidNumHarmonics);
-        hassert (tunedNumHarmonics >= 2);
+        const int tunedMaxHarmonic = std::min (m_desiredMaxHarmonic, maxValidNumHarmonics);
+        hassert (tunedMaxHarmonic >= 2);
 
         const double tunedFrequencyHz =
             closestCoherentFrequencyHz (
                 m_desiredFrequencyHz,
                 tunedDurationFrames,
                 m_sampleRateHz,
-                tunedNumHarmonics
+                tunedMaxHarmonic
             );
 
         return {
             tunedFrequencyHz,
             tunedDurationSeconds,
             tunedDurationFrames,
-            tunedNumHarmonics
+            tunedMaxHarmonic
         };
     }
 
@@ -295,7 +296,7 @@ private:
     double m_sampleRateHz = CLIConfig::getInstance().getDefaultSampleRateHz();
     double m_desiredDurationSeconds = CLIConfig::getInstance().getDefaultRenderDurationSeconds();
     size_t m_desiredDurationFrames = 0;
-    int m_desiredNumHarmonics = 10;
+    int m_desiredMaxHarmonic = 10;
     bool m_durationSpecifiedInFrames = false;
 
     static double closestCoherentFrequencyHz (
@@ -314,7 +315,7 @@ private:
             HART_THROW_OR_RETURN (hart::SampleRateError, "Invalid sample rate", nan);
 
         if (desiredFrequencyHz < 0.0 || floatsEqual (desiredFrequencyHz, 0.0) || std::isnan (desiredFrequencyHz))
-            HART_THROW_OR_RETURN (hart::ValueError, "Invalid sample rate", nan);
+            HART_THROW_OR_RETURN (hart::ValueError, "Invalid input fundamental frequency", nan);
 
         if (maxHarmonic < 2)
             HART_THROW_OR_RETURN (hart::ValueError, "Invalid max harmonic number", nan);
@@ -346,8 +347,8 @@ private:
 
 /// @brief Calculates the total harmonic distortion (THD) of a spectrum.
 ///
-/// THD is calculated as the RMS sum of the powers of the harmonics relative
-/// to the power of the fundamental:
+/// THD is calculated as the square root of the summed harmonic power
+/// divided by the fundamental bin power:
 ///
 /// @f[
 /// \mathrm{THD}
@@ -390,8 +391,8 @@ private:
 ///     .tune();
 ///
 /// processAudioWith (SomeDSP())
-///     .withInputSignal (SineWave (setup.frequencyHz))  // Corrected frequency...
-///     .withDuration (setup.durationSeconds)  // ...and corrected render duration
+///     .withInputSignal (SineWave (setup.frequencyHz))  // Tuned frequency...
+///     .withDuration (setup.durationSeconds)  // ...and tuned render duration
 ///     .expectTrue (
 ///         [setup] (const hart::AudioBuffer<float>& output)
 ///         {
@@ -462,10 +463,10 @@ inline MetricQuery<double> thd (const Spectrum& spectrum, THD::ExperimentSetup e
         const double nyquistFrequencyHz = spectrum.getSampleRateHz() / 2.0;
         AccurateSum<double> harmonicPowerSum;
 
-        const int numHarmonics = experimentSetup.numHarmonics;
-        hassert (numHarmonics > 2);
+        const int maxHarmonic = experimentSetup.maxHarmonic;
+        hassert (maxHarmonic >= 2);
         
-        for (int harmonic = 2; harmonic <= numHarmonics; ++harmonic)
+        for (int harmonic = 2; harmonic <= maxHarmonic; ++harmonic)
         {
             const double harmonicFrequencyHz = fundamentalFrequencyHz * harmonic;
 

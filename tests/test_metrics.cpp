@@ -1263,7 +1263,7 @@ HART_TEST ("Metrics - THD - Regular use cases")
             .withInputSignal (SineWave (setup.frequencyHz))
             .withDuration (setup.durationSeconds)
             .assertTrue ([] (const AudioBuffer& output) { return HART_TRUE (hart::isPowerOfTwo (output.getNumFrames())); }, "Rendered audio size in frames is a power of two")
-            .expectTrue ([setup] (const AnalysisContext& context) { return HART_FLOAT_IN_RANGE (hart::thd (context.outputSpectrum(), setup).get(), 0.002, 0.003, 1.0e-8); }, "0.02 <= THD <= 0.03")
+            .expectTrue ([setup] (const AnalysisContext& context) { return HART_FLOAT_IN_RANGE (hart::thd (context.outputSpectrum(), setup).get(), 0.002, 0.003, 1.0e-8); }, "0.002 <= THD <= 0.003")
             .process();
 
         processAudioWith (HardClip (-6_dB))
