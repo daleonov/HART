@@ -1241,7 +1241,7 @@ HART_TEST ("Metrics - True Peak")
 HART_TEST ("Metrics - THD - Regular use cases")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
-    using Spectrum = hart::Spectrum;
+    using AnalysisContext = hart::AnalysisContext<float>;
     using hart::thd;
 
     for (const double frequencyHz : {50_Hz, 440_Hz, 1000_Hz, 3456.78_Hz})
@@ -1255,7 +1255,7 @@ HART_TEST ("Metrics - THD - Regular use cases")
             .withInputSignal (SineWave (setup.frequencyHz))
             .withDuration (setup.durationSeconds)
             .assertTrue ([] (const AudioBuffer& output) { return HART_TRUE (hart::isPowerOfTwo (output.getNumFrames())); }, "Rendered audio size in frames is a power of two")
-            .expectTrue ([setup] (const AudioBuffer& output) { return HART_FLOAT_EQ (hart::thd (Spectrum (output), setup).get(), 0.0, 1e-8); }, "THD ~= 0")
+            .expectTrue ([setup] (const AnalysisContext& context) { return HART_FLOAT_EQ (hart::thd (context.outputSpectrum(), setup).get(), 0.0, 1e-8); }, "THD ~= 0")
             .process();
 
         processAudioWith (HardClip (-0.1_dB))
@@ -1263,7 +1263,7 @@ HART_TEST ("Metrics - THD - Regular use cases")
             .withInputSignal (SineWave (setup.frequencyHz))
             .withDuration (setup.durationSeconds)
             .assertTrue ([] (const AudioBuffer& output) { return HART_TRUE (hart::isPowerOfTwo (output.getNumFrames())); }, "Rendered audio size in frames is a power of two")
-            .expectTrue ([setup] (const AudioBuffer& output) { return HART_FLOAT_IN_RANGE (hart::thd (Spectrum (output), setup).get(), 0.002, 0.003, 1.0e-8); }, "0.02 <= THD <= 0.03")
+            .expectTrue ([setup] (const AnalysisContext& context) { return HART_FLOAT_IN_RANGE (hart::thd (context.outputSpectrum(), setup).get(), 0.002, 0.003, 1.0e-8); }, "0.02 <= THD <= 0.03")
             .process();
 
         processAudioWith (HardClip (-6_dB))
@@ -1271,7 +1271,7 @@ HART_TEST ("Metrics - THD - Regular use cases")
             .withInputSignal (SineWave (setup.frequencyHz))
             .withDuration (setup.durationSeconds)
             .assertTrue ([] (const AudioBuffer& output) { return HART_TRUE (hart::isPowerOfTwo (output.getNumFrames())); }, "Rendered audio size in frames is a power of two")
-            .expectTrue ([setup] (const AudioBuffer& output) { return HART_FLOAT_IN_RANGE (hart::thd (Spectrum (output), setup).get(), 0.2, 0.3, 1.0e-8); }, "0.2 <= THD <= 0.3")
+            .expectTrue ([setup] (const AnalysisContext& context) { return HART_FLOAT_IN_RANGE (hart::thd (context.outputSpectrum(), setup).get(), 0.2, 0.3, 1.0e-8); }, "0.2 <= THD <= 0.3")
             .process();
     }
 }
