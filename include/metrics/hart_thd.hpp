@@ -13,11 +13,43 @@ namespace hart
 namespace THD
 {
 
+/// @brief A tuned setup for optimal THD measurement
+///
+/// Intended to be used for `hart::thd() metric`.
+///
+/// Contains the tuned experiment parameters produced by `ExperimentSetupTuner`.
+/// The frequency and duration are selected so that the rendered signal contains
+/// a power-of-two number of frames and the fundamental frequency falls exactly
+/// in the centre of FFT bin, avoiding FFT spectral leakage.
+///
+/// Use hart::THD::ExperimentSetupTuner::tune() to instantiate it.
+///
+/// Use `frequencyHz` and `durationSeconds` to configure the input signal and
+/// render duration, then pass the same `ExperimentSetup` instance to `hart::thd()`.
 struct ExperimentSetup
 {
+    /// @brief Optimized frequency of the input sine wave
+    /// @details
+    /// Should be close to desired fundamental, snapped to the centre of FFT bin.
     const double frequencyHz;
+
+    /// @brief Optimized duration of audio for FFT with no padding
+    /// @details
+    /// Tuned in a way that signal will have a number of frames equal to power of 2.
+    /// Guaranteed to be no more that desired duration, specified in the `ExperimentSetupTuner`.
+    ///
+    /// Same as `durationFrames`, but in seconds.
     const double durationSeconds;
+
+    /// @brief Optimized duration of audio for FFT with no padding
+    /// @details Guaranteed to be power of two.
+    ///
+    /// Same as `durationSeconds`, but in frames.
     const size_t durationFrames;
+
+    /// @brief Optimized number of harmonics for THD calculation
+    /// @details Based on  desired amount of harmonics specified in the `ExperimentSetupTuner`,
+    /// limited to the maximum possible amount, with FFT size in mind.
     const int numHarmonics;
 
     ExperimentSetup (const ExperimentSetup&) = default;
@@ -27,9 +59,11 @@ struct ExperimentSetup
     ~ExperimentSetup() = default;
 
 private:
+    /// @brief The builder class used for instantiating this structure
     friend class ExperimentSetupTuner;
 
-    // Supposed to be constructed only via ExperimentSetupTuner
+    /// @brief Creates the `ExperimentSetup` structure, filled with the provided values
+    /// @note Supposed to be constructed only via ExperimentSetupTuner
     ExperimentSetup (double frequencyHz_, double durationSeconds_, size_t durationFrames_, int numHarmonics_) :
         frequencyHz (frequencyHz_),
         durationSeconds (durationSeconds_),
@@ -38,8 +72,8 @@ private:
     {
     }
 
-    /// @brief Invalid default-constructed structure
-    /// @details Supposed to be constructed only when builder encouters any runtime errors
+    /// @brief Creates invalid default-constructed structure
+    /// @note Supposed to be constructed only when builder encouters any runtime errors
     ExperimentSetup() :
         frequencyHz (hart::nan<double>()),
         durationSeconds (hart::nan<double>()),
@@ -49,9 +83,85 @@ private:
     }
 };
 
+/// @brief Configures and tunes an experiment setup for accurate THD measurement.
+///
+/// Intended to be used for `hart::thd() metric`.
+///
+/// THD measurement requires a pure sine, whose fundamental frequency should fall
+/// exactly on an FFT bin. The analysed signal should also contain exactly the
+/// same number of frames as the FFT, without zero padding. Otherwise, spectral
+/// leakage may appear as harmonic energy and artificially increase the
+/// measured THD.
+///
+/// This class takes the desired experiment parameters and tunes them
+/// to satisfy these requirements for you. The `tune()` method:
+///
+/// - Snaps the requested duration to a number of frames that is a power of two
+/// - Snaps the requested fundamental frequency to centre of the nearest valid FFT bin
+/// - Limits the number of harmonics to those measurable below Nyquist frequency bin
+///
+/// Examples:
+///
+/// @code
+/// // 1. Tune the desired experiment parameters
+/// const hart::THD::ExperimentSetup setup =
+///     hart::THD::ExperimentSetupTuner()
+///         .withFrequency (1000_Hz)
+///         .withSampleRate (44100_Hz)
+///         .withDuration (100_ms)  // or withNumFrames(n)
+///         .withNumHarmonics (10)
+///         .tune();
+///
+/// // 2. Run the experiment (render the audio), using the tuned values...
+/// processAudioWith (SomeDSP())
+///     .withInputSignal (SineWave (setup.frequencyHz))   // ...here...
+///     .withDuration (setup.durationSeconds)   // ...and here.
+///     .expectTrue (
+///         [setup] (const auto& output)
+///         {
+///             return HART_EXPECT_LT (
+///                 // 3. Call the thd() metric, passing the same setup structure to it
+///                 hart::thd (hart::Spectrum (output), setup).get(),
+///                 0.01);
+///         },
+///         "THD < 0.1"
+///         )
+///     .process();
+/// @endcode
+///
+/// If the desired duration is already expressed in frames, withNumFrames()
+/// can be used instead:
+///
+/// @code
+/// const hart::THD::ExperimentSetup setup = hart::THD::ExperimentSetupTuner()
+///     .withFrequency (1000_Hz)
+///     .withNumFrames (4096)
+///     .tune();
+///
+/// // (Then run the test)
+/// @endcode
+///
+/// The most minimal scenario can look like this:
+///
+/// @code
+/// const auto setup = hart::THD::ExperimentSetupTuner()
+///     .withFrequency (1000_Hz)
+///     .tune();
+///
+/// // (Then run the test)
+/// @endcode
+///
+/// In that case, the duration and sample rate will be pulled `from hart::CLIConfig`,
+/// and be the same as the defaults in the usual `hart::AudioTestBuilder`.
 class ExperimentSetupTuner
 {
 public:
+    /// @brief Sets the desired frequency of the input signal
+    /// @details It will be tuned to fall exactly in the centre of an FFT bin.
+    /// 
+    /// If omitted, this desired frequency will be assumed to be 1 kHz.
+    /// @param desiredFrequencyHz Your desired frequency of a sine wave in the input signal
+    /// @return A chainable builder
     ExperimentSetupTuner& withFrequency (double desiredFrequencyHz)
     {
         if (desiredFrequencyHz < 0.0 || floatsEqual (desiredFrequencyHz, 0.0) || std::isnan (desiredFrequencyHz))
@@ -61,6 +171,10 @@ public:
         return *this;
     }
 
+    /// @brief Sample rate of the test case
+    /// @details If omitted, the global default sample rate will be pulled from `hart::CLIConfig`
+    /// @param sampleRateHz Sample rate in Herts
+    /// @return A chainable builder
     ExperimentSetupTuner& withSampleRate (double sampleRateHz)
     {
         if (sampleRateHz <= 0.0 || floatsEqual (sampleRateHz, 0.0) || std::isnan (sampleRateHz))
@@ -70,6 +184,18 @@ public:
         return *this;
     }
 
+    /// @brief Sets desired render time of the test case in seconds
+    /// @details Alternatively, you can set this duration in frames, using `withNumFrames()`.
+    /// There's no need to call both seconds and frames setters in one chained builder, use
+    /// no more than one - either this one, or `withNumFrames()`.
+    ///
+    /// If both seconds and frames setters are omitted, the global default duration will be
+    /// pulled from `hart::CLIConfig`.
+    ///
+    /// This value be tuned in a way that resulting rendered audio will have number of frames
+    /// that is a power of two, so that no FFT zero padding would be required.
+    /// @param desiredDurationSeconds Desired render time in seconds
+    /// @return A chainable builder
     ExperimentSetupTuner& withDuration (double desiredDurationSeconds)
     {
         if (desiredDurationSeconds < 0.0 || floatsEqual (desiredDurationSeconds, 0.0) || std::isnan (desiredDurationSeconds))
@@ -80,6 +206,18 @@ public:
         return *this;
     }
 
+    /// @brief Sets desired render time of the test case in frames
+    /// @details Alternatively, you can set this duration in seconds, using `withDuration()`.
+    /// There's no need to call both seconds and frames setters in one chained builder, use
+    /// no more than one - either this one, or `withDuration()`.
+    ///
+    /// If both seconds and frames setters are omitted, the global default duration will be
+    /// pulled from `hart::CLIConfig`.
+    ///
+    /// This value be tuned in a way that resulting rendered audio will have number of frames
+    /// that is a power of two, so that no FFT zero padding would be required.
+    /// @param desiredDurationFrames Desired size of rendered audio in frames
+    /// @return A chainable builder
     ExperimentSetupTuner& withNumFrames (size_t desiredDurationFrames)
     {
         if (desiredDurationFrames == 0)
@@ -90,6 +228,11 @@ public:
         return *this;
     }
 
+    /// @brief Sets desired number of harmonics for the THD measurement
+    /// @details This value will be limited in a way it's always under the Nyquist
+    /// bin in the resulting FFT.
+    /// @param desiredNumHarmonics Desired number of harmonics used for the THD calculation
+    /// @return 
     ExperimentSetupTuner& withNumHarmonics (int desiredNumHarmonics)
     {
         if (desiredNumHarmonics < 2)
@@ -99,6 +242,16 @@ public:
         return *this;
     }
 
+    /// @brief Call it at the end of the builder chain to produce a `hart::THD::ExperimentSetup` instance
+    /// @details This will give you a structure with tunes experiment setup values inside.
+    ///
+    /// You're expected to use those values for the test case, namely sine wave frequency and render duration,
+    /// instead of your desired values used in this builder. The values will be different from the desired
+    /// ones (except for rare lucky cases), but they'll be optimized for an accurate THD reading, with no FFT
+    /// spills. You're also expected to pass the same instance of experiment setup to the `hart::thd()` metric,
+    /// so that it has all experiment context it needs.
+    /// @return A `hart::THD::ExperimentSetup` instance containing tuned values for the THD measurement
+    /// experiment.
     ExperimentSetup tune() const
     {
         const size_t requestedDurationFrames =
@@ -191,7 +344,6 @@ private:
 
 }  // namespace hart::THD
 
-
 /// @brief Calculates the total harmonic distortion (THD) of a spectrum.
 ///
 /// THD is calculated as the RMS sum of the powers of the harmonics relative
@@ -247,20 +399,23 @@ private:
 ///                 hart::thd (hart::Spectrum (output), setup).get(),
 ///                 0.0,
 ///                 1e-8
-//                  );
+///                 );
 ///         },
 ///         "THD ~= 0")
 ///     .process();
 /// @endcode
 ///
+/// @see hart::THD::ExperimentSetup
+/// @see hart::THD::ExperimentSetupTuner
 /// @param spectrum Spectrum of the output signal to analyse, assuming the input
 /// was a pure sine wave
 /// @param experimentSetup Optimized experiment setup values obtained through
 /// hart::THD::ExperimentSetupTuner().
 /// @return A MetricQuery containing THD as a linear amplitude ratio. May return `NaN`.
+/// @ingroup Metrics
 inline MetricQuery<double> thd (const Spectrum& spectrum, THD::ExperimentSetup experimentSetup)
 {
-    typename MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
+    MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
         [&spectrum, experimentSetup]
         (size_t channel, const Slice& slice, Unit requestedUnit)
         -> double
@@ -297,10 +452,6 @@ inline MetricQuery<double> thd (const Spectrum& spectrum, THD::ExperimentSetup e
         if (floatsNotEqual (fundamentalFrequencyHz, spectrum.getBinFrequencyHz (fundamentalBin)))
             HART_THROW_OR_RETURN (hart::ValueError, "Fundamental frequency in the provided spectrum doesn't match one in experiment setup", nan);
 
-        // Might be a bit too strict, but for accurate THD measurement the fundamental must be coherent
-        if (floatsNotEqual (fundamentalFrequencyHz, spectrum.getBinFrequencyHz (fundamentalBin)))
-            HART_THROW_OR_RETURN (hart::ValueError, "Fundamental frequency should be in the middle of the bin. Use closestCoherentFrequencyHz() to calculate appropriate signal frequency.", hart::nan<double>());
-
         const double fundamentalPower = std::norm (spectrum.getBinValue (channel, fundamentalBin));
         
         if (fundamentalPower < 1e-15)
@@ -334,6 +485,5 @@ inline MetricQuery<double> thd (const Spectrum& spectrum, THD::ExperimentSetup e
         ChannelSubsets::allChannels (numChannels)
     );
 }
-
 
 }  // namespace hart
