@@ -493,6 +493,15 @@ public:
             stream << ", nan())";
     }
 
+    /// @brief Fills this entire AudioBuffer with a specific single value
+    /// @param value Value to assign every frame in the buffer to
+    /// @return A reference to this AudioBuffer for chaining further operations.
+    AudioBuffer<SampleType>& fillWith (SampleType value)
+    {
+        std::fill(m_frames.begin(), m_frames.end(), value);
+        return *this;
+    }
+
     /// @brief Fills this AudioBuffer by rendering audio from a Signal.
     /// @details
     /// This method uses the supplied Signal and renders audio into this buffer, replacing all existing samples.

@@ -89,3 +89,23 @@ HART_TEST ("AudioBuffer - Multiply Buffer by a Number")
     HART_EXPECT_EQ (audioBufferB * 0.0f, audioBufferB * 0.0f);
     HART_EXPECT_EQ (audioBufferE * 123.456f, audioBufferE);
 }
+
+HART_TEST ("AudioBuffer - Fill with a specific value")
+{
+    const hart::CLIConfig& cliConfig = hart::CLIConfig::getInstance();
+    const double sampleRateHz = cliConfig.getDefaultSampleRateHz();
+    const double renderDurationSeconds = cliConfig.getDefaultRenderDurationSeconds();
+    const size_t numFrames = hart::roundToSizeT (renderDurationSeconds * sampleRateHz);
+    const size_t numChannels = cliConfig.getDefaultNumInputChannels();
+
+    constexpr float value = 123.456f;
+    const auto buffer = AudioBuffer (numChannels, numFrames, sampleRateHz).fillWith (value);
+
+    for (size_t channel = 0; channel < numChannels; ++channel)
+    {
+        const float* channelData = buffer[channel];
+
+        for (size_t frame = 0; frame < numFrames; ++frame)
+            HART_EXPECT_FLOAT_EQ (channelData[frame], value, 1e-8f) << "Channel " << channel << ", frame " << frame;
+    }
+}
