@@ -22,7 +22,7 @@
 #include "hart_preparation.hpp"
 #include "hart_wavwriter.hpp"
 #include "signals/hart_signals_all.hpp"
-#include "hart_utils.hpp"  // make_unique()
+#include "hart_utils.hpp"  // make_unique(), roundToSizeT()
 
 namespace hart {
 
@@ -704,11 +704,10 @@ public:
     /// @details Call this after setting all the test parameters
     std::unique_ptr<DSPBase<SampleType>> process()
     {
-        const size_t totalDurationFrames = (size_t) std::round (m_sampleRateHz * (m_testDurationSeconds + m_warmUpDurationSeconds));
-        const size_t warmUpDurationFrames = (size_t) std::round (m_sampleRateHz * m_warmUpDurationSeconds);
-        const size_t testDurationFrames = totalDurationFrames - warmUpDurationFrames;
+        const size_t warmUpDurationFrames = roundToSizeT (m_sampleRateHz * m_warmUpDurationSeconds);
+        const size_t testDurationFrames = roundToSizeT (m_sampleRateHz * m_testDurationSeconds);
 
-        if (totalDurationFrames == 0)
+        if (testDurationFrames == 0 && warmUpDurationFrames == 0)
             HART_THROW_OR_RETURN (hart::SizeError, "Nothing to process", std::move (m_processor));
 
         const bool perBlockChecksPreparationSuccessful = prepareChecks (perBlockChecks);
@@ -752,11 +751,6 @@ public:
 
         offsetFrames = 0;
 
-        // TODO: Pre-allocate full buffer sizes here, as they're already known at this point
-        AudioBuffer<SampleType> fullInputBuffer (m_numInputChannels, 0, m_sampleRateHz);
-        AudioBuffer<SampleType> fullOutputBuffer (m_numOutputChannels, 0, m_sampleRateHz);
-        bool atLeastOneCheckFailed = false;
-
         // Warm-up render
         while (offsetFrames < warmUpDurationFrames)
         {
@@ -782,13 +776,22 @@ public:
         if (m_signalPreparationAfterWarmUp == Preparation::prepare || m_signalPreparationAfterWarmUp == Preparation::resetAndPrepare)
             m_inputSignal->prepareWithDSPChain (m_sampleRateHz, m_numInputChannels, m_blockSizeFrames);
 
+        AudioBuffer<SampleType> fullInputBuffer (m_numInputChannels, testDurationFrames, m_sampleRateHz);
+        AudioBuffer<SampleType> fullOutputBuffer (m_numOutputChannels, testDurationFrames, m_sampleRateHz);
+        bool atLeastOneCheckFailed = false;
+        offsetFrames = 0;
+
+        // Fill with NaNs for internal post-validation,
+        // to make sure we didn't miss any frames
+        fullInputBuffer.fillWith (nan<SampleType>());
+        fullOutputBuffer.fillWith (nan<SampleType>());
+
         // Main test render
-        while (offsetFrames < totalDurationFrames)
+        while (offsetFrames < testDurationFrames)
         {
             // TODO: Do not continue if there are no checks, or all checks should skip and there's no input and output file to write
-            // TODO: Avoid re-allocating inputBlock and outputBlock in every iteration of this loop
 
-            const size_t blockSizeFrames = std::min (m_blockSizeFrames, totalDurationFrames - offsetFrames);
+            const size_t blockSizeFrames = std::min (m_blockSizeFrames, testDurationFrames - offsetFrames);
 
             hart::AudioBuffer<SampleType> inputBlock (m_numInputChannels, blockSizeFrames, m_sampleRateHz);
             hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, blockSizeFrames, m_sampleRateHz);
@@ -797,26 +800,37 @@ public:
 
             const bool allChecksPassed = processChecks (perBlockChecks, inputBlock, outputBlock, offsetFrames);
             atLeastOneCheckFailed |= ! allChecksPassed;
-            fullInputBuffer.appendFrom (inputBlock);
-            fullOutputBuffer.appendFrom (outputBlock);
+
+            for (size_t channel = 0; channel < m_numInputChannels; ++channel)
+                fullInputBuffer.copyFrom (channel, offsetFrames, inputBlock, channel, 0, blockSizeFrames);
+
+            for (size_t channel = 0; channel < m_numOutputChannels; ++channel)
+                fullOutputBuffer.copyFrom (channel, offsetFrames, outputBlock, channel, 0, blockSizeFrames);
 
             offsetFrames += blockSizeFrames;
         }
 
+        // Sanity check - making sure we didn't skip any frames in the input buffer...
+        for (size_t channel = 0; channel < m_numInputChannels; ++channel)
+        {
+            const SampleType* channelData = fullInputBuffer[channel];
+
+            for (size_t frame = 0; frame < testDurationFrames; ++frame)
+                hassert (! std::isnan (channelData[frame]));
+        }
+
+        // ...and the output buffer
+        for (size_t channel = 0; channel < m_numOutputChannels; ++channel)
+        {
+            const SampleType* channelData = fullOutputBuffer[channel];
+
+            for (size_t frame = 0; frame < testDurationFrames; ++frame)
+                hassert (! std::isnan (channelData[frame]));
+        }
+
         if (testDurationFrames != 0 && ! fullSignalChecks.empty())
         {
-            // Full audio buffers for full audio matchers
-            // We want to skip the warm-up pieces for those
-            AudioBuffer<SampleType> fullInputNoWarmUpBuffer (m_numInputChannels, testDurationFrames, m_sampleRateHz);
-            AudioBuffer<SampleType> fullOutputNoWarmUpBuffer (m_numOutputChannels, testDurationFrames, m_sampleRateHz);
-
-            for (size_t channel = 0; channel < m_numInputChannels; ++channel)
-                fullInputNoWarmUpBuffer.copyFrom (channel, 0, fullInputBuffer, channel, warmUpDurationFrames, testDurationFrames);
-
-            for (size_t channel = 0; channel < m_numOutputChannels; ++channel)
-                fullOutputNoWarmUpBuffer.copyFrom (channel, 0, fullOutputBuffer, channel, warmUpDurationFrames, testDurationFrames);
-
-            const bool allChecksPassed = processChecks (fullSignalChecks, fullInputNoWarmUpBuffer, fullOutputNoWarmUpBuffer, warmUpDurationFrames);
+            const bool allChecksPassed = processChecks (fullSignalChecks, fullInputBuffer, fullOutputBuffer, warmUpDurationFrames);
             atLeastOneCheckFailed |= ! allChecksPassed;
         }
 
