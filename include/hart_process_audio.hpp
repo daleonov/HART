@@ -152,7 +152,7 @@ public:
     /// `processAudioWith (...).withDuration (100_ms).withWarmUp (10_ms)` will result in
     /// 10 + 100 = 110 ms of total rendered audio.
     /// @note Calling `saveOutputTo()` (both for wav files and `AudioBuffer`s) and `savePlotTo()`
-    /// will always output the entire rendered piece of audio, including this warm-up stage.
+    /// will not include this warm-up section of audio in the output.
     /// @param warmUpDurationSeconds Duration of the warm‑up in seconds
     /// @param signalPreparation Whether to call reset() and/or prepare() on an input signal
     /// after the warm-up stage
@@ -588,7 +588,7 @@ public:
     }
 
     /// @brief Enables saving input audio to a provided buffer
-    /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the receiving buffer
+    /// @note If you're using `withWarmUp()`, this warm-up section of audio will not be included in the receiving buffer
     /// @param receivingBuffer A buffer to receive the data. You can pass an unitialised buffer, among other things, as it will be move-assigned.
     AudioTestBuilder& saveInputTo (AudioBuffer<SampleType>& receivingBuffer)
     {
@@ -601,7 +601,7 @@ public:
     }
 
     /// @brief Enables saving input audio via provided callback
-    /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the receiving 
+    /// @note If you're using `withWarmUp()`, this warm-up section of audio will not be included in the receiving 
     /// @param outputBufferSink A callable that accepts a buffer rvalue. The buffer is moved into the provided sink. The test runner takes ownership of the callable object.
     AudioTestBuilder& saveInputTo (std::function<void (AudioBuffer<SampleType>&&)> inputBufferSink)
     {
@@ -610,7 +610,7 @@ public:
     }
 
     /// @brief Enables saving output audio to a wav file
-    /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the output file
+    /// @note If you're using `withWarmUp()`, this warm-up section of audio will not be included in the output file
     /// @param path File path - relative or absolute. If relative path is set, it will be appended to the provided `--data-root-path` CLI argument.
     /// @param mode When to save, see @ref hart::Save
     /// @param wavFormat Format of the wav file, see hart::WavFormat for supported options
@@ -627,7 +627,7 @@ public:
     }
 
     /// @brief Enables saving output audio to a provided buffer
-    /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the output buffer
+    /// @note If you're using `withWarmUp()`, this warm-up section of audio will not be included in the output buffer
     /// @param receivingBuffer An output buffer to receive the data. You can pass an unitialised buffer, among other things, as it will be move-assigned.
     AudioTestBuilder& saveOutputTo (AudioBuffer<SampleType>& receivingBuffer)
     {
@@ -640,7 +640,7 @@ public:
     }
 
     /// @brief Enables saving output audio via provided callback
-    /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the output buffer
+    /// @note If you're using `withWarmUp()`, this warm-up section of audio will not be included in the output buffer
     /// @param outputBufferSink A callable that accepts a buffer rvalue. The buffer is moved into the provided sink. The test runner takes ownership of the callable object.
     AudioTestBuilder& saveOutputTo (std::function<void (AudioBuffer<SampleType>&&)> outputBufferSink)
     {
@@ -650,7 +650,7 @@ public:
 
     /// @brief Enables saving a plot to an SVG file
     /// @details This will plot an input and output audio as a waveform
-    /// @note If you're using `withWarmUp()`, this warm-up section of audio will also be included in the plot
+    /// @note If you're using `withWarmUp()`, this warm-up section of audio will not be included in the plot
     /// Tip: You can use @ref HART_STR() to construct file names using "<<" syntax.
     /// @param path File path - relative or absolute. If relative path is set, it will be appended to the provided `--data-root-path` CLI argument.
     /// @param mode When to save, see @ref hart::Save
@@ -766,9 +766,6 @@ public:
             hart::AudioBuffer<SampleType> outputBlock (m_numOutputChannels, blockSizeFrames, m_sampleRateHz);
             m_inputSignal->renderNextBlockWithDSPChain (inputBlock);
             m_processor->processWithEnvelopes (inputBlock, outputBlock);
-
-            fullInputBuffer.appendFrom (inputBlock);
-            fullOutputBuffer.appendFrom (outputBlock);
 
             offsetFrames += blockSizeFrames;
         }
