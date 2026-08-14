@@ -17,6 +17,8 @@ That's all!
 
 There are a few libraries it depends on, both are included in the repo:
 
+ * [r8brain](https://github.com/avaneev/r8brain-free-src) for resampling (Sample rate converter designed by Aleksey Vaneev of Voxengo)
+
  * [dr_wav](https://github.com/mackron/dr_libs) for working with wav
 
  * [CLI11](https://github.com/CLIUtils/CLI11) for parsing CLI arguments
