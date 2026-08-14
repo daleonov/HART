@@ -18,7 +18,7 @@ namespace hart
 /// @details Uses r8brain under the hood, a sample rate converter designed by Aleksey Vaneev of Voxengo
 /// @note Intended to be used internally by containers like AudioBuffer or ImpulseResponse, but you can use
 /// it too, if you really want to. But it's encouraged to use those containers' methods, whenever appropriate.
-/// @ingroup Utils
+/// @ingroup Utilities
 template <typename SampleType>
 static void resample (const SampleType* sourceData, size_t sourceSizeFrames, double sourceSampleRateHz, SampleType* destinationData, size_t destinationCapacityFrames, double destinationSampleRateHz)
 {
