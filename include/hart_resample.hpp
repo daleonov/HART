@@ -35,10 +35,10 @@ static void resample (const SampleType* sourceData, size_t sourceSizeFrames, dou
         HART_THROW_OR_RETURN_VOID (SizeError, "Destination data capacity is zero");
 
     if (sourceSampleRateHz < 0.0 || floatsEqual (sourceSampleRateHz, 0.0) || std::isnan (sourceSampleRateHz))
-        HART_THROW_OR_RETURN (hart::SampleRateError, "Invalid source sample rate");
+        HART_THROW_OR_RETURN_VOID (hart::SampleRateError, "Invalid source sample rate");
 
     if (destinationSampleRateHz < 0.0 || floatsEqual (destinationSampleRateHz, 0.0) || std::isnan (destinationSampleRateHz))
-        HART_THROW_OR_RETURN (hart::SampleRateError, "Invalid destination sample rate");
+        HART_THROW_OR_RETURN_VOID (hart::SampleRateError, "Invalid destination sample rate");
 
     const double sampleRatesRatio = destinationSampleRateHz / sourceSampleRateHz;
     const double minDestinationCapacityFrames = roundToSizeT (static_cast<double> (sourceSizeFrames) * destinationSampleRateHz / sourceSampleRateHz);

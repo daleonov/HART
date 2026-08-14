@@ -747,10 +747,10 @@ public:
     AudioBuffer<SampleType> resample (double targetSampleRateHz) const
     {
         if (targetSampleRateHz < 0.0 || floatsEqual (targetSampleRateHz, 0.0) || std::isnan (targetSampleRateHz))
-            HART_THROW_OR_RETURN (hart::SampleRateError, "Invalid target sample rate", { m_numChannels, 0 });
+            HART_THROW_OR_RETURN (hart::SampleRateError, "Invalid target sample rate", AudioBuffer<SampleType> (m_numChannels, 0));
 
         if (! hasSampleRate())
-            HART_THROW_OR_RETURN (hart::SampleRateError, "Can't resample, since this AudioBuffer doesn't have a sample rate value assigned to it", { m_numChannels, 0, targetSampleRateHz });
+            HART_THROW_OR_RETURN (hart::SampleRateError, "Can't resample, since this AudioBuffer doesn't have a sample rate value assigned to it", AudioBuffer<SampleType> (m_numChannels, 0, targetSampleRateHz));
 
         if (floatsEqual (targetSampleRateHz, m_sampleRateHz))
             return AudioBuffer<SampleType> (*this);  // Same sample rate - can get away with just a copy
