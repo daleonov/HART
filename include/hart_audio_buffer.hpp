@@ -8,6 +8,7 @@
 #include "hart_exceptions.hpp"
 #include "hart_precision.hpp"  // hzPrecision
 #include "hart_preparation.hpp"
+#include "hart_resample.hpp"
 #include "hart_slice.hpp"
 #include "hart_utils.hpp"  // nan(), floatsEqual(), roundToSizeT()
 
@@ -734,6 +735,35 @@ public:
                 HART_THROW_OR_RETURN (hart::UnitError, "Slice type cannot be interpreted as frame range", std::make_pair (0, numFrames));
             }
         }
+    }
+
+    /// @brief Resamples this buffer to an arbitrary sample rate
+    /// @details Under the hood, it uses
+    /// [r8brain](https://github.com/avaneev/r8brain-free-src), which is said
+    /// to be one of the most high-quality SRC libraries out there. 
+    /// @param targetSampleRateHz Sample rate to resample to. Can be higher, lower,
+    /// and can be any valid SR value, not just power-of-two ratios.
+    /// @return A new buffer containing resampled audio
+    AudioBuffer<SampleType> resample (double targetSampleRateHz) const
+    {
+        if (targetSampleRateHz < 0.0 || floatsEqual (targetSampleRateHz, 0.0) || std::isnan (targetSampleRateHz))
+            HART_THROW_OR_RETURN (hart::SampleRateError, "Invalid target sample rate", { m_numChannels, 0 });
+
+        if (! hasSampleRate())
+            HART_THROW_OR_RETURN (hart::SampleRateError, "Can't resample, since this AudioBuffer doesn't have a sample rate value assigned to it", { m_numChannels, 0, targetSampleRateHz });
+
+        if (floatsEqual (targetSampleRateHz, m_sampleRateHz))
+            return AudioBuffer<SampleType> (*this);  // Same sample rate - can get away with just a copy
+
+        const double sourceLengthSeconds = getLengthSeconds();
+        const size_t resampledBufferSizeFrames = roundToSizeT (sourceLengthSeconds * targetSampleRateHz);
+        AudioBuffer<SampleType> resampledBuffer (m_numChannels, resampledBufferSizeFrames, targetSampleRateHz);
+        hassert (floatsEqual (resampledBuffer.getLengthSeconds(), sourceLengthSeconds, 100e-6));  // It's okay to loosen this tolerance within reason, if it fails at some point
+
+        for (size_t channel = 0; channel < m_numChannels; ++channel)
+            hart::resample ((*this)[channel], m_numFrames, m_sampleRateHz, resampledBuffer[channel], resampledBufferSizeFrames, targetSampleRateHz);
+
+        return resampledBuffer;
     }
 
 private:
