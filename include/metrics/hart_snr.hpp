@@ -82,7 +82,7 @@ MetricQuery<double> snr (const AudioBuffer<SampleType>& signalPlusNoise, const A
         switch (requestedUnit)
         {
             case Unit::native:
-            case Unit::linear: return snrRatio;
+            case Unit::ratio: return snrRatio;
 
             case Unit::dB: return hart::powerToDecibels (snrRatio);
 
