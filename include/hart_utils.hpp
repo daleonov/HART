@@ -4,6 +4,7 @@
 #include <cctype>  // isalpha()
 #include <cmath>  // pow()
 #include <exception>
+#include <fstream>
 #include <limits>  // infinity(), nan()
 #include <memory>
 #include <ostream>
@@ -206,6 +207,14 @@ static size_t previousPowerOfTwo (size_t x)
 static bool isPowerOfTwo (size_t x)
 {
     return (x != 0) && ((x & (x - 1)) == 0);
+}
+
+// @brief Check if file exists and whether it's possible to read it
+// @note There are better ways to do it post-C++17, but HART is C++11.
+inline static bool fileExistsAndReadable (const std::string& path)
+{
+    std::ifstream file (path.c_str());
+    return file.good();
 }
 
 /// @brief Checks if the provided file path is absolute
