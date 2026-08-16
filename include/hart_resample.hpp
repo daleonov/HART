@@ -9,7 +9,7 @@
 
 #include "dependencies/r8brain-free-src/CDSPResampler.h"
 #include "hart_audio_buffer.hpp"
-#include "hart_utils.hpp"  // roundToSizeT()
+#include "hart_utils.hpp"  // roundToSizeT(), floatsEqual()
 
 namespace hart
 {
@@ -48,6 +48,8 @@ static void resample (const SampleType* sourceData, size_t sourceSizeFrames, dou
 
     // It can also be r8b::CDSPResampler instead of r8b::CDSPResampler24, for even better fidelity
     r8b::CDSPResampler24 resampler (sourceSampleRateHz, destinationSampleRateHz, sourceSizeFrames);
+    hassert (floatsEqual (resampler.getLatencyFrac(), 0.0));  // We don't want SRC filters to introduce latency without us knowiung
+
     resampler.oneshot (const_cast<SampleType*> (sourceData), static_cast<int> (sourceSizeFrames), destinationData, static_cast<int> (destinationCapacityFrames));
 }
 
