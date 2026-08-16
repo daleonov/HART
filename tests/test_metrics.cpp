@@ -1540,6 +1540,31 @@ HART_TEST ("Metrics - SNR")
         .process();
 }
 
+HART_TEST ("Metrics - SNR - Units")
+{
+    using hart::snr;
+    using hart::powerToDecibels;
+    using AudioBuffer = hart::AudioBuffer<float>;
+
+    AudioBuffer signal;
+    AudioBuffer signalPlusNoise;
+    processAudioWith (AdditiveNoise (-10_dB))
+        .withInputSignal (SineWave())
+        .saveInputTo (signal)
+        .saveOutputTo (signalPlusNoise)
+        .inMono()
+        .process();
+
+    const double snrDefault = snr (signal, signalPlusNoise);
+    const double snrNative = snr (signal, signalPlusNoise).as (native);
+    const double snrRatio = snr (signal, signalPlusNoise).as (ratio);
+    const double snrDb = snr (signal, signalPlusNoise).as (dB);
+
+    HART_EXPECT_FLOAT_EQ (snrNative, snrDefault, 1e-16) << "Native is the default";
+    HART_EXPECT_FLOAT_EQ (snrRatio, snrNative, 1e-16) << "Ratio is the same as Native";
+    HART_EXPECT_FLOAT_EQ (snrDb, powerToDecibels (snrRatio), 1e-16) << "Decibels are calculated as power, and not voltage";
+}
+
 HART_TEST ("Metrics - SNRa - Distortion effect with aliasing")
 {
     using hart::snra;
