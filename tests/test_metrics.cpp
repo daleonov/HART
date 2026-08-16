@@ -1539,3 +1539,119 @@ HART_TEST ("Metrics - SNR")
         .expectTrue ([] (AnalysisContext ac) { return HART_LT (snr (ac.inputAudio(), ac.outputAudio()).as (dB).get (min()), 100_dB); }, "SNR < 100 dB" )
         .process();
 }
+
+HART_TEST ("Metrics - SNRa - Distortion effect with aliasing")
+{
+    using hart::snra;
+    using hart::max;
+    using hart::min;
+    using hart::Slice;
+    using AudioBuffer = hart::AudioBuffer<float>;
+
+    // Resampling the reference buffer doesn't guarantee preserving the transients at boundaries
+    // (i.e. the very beginning and very and of the buffer), so it's a good idea to only compare the
+    // slice of audio in the middle.
+    const Slice steadySlice = Slice::time (50_ms, 150_ms);
+    constexpr double renderDurationSeconds = 200_ms;
+
+    const double nativeSampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
+    const double highSampleRateHz = 4 * nativeSampleRateHz;
+    std::vector<double> snras;
+
+    for (double sineFrequencyHz = 20_Hz; sineFrequencyHz <= 20_kHz; sineFrequencyHz *= 2)
+    {
+        AudioBuffer estimatedBuffer;
+        processAudioWith (HardClip (-10_dB))
+            .withInputSignal (SineWave (sineFrequencyHz))
+            .withDuration (renderDurationSeconds)
+            .saveOutputTo (estimatedBuffer)
+            .process();
+
+        AudioBuffer referenceBuffer;
+        processAudioWith (HardClip (-10_dB))
+            .withInputSignal (SineWave (sineFrequencyHz))
+            .withSampleRate (highSampleRateHz)
+            .withDuration (renderDurationSeconds)
+            .saveOutputTo (referenceBuffer)
+            .process();
+        
+        snras.push_back (snra (estimatedBuffer, referenceBuffer).at (steadySlice).as (dB). get (min()));
+    }
+
+    HART_EXPECT_LT (max() (snras.begin(), snras.end()), 100_dB) << "Best SNRa < 100 dB";
+    HART_EXPECT_LT (min() (snras.begin(), snras.end()), 30_dB) << "Worst SNRa < 30 dB";
+}
+
+HART_TEST ("Metrics - SNRa - Clean effect with no aliasing")
+{
+    using hart::snra;
+    using hart::min;
+    using hart::Slice;
+    using AudioBuffer = hart::AudioBuffer<float>;
+
+    // Resampling the reference buffer doesn't guarantee preserving the transients at boundaries
+    // (i.e. the very beginning and very and of the buffer), so it's a good idea to only compare the
+    // slice of audio in the middle.
+    const Slice steadySlice = Slice::time (50_ms, 150_ms);
+    constexpr double renderDurationSeconds = 200_ms;
+
+    const double nativeSampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
+    const double highSampleRateHz = 4 * nativeSampleRateHz;
+    std::vector<double> snras;
+
+    for (double sineFrequencyHz = 20_Hz; sineFrequencyHz <= 20_kHz; sineFrequencyHz *= 2)
+    {
+        AudioBuffer estimatedBuffer;
+        processAudioWith (GainDb (-10_dB))
+            .withInputSignal (SineWave (sineFrequencyHz))
+            .withDuration (renderDurationSeconds)
+            .saveOutputTo (estimatedBuffer)
+            .process();
+
+        AudioBuffer referenceBuffer;
+        processAudioWith (GainDb (-10_dB))
+            .withInputSignal (SineWave (sineFrequencyHz))
+            .withSampleRate (highSampleRateHz)
+            .withDuration (renderDurationSeconds)
+            .saveOutputTo (referenceBuffer)
+            .process();
+
+        snras.push_back (snra (estimatedBuffer, referenceBuffer).at (steadySlice).as (dB).get (min()));
+    }
+    
+    HART_EXPECT_GT (min() (snras.begin(), snras.end()), 100_dB) << "Worst SNRa > 100 dB";
+}
+
+HART_TEST ("Metrics - SNRa - Units")
+{
+    using hart::snra;
+    using hart::powerToDecibels;
+    using AudioBuffer = hart::AudioBuffer<float>;
+
+    const double nativeSampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
+    const double highSampleRateHz = 4 * nativeSampleRateHz;
+
+    AudioBuffer estimatedBuffer;
+    processAudioWith (HardClip (-10_dB))
+        .withInputSignal (SineWave())
+        .saveOutputTo (estimatedBuffer)
+        .inMono()
+        .process();
+
+    AudioBuffer referenceBuffer;
+    processAudioWith (HardClip (-10_dB))
+        .withInputSignal (SineWave())
+        .withSampleRate (highSampleRateHz)
+        .saveOutputTo (referenceBuffer)
+        .inMono()
+        .process();
+        
+    const double snraDefault = snra (estimatedBuffer, referenceBuffer);
+    const double snraNative = snra (estimatedBuffer, referenceBuffer).as (native);
+    const double snraRatio = snra (estimatedBuffer, referenceBuffer).as (ratio);
+    const double snraDb = snra (estimatedBuffer, referenceBuffer).as (dB);
+
+    HART_EXPECT_FLOAT_EQ (snraNative, snraDefault, 1e-16) << "Native is the default";
+    HART_EXPECT_FLOAT_EQ (snraRatio, snraNative, 1e-16) << "Ratio is the same as Native";
+    HART_EXPECT_FLOAT_EQ (snraDb, powerToDecibels (snraRatio), 1e-16) << "Decibels are calculated as power, and not voltage";
+}
