@@ -741,6 +741,10 @@ public:
     /// @details Under the hood, it uses
     /// [r8brain](https://github.com/avaneev/r8brain-free-src), which is said
     /// to be one of the most high-quality SRC libraries out there. 
+    /// It is guaranteed that there's no latency introduced to the resampled signal.
+    /// However, the exact waveform at boundary transients, i. e. at the very
+    /// beginning and at the very end of the buffer, is not guaranteed to be preserved,
+    /// due to SRC filtering.
     /// @param targetSampleRateHz Sample rate to resample to. Can be higher, lower,
     /// and can be any valid SR value, not just power-of-two ratios.
     /// @return A new buffer containing resampled audio
