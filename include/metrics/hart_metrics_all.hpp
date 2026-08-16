@@ -13,6 +13,7 @@
 #include "metrics/hart_rms.hpp"
 #include "metrics/hart_rt60.hpp"
 #include "metrics/hart_sample_peak.hpp"
+#include "metrics/hart_snr.hpp"
 #include "metrics/hart_spectral_centroid.hpp"
 #include "metrics/hart_spectral_flatness.hpp"
 #include "metrics/hart_thd.hpp"

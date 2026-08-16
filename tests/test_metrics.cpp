@@ -1,5 +1,5 @@
 #include <algorithm>  // max()
-#include <cmath>  // abs(), isnan()
+#include <cmath>  // abs(), isnan(), isinf()
 
 #include "hart.hpp"
 #include "exponential_decay.hpp"
@@ -1502,4 +1502,40 @@ HART_TEST ("Metrics - Centre Time - Units")
     HART_EXPECT_FLOAT_EQ (centreTime (ir).as (seconds).get(), centreTime (ir).as (native).get(), 1.0e-8) << "Native unit is seconds";
     HART_EXPECT_FLOAT_EQ (centreTime (ir).as (seconds).get(), expectedCentreTimeSeconds, 100_us) << "Seconds are indeed interpreted as seconds";
     HART_EXPECT_FLOAT_EQ (centreTime (ir).as (frames).get(), expectedCentreTimeFrames, 1.0) << "Supports returning decay time in frames";
+}
+
+HART_TEST ("Metrics - SNR")
+{
+    using std::isinf;
+    using hart::snr;
+    using hart::min;
+    using AnalysisContext = hart::AnalysisContext<float>;
+
+    // Sine wave an unity gain has RMS of 1 / sqrt (2)
+    // White noise (uniform distribution) at about -18.2dB sample peak has RMS of 1 / (10 * sqrt (2))
+    // Mixing those resulta in 20 dB SNR
+    processAudioWith (AdditiveNoise (-18.2_dB))
+        .withLabel ("Additive noise")
+        .withInputSignal (SineWave())
+        .expectTrue ([] (AnalysisContext ac) { return HART_FLOAT_EQ (snr (ac.inputAudio(), ac.outputAudio()).as (dB).get (min()), 20_dB, 0.1_dB); }, "SNR is ~20 dB" )
+        .process();
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("No noise at all")
+        .withInputSignal (SineWave())
+        .expectTrue ([] (AnalysisContext ac) { return HART_GT (snr (ac.inputAudio(), ac.outputAudio()).as (dB).get (min()), 100_dB); }, "SNR > 100 dB" )
+        .expectTrue ([] (AnalysisContext ac) { return HART_TRUE (isinf (snr (ac.inputAudio(), ac.outputAudio()).as (dB).get (min()))); }, "SNR -> +oo" )
+        .process();
+
+    processAudioWith (GainDb (-10_dB))
+        .withLabel ("Mismatched gain throws off SNR reading")
+        .withInputSignal (SineWave())
+        .expectTrue ([] (AnalysisContext ac) { return HART_LT (snr (ac.inputAudio(), ac.outputAudio()).as (dB).get (min()), 100_dB); }, "SNR < 100 dB" )
+        .process();
+
+    processAudioWith (TimeShift (1_ms))
+        .withLabel ("Latency throws off SNR reading")
+        .withInputSignal (SineWave())
+        .expectTrue ([] (AnalysisContext ac) { return HART_LT (snr (ac.inputAudio(), ac.outputAudio()).as (dB).get (min()), 100_dB); }, "SNR < 100 dB" )
+        .process();
 }
