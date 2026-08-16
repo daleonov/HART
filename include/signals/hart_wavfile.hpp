@@ -9,7 +9,7 @@
 
 #include "hart_exceptions.hpp"
 #include "signals/hart_signal.hpp"
-#include "hart_utils.hpp"  // toAbsolutePath(), floatsNotEqual(), Loop
+#include "hart_utils.hpp"  // toAbsolutePath(), floatsNotEqual(), fileExistsAndReadable(), Loop
 
 namespace hart
 {
@@ -36,7 +36,10 @@ public:
         m_filePath (filePath),
         m_loop (loop)
     {
-        // TODO: Check if the file exists first
+        const std::string fileAbsolutePath = toAbsolutePath (filePath);
+        
+        if (! fileExistsAndReadable (fileAbsolutePath))
+            HART_THROW_OR_RETURN_VOID (hart::IOError, "Wav file does not exist, or not readable");
 
         drwav_uint64 numFrames;
         unsigned int numChannels;
