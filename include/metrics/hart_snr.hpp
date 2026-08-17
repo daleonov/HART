@@ -13,9 +13,52 @@
 
 namespace hart
 {
-// TODO: Document it
 
-/// @brief Calculates signal to noise ratio (SNR)
+/// @brief Calculates signal-to-noise ratio (SNR)
+/// @details SNR expresses the ratio between the energy of a reference signal
+/// and the energy of the error, or noise, present in an estimated signal.
+///
+/// The noise component is calculated as the sample-by-sample difference
+/// between the estimated and reference signals.
+///
+/// SNR is calculated this way:
+/// @f[
+/// \mathrm{SNR}
+/// =
+/// \frac
+/// {\sum_{n=0}^{N-1} r[n]^2}
+/// {\sum_{n=0}^{N-1} \left(x[n] - r[n]\right)^2}
+/// @f]
+///
+/// (SNR = sum(r[n] ** 2) / sum((x[n] - r[n]) ** 2)),
+///
+/// where x[n] is a sample from the estimated signal, r[n] is the
+/// corresponding sample from the reference signal, and N is the number of
+/// frames being analyzed.
+///
+/// Higher values indicate a closer match to the reference signal, and thus
+/// lower noise. Identical signals produce positive infinity, and this metric
+/// will return `+inf` in those cases.
+///
+/// Can be expressed as an energy ratio or decibels. Supports `Unit::ratio`,
+/// `Unit::native` (same as ratio), and `Unit::dB`. Values in decibels are
+/// calculated as a power ratio:
+///
+/// @f[
+/// \mathrm{SNR_{dB}} = 10 \log_{10}\left(\mathrm{SNR}\right)
+/// @f]
+///
+/// (SNR_dB = 10 * log10(SNR)).
+///
+/// The two buffers are expected to represent aligned versions of the same
+/// signal. Differences in gain, latency, phase, or other deterministic signal
+/// properties are included in the measured noise/error.
+///
+/// @tparam SampleType
+/// @param signalPlusNoise Estimated or measured signal
+/// @param signal Reference signal to compare against
+/// @return Chainable `MetricQuery` object which calculates SNR as a linear
+/// energy ratio or in decibels. May return `NaN` or `+inf`.
 /// @ingroup Metrics
 template <typename SampleType>
 MetricQuery<double> snr (const AudioBuffer<SampleType>& signalPlusNoise, const AudioBuffer<SampleType>& signal)
