@@ -56,16 +56,17 @@ public:
         if (pcmFrames == nullptr)
             HART_THROW_OR_RETURN_VOID (hart::IOError, std::string ("Could not read frames from the wav file"));
 
-        m_wavFrames = std::make_shared<AudioBuffer<float>> (numChannels, numFrames);
+        m_wavFramesOriginal = std::make_shared<AudioBuffer<float>> (
+            static_cast<size_t> (numChannels),
+            static_cast<size_t> (numFrames),
+            static_cast<double> (wavSampleRateHz)
+        );
 
         for (size_t frame = 0; frame < numFrames; ++frame)
             for (size_t channel = 0; channel < numChannels; ++channel)
-                (*m_wavFrames)[channel][frame] = pcmFrames[frame * numChannels + channel];
+                (*m_wavFramesOriginal)[channel][frame] = pcmFrames[frame * numChannels + channel];
 
         drwav_free (pcmFrames, nullptr);
-
-        m_wavSampleRateHz = static_cast<double> (wavSampleRateHz);
-        m_wavNumChannels = static_cast<size_t> (numChannels);
     }
 
     /// @copydoc Signal::supportsNumChannels()
@@ -74,45 +75,87 @@ public:
     /// one channel (left, discarding right), but not three channels.
     bool supportsNumChannels (size_t numChannels) const override
     {
-        return numChannels <= m_wavNumChannels;
+        if (m_wavFramesOriginal == nullptr)
+        {
+            hassertfalse;
+            return false;
+        }
+
+        return numChannels <= m_wavFramesOriginal->getNumChannels();
     };
+
+    bool supportsSampleRate (double sampleRateHz) const override
+    {
+        if (m_wavFramesOriginal == nullptr)
+        {
+            hassertfalse;
+            return false;
+        }
+
+        return floatsEqual (sampleRateHz, m_wavFramesOriginal->getSampleRateHz(), m_sampleRateToleranceHz);
+    }
 
     void prepare (double sampleRateHz, size_t numOutputChannels, size_t /*maxBlockSizeFrames*/) override
     {
-        // There are a few ovbvious cases where channel number mismatch can be gracefully resolved - perhaps in the future
-        if (numOutputChannels != m_wavNumChannels)
+        if (m_wavFramesOriginal == nullptr)
+        {
+            hassertfalse;
+            return;
+        }
+
+        // There are a few obvious cases where channel number mismatch can be gracefully resolved - perhaps in the future
+        if (numOutputChannels != m_wavFramesOriginal->getNumChannels())
             HART_THROW_OR_RETURN_VOID (hart::ChannelLayoutError, std::string ("Unexpected channel number"));
 
-        if (floatsNotEqual (sampleRateHz, m_wavSampleRateHz))
+        hassert (m_wavFramesOriginal->hasSampleRate());  // Sample rate should be assigned to the buffer in the ctor
+
+        // TODO: Resampling is supported now, so quietly resample
+        if (floatsNotEqual (sampleRateHz, m_wavFramesOriginal->getSampleRateHz(), m_sampleRateToleranceHz))
             HART_THROW_OR_RETURN_VOID (hart::UnsupportedError, std::string ("Wav file is in different sampling rate, resampling not supported"));
+    
+        m_wavFramesSource = m_wavFramesOriginal;
     }
 
     void renderNextBlock (AudioBuffer<SampleType>& output) override
     {
         // TODO: Add support for number of channels different from the wav file
         // TODO: Add resampling
+
+        if (m_wavFramesSource == nullptr)
+        {
+            // Source should have been assigned during the prepare() call
+            hassertfalse;
+            return;
+        }
+
+        hassert (output.getNumChannels() == m_wavFramesSource->getNumChannels());
+        hassert (output.hasSampleRate());
+        hassert (m_wavFramesSource->hasSampleRate());
+        hassert (floatsEqual (output.getSampleRateHz(), m_wavFramesSource->getSampleRateHz(), m_sampleRateToleranceHz));
+
         const size_t numFrames = output.getNumFrames();
+        const size_t numChannels = output.getNumChannels();
         size_t frameInOutputBuffer = 0;
         size_t frameInWavBuffer = m_wavOffsetFrames;
 
-        while (m_wavOffsetFrames < m_wavFrames->getNumFrames() && frameInOutputBuffer < numFrames)
+        while (m_wavOffsetFrames < m_wavFramesSource->getNumFrames() && frameInOutputBuffer < numFrames)
         {
-            for (size_t channel = 0; channel < m_wavNumChannels; ++channel)
-                output[channel][frameInOutputBuffer] = (*m_wavFrames)[channel][frameInWavBuffer];
+            for (size_t channel = 0; channel < m_wavFramesSource->getNumChannels(); ++channel)
+                output[channel][frameInOutputBuffer] = (*m_wavFramesSource)[channel][frameInWavBuffer];
 
             ++frameInOutputBuffer;
             ++frameInWavBuffer;
             ++m_wavOffsetFrames;
 
             if (m_loop == Loop::yes)
-                m_wavOffsetFrames %= m_wavFrames->getNumFrames();
+                m_wavOffsetFrames %= m_wavFramesSource->getNumFrames();
         }
 
         while (frameInOutputBuffer < numFrames)
         {
             hassert (m_loop == Loop::no);
 
-            for (size_t channel = 0; channel < m_wavNumChannels; ++channel)
+            for (size_t channel = 0; channel < m_wavFramesSource->getNumChannels(); ++channel)
                 output[channel][frameInOutputBuffer] = (SampleType) 0;
 
             ++frameInOutputBuffer;
@@ -130,12 +173,12 @@ public:
     }
 
 private:
+    static constexpr double m_sampleRateToleranceHz = 1e-3;
     const std::string m_filePath;
     const Loop m_loop;
-    size_t m_wavNumChannels;
-    double m_wavSampleRateHz;
     size_t m_wavOffsetFrames = 0;
-    std::shared_ptr<AudioBuffer<float>> m_wavFrames;
+    std::shared_ptr<AudioBuffer<float>> m_wavFramesOriginal;
+    std::shared_ptr<AudioBuffer<float>> m_wavFramesSource;
 };
 
 HART_SIGNAL_DECLARE_ALIASES_FOR (WavFile)
