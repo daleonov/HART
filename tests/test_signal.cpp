@@ -379,3 +379,31 @@ HART_TEST ("Signal - SignalFunction")
         .expectTrue (PeaksAt (-10_dB))
         .process();
 }
+
+HART_GENERATE ("Sginal - WavFile - Wav files for Resampling test")
+{
+    processAudioWith (GainDb (0_dB))
+        .withInputSignal (SineWave (1_kHz))
+        .withSampleRate (48_kHz)
+        .withDuration (100_ms)
+        .inMono()
+        .saveOutputTo ("Sine 1kHz at 48kHz.wav")
+        .process();
+}
+
+HART_TEST ("Signal - WavFile - Resampling")
+{
+    using AnalysisContext = hart::AnalysisContext<float>;
+    using hart::quinns2;
+
+    for (const double sampleRateHz : {8_kHz, 32_kHz, 44.1_kHz, 48_kHz, 88.2_kHz })
+    {
+        processAudioWith (GainDb (0_dB))
+            .withLabel (HART_STR ("Sample rate at " << sampleRateHz << " Hz"))
+            .withInputSignal (WavFile ("Sine 1kHz at 48kHz.wav"))
+            .withSampleRate (sampleRateHz)
+            .inMono()
+            .expectTrue ([] (AnalysisContext ac) { return HART_FREQUENCIES_EQUAL (quinns2 (ac.inputSpectrum()).get(), 1_kHz, 5_cents); }, "Fundamental frequency is 1 kHz" )
+            .process();
+    }
+}
