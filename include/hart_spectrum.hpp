@@ -3,7 +3,7 @@
 #include <cstdint>  // uint_fast32_t
 #include <vector>
 #include <cmath>  // sin(), cos(), abs()
-#include <complex>  // complex, conj(),
+#include <complex>  // complex, conj(), real(), imag()
 #include <algorithm>
 #include <random>
 #include <utility>  // swap(), make_pair(), pair
@@ -230,6 +230,58 @@ public:
         }
 
         return buffer;
+    }
+
+    /// @brief Checks whether this spectrum contains approximately the same data as another spectrum
+    /// @details The comparison is relaxed - each pair of corresponding complex bins must differ by
+    /// no more than `toleranceLinear`. Both spectra must have the same dimensions, FFT size,
+    /// time-domain size, and sample rate.
+    /// @param other Spectrum to compare against
+    /// @param toleranceLinear Absolute complex-bin tolerance in linear domain,
+    /// for both real and imaginary parts.
+    /// @return `true` if the spectra are equal within the specified tolerance, `false` otherwise
+    bool equalsTo (const Spectrum& other, double toleranceLinear = 1e-6) const
+    {
+        if (m_numChannels != other.m_numChannels
+            || m_fftSize != other.m_fftSize
+            || m_numBins != other.m_numBins
+            || m_sizeInTimeDomainFrames != other.m_sizeInTimeDomainFrames)
+            return false;
+
+        if (! floatsEqual (m_sampleRateHz, other.m_sampleRateHz))
+            return false;
+
+        for (size_t channel = 0; channel < m_numChannels; ++channel)
+        {
+            for (size_t bin = 0; bin < m_numBins; ++bin)
+            {
+                const std::complex<double> thisValue = m_data[channel][bin];
+                const std::complex<double> otherValue = other.m_data[channel][bin];
+
+                if (std::abs (std::real (thisValue - otherValue)) > toleranceLinear || std::abs (std::imag (thisValue - otherValue)) > toleranceLinear)
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// @brief Checks whether two spectra contain approximately the same data
+    /// @details Equivalent to calling `Spectrum::equalsTo (other)` with the default tolerance
+    /// @param other Spectrum to compare against
+    /// @return `true` if the spectra are equal within the default tolerance, `false` otherwise
+    bool operator== (const Spectrum& other) const
+    {
+        return equalsTo (other);
+    }
+
+    /// @brief Checks whether two spectra differ beyond the default comparison tolerance
+    /// @details Equivalent to `! Spectrum::equalsTo (other)`
+    /// @param other Spectrum to compare against
+    /// @return `true` if the spectra are not equal within the default tolerance, `false` otherwise
+    bool operator!= (const Spectrum& other) const
+    {
+        return ! equalsTo (other);
     }
 
     /// @brief Returns frequency corresponding to a bin index
