@@ -105,7 +105,7 @@ public:
     /// @details `beta` is interpreted as a power-spectrum exponent, so the
     /// stored bin magnitudes follow:
     /// @f[
-    /// $\lvert X(f) \rvert \propto {f_{rel}}^ \frac{\beta}{2}$
+    /// |X(f)| \propto {f_{rel}}^ \frac{\beta}{2}
     /// @f]
     /// (|X(f)| ~ f_rel ** (beta / 2)),
     ///
