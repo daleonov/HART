@@ -1,9 +1,11 @@
 #pragma once
 
+#include <cstdint>  // uint_fast32_t
 #include <vector>
 #include <cmath>  // sin(), cos(), abs()
 #include <complex>  // complex, conj(),
 #include <algorithm>
+#include <random>
 #include <utility>  // swap(), make_pair(), pair
 
 #include "hart_audio_buffer.hpp"
@@ -95,6 +97,76 @@ public:
             spectrum.m_numChannels,
             std::vector<std::complex<double>> (spectrum.m_numBins, std::complex<double> (0.0, 0.0))
             );
+
+        return spectrum;
+    }
+
+    /// @brief Creates deterministic coloured noise in the frequency domain
+    /// @details `beta` is interpreted as a power-spectrum exponent, so the
+    /// stored bin magnitudes follow:
+    /// @f[
+    /// $\lvert X(f) \rvert \propto {f_{rel}}^ \frac{\beta}{2}$
+    /// @f]
+    /// (|X(f)| ~ f_rel ** (beta / 2)),
+    ///
+    /// where f_rel = frequency / lowCutoffFrequencyHz.
+    /// @param beta Power-spectrum exponent (slope):
+    ///
+    /// Noise type | beta
+    /// -----------|------
+    /// white      |  0
+    /// pink       | −1
+    /// brown/red  | −2
+    /// blue       | +1
+    /// violet     | +2
+    /// @param lowCutoffFrequencyHz The starting frequency of the noise.
+    /// Bins below it will be zero. Must be at least 1 Hz.
+    /// @param numChannels Number of channels in the generated spectrum
+    /// @param signalDurationFrames Desired duration of the signal this
+    /// noise represents. Can be arbitrary. If not a power of 2, the
+    /// spectrum will be padded to the next power of 2, but if converted
+    /// to time domain via `toAudioBuffer()`, the desired duration will
+    /// be respected.
+    /// @param sampleRateHz Sample rate of the generated spectrum in Hertz
+    /// @param randomSeed RNG seed. While magnitudes will have ideal
+    /// values, the real and imaginary parts of bins will be randomized.
+    static Spectrum colouredNoise (double beta, uint_fast32_t randomSeed = CLIConfig::getInstance().getRandomSeed(), double lowCutoffFrequencyHz = 20.0, size_t numChannels = CLIConfig::getInstance().getDefaultNumInputChannels(), size_t signalDurationFrames = CLIConfig::getInstance().getDefaultRenderDurationFrames(), double sampleRateHz = CLIConfig::getInstance().getDefaultSampleRateHz())
+    {
+        if (lowCutoffFrequencyHz < 1.0)
+            HART_THROW_OR_RETURN (hart::ValueError, "Low cutoff frequency should be at least 1 Hz", Spectrum::zeros (numChannels, signalDurationFrames, sampleRateHz));
+
+        Spectrum spectrum = Spectrum::zeros (numChannels, signalDurationFrames, sampleRateHz);
+        std::mt19937 randomNumberGenerator (randomSeed);
+        std::uniform_real_distribution<double> phaseDistribution (0.0, hart::twoPi);
+        std::uniform_int_distribution<int> signDistribution (0, 1);
+
+        const double magnitudeExponent = beta / 2.0;
+
+        for (size_t channel = 0; channel < spectrum.m_numChannels; ++channel)
+        {
+            for (size_t bin = 0; bin < spectrum.m_numBins; ++bin)
+            {
+                const double frequencyHz = spectrum.getBinFrequencyHz (bin);
+
+                if (frequencyHz < lowCutoffFrequencyHz || (frequencyHz == 0.0 && beta < 0.0))
+                {
+                    spectrum.m_data[channel][bin] = std::complex<double> (0.0, 0.0);
+                    continue;
+                }
+
+                const double magnitude = std::pow (frequencyHz / lowCutoffFrequencyHz, magnitudeExponent);
+
+                if (bin == 0 || (spectrum.m_fftSize % 2 == 0 && bin == spectrum.m_numBins - 1))
+                {
+                    const double signedMagnitude = signDistribution (randomNumberGenerator) == 0 ? -magnitude : magnitude;
+                    spectrum.m_data[channel][bin] = std::complex<double> (signedMagnitude, 0.0);
+                    continue;
+                }
+
+                const double phase = phaseDistribution (randomNumberGenerator);
+                spectrum.m_data[channel][bin] = std::complex<double> (magnitude * std::cos (phase), magnitude * std::sin (phase));
+            }
+        }
 
         return spectrum;
     }
