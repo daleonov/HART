@@ -19,13 +19,7 @@ HART_TEST ("Spectrum - Converts to AudioBuffer correctly")
 
 HART_TEST ("Spectrum - Spectrum::zeros() converts to a silent AudioBuffer")
 {
-    const hart::CLIConfig& cliConfig = hart::CLIConfig::getInstance();
-    const double sampleRateHz = cliConfig.getDefaultSampleRateHz();
-    const double renderDurationSeconds = cliConfig.getDefaultRenderDurationSeconds();
-    const size_t numFrames = hart::roundToSizeT (renderDurationSeconds * sampleRateHz);
-    const size_t numChannels = cliConfig.getDefaultNumInputChannels();
-
-    const hart::Spectrum spectrum = hart::Spectrum::zeros (numChannels, numFrames, sampleRateHz);
+    const hart::Spectrum spectrum = hart::Spectrum::zeros();
     const AudioBuffer buffer = spectrum.toAudioBuffer<float>();
 
     processAudioWith (GainDb (0_dB))

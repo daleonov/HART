@@ -7,6 +7,7 @@
 #include <utility>  // swap(), make_pair(), pair
 
 #include "hart_audio_buffer.hpp"
+#include "hart_cliconfig.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_slice.hpp" 
 #include "hart_utils.hpp"  // nan(), roundToSizeT(), nextPowerOfTwo()
@@ -69,7 +70,7 @@ public:
         }
     }
 
-    static Spectrum zeros (size_t numChannels, size_t signalDurationFrames, double sampleRateHz)
+    static Spectrum zeros (size_t numChannels = CLIConfig::getInstance().getDefaultNumInputChannels(), size_t signalDurationFrames = CLIConfig::getInstance().getDefaultRenderDurationFrames(), double sampleRateHz = CLIConfig::getInstance().getDefaultSampleRateHz())
     {
         Spectrum spectrum;
 
