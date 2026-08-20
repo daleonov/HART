@@ -132,6 +132,7 @@ public:
     size_t getDefaultNumOutputChannels() const { return m_defaultNumOutputChannels; }
     double getDefaultSampleRateHz() const { return m_defaultSampleRateHz; }
     double getDefaultRenderDurationSeconds() const { return m_defaultRenderDurationSeconds; }
+    size_t getDefaultRenderDurationFrames() const { return static_cast<size_t> (m_defaultRenderDurationSeconds * m_defaultSampleRateHz + 0.5); }
 
 private:
     CLI::App app { "HART" };
