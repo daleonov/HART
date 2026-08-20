@@ -12,8 +12,6 @@
 #include "hart_slice.hpp" 
 #include "hart_utils.hpp"  // nan(), roundToSizeT(), nextPowerOfTwo()
 
-// TODO: Implement represent() for it
-
 namespace hart
 {
 
@@ -277,6 +275,21 @@ public:
                 HART_THROW_OR_RETURN (hart::UnitError, "Slice type cannot be interpreted as bin range", std::make_pair (0, numBins));
             }
         }
+    }
+
+    /// @brief Prints readable representation of the spectrum object
+    /// @param stream String stream to append the representation to
+    void represent (std::ostream& stream) const
+    {
+        stream << "<Spectrum>";
+    }
+
+    /// @brief Prints readable text representation of the spectrum object into the I/O stream
+    /// @relates Spectrum
+    friend std::ostream& operator<< (std::ostream& stream, const Spectrum& spectrum)
+    {
+        spectrum.represent (stream);
+        return stream;
     }
 
 private:
