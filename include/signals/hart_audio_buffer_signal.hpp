@@ -18,11 +18,8 @@ class AudioBufferSignal :
     public Signal<SampleType, AudioBufferSignal<SampleType>>
 {
 public:
-    enum class Loop
-    {
-        yes,
-        no
-    };
+    // TODO: Just use hart::Loop natively in this class
+    using Loop = hart::Loop;
 
     /// @brief Construct from a shared_ptr (shared ownership)
     explicit AudioBufferSignal (std::shared_ptr<AudioBuffer<SampleType>> buffer, Loop loop = Loop::no) :

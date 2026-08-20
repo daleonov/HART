@@ -17,6 +17,8 @@
 
 namespace hart {
 
+template<typename SampleType> class AudioBufferSignal;
+
 template <typename T> class DSPBase;
 template <typename T> class SignalBase;
 
@@ -770,6 +772,9 @@ public:
         return resampledBuffer;
     }
 
+    AudioBufferSignal<SampleType> toSignal (Loop loop = Loop::no) const &;
+    AudioBufferSignal<SampleType> toSignal (Loop loop = Loop::no) &&;
+
 private:
     size_t m_numChannels = 0;
     size_t m_numFrames = 0;
@@ -799,3 +804,4 @@ private:
 
 #include "hart_audio_buffer_fill_with.hpp"
 #include "hart_audio_buffer_process_with.hpp"
+#include "hart_audio_buffer_to_signal.hpp"
