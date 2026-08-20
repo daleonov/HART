@@ -274,34 +274,54 @@ HART_TEST ("Signal - Impulse")
 HART_TEST ("Signal - AudioBufferSignal")
 {
     hart::AudioBuffer<float> bufferA;
-    HART_ASSERT_TRUE (hart::floatsEqual (bufferA.getLengthSeconds(), 0.0));
+    HART_ASSERT_FLOAT_EQ (bufferA.getLengthSeconds(), 0.0, 5_us) << "Buffer is empty";
+
+    constexpr double renderDurationSeconds = 10_ms;
 
     processAudioWith (GainDb (0_dB))
         .withInputSignal (WhiteNoise())
-        .withDuration (10_ms)
+        .withDuration (renderDurationSeconds)
         .inStereo()
         .saveOutputTo (bufferA)
         .process();
 
-    HART_ASSERT_TRUE (hart::floatsEqual (bufferA.getLengthSeconds(), 10_ms, 5_us));
+    HART_ASSERT_FLOAT_EQ (bufferA.getLengthSeconds(), renderDurationSeconds, 5_us) << "Buffer contains data after first render";
 
     processAudioWith (GainDb (0_dB))
-        .withLabel ("Renders signal exactly as captured")
+        .withLabel ("Renders signal exactly as captured - Lvalue ctor")
         .withInputSignal (AudioBufferSignal (bufferA))
-        .withDuration (10_ms)
+        .withDuration (renderDurationSeconds)
         .inStereo()
         .expectTrue (EqualsTo (WhiteNoise()))
         .process();
+
+    HART_ASSERT_FLOAT_EQ (bufferA.getLengthSeconds(), renderDurationSeconds, 5_us) << "Buffer is not consumed";
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Renders signal exactly as captured - Lvalue factory")
+        .withInputSignal (bufferA.toSignal())
+        .withDuration (renderDurationSeconds)
+        .inStereo()
+        .expectTrue (EqualsTo (WhiteNoise()))
+        .process();
+
+    HART_ASSERT_FLOAT_EQ (bufferA.getLengthSeconds(), renderDurationSeconds, 5_us) << "Buffer is still not consumed";
+
+    processAudioWith (GainDb (0_dB))
+        .withLabel ("Renders signal exactly as captured - Rvalue factory")
+        .withInputSignal (std::move (bufferA).toSignal())
+        .withDuration (renderDurationSeconds)
+        .inStereo()
+        .expectTrue (EqualsTo (WhiteNoise()))
+        .process();
+
+    HART_ASSERT_FLOAT_EQ (bufferA.getLengthSeconds(), 0_s, 5_us) << "Buffer is consumed into the signal";
 
     // TODO:
     // Re-use the buffer, make non-looping signal, use Signal::skipTo() to skip to silence, (EqualsTo (Silence()))
     // Re-use the buffer, make looping signal, use Signal::skipTo() to skip to exactly one cycle, expectTrue EqualsTo
     // Re-use the buffer, make looping signal, use Signal::skipTo() to skip to exactly three cycles, expectTrue EqualsTo
     // Re-use the buffer, make looping signal, use Signal::skipTo() to skip to some arbitrary point, expectFalse EqualsTo
-    // maybe store 10 ms duration in a constexpr
-    // HART_ASSERT_TRUE (buffer is still not moved)
-    // Construct a signal via move semantics, play 1 ms, just check it's not silence (EqualsTo (Silence()))
-    // HART_ASSERT_TRUE (buffer was actually moved)
 }
 
 HART_TEST ("Signal - SignalFunction")
