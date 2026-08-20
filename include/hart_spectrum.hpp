@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <cmath>  // sin(), cos(), abs()
-#include <complex>
+#include <complex>  // complex, conj(),
 #include <algorithm>
 #include <utility>  // swap(), make_pair(), pair
 
@@ -10,6 +10,8 @@
 #include "hart_exceptions.hpp"
 #include "hart_slice.hpp" 
 #include "hart_utils.hpp"  // nan(), roundToSizeT(), nextPowerOfTwo()
+
+// TODO: Implement represent() for it
 
 namespace hart
 {
@@ -43,6 +45,7 @@ public:
         m_data.resize (m_numChannels);
 
         const size_t numFrames = buffer.getNumFrames();
+        m_sizeInTimeDomainFrames = numFrames;
 
         m_fftSize = nextPowerOfTwo (std::max<size_t> (1, numFrames));
         m_numBins = m_fftSize / 2 + 1;
@@ -59,7 +62,7 @@ public:
             for (size_t frame = numFrames; frame < m_fftSize; ++frame)
                 fftBuffer[frame] = 0.0;
 
-            performFFT (fftBuffer);
+            performFFT (fftBuffer, false);
 
             for (size_t bin = 0; bin < m_numBins; ++bin)
                 m_data[channel][bin] = fftBuffer[bin];
@@ -86,6 +89,7 @@ public:
 
         spectrum.m_fftSize = nextPowerOfTwo (signalDurationFrames);
         spectrum.m_numBins = spectrum.m_fftSize / 2 + 1;
+        spectrum.m_sizeInTimeDomainFrames = signalDurationFrames;
 
         spectrum.m_numChannels = numChannels;
         spectrum.m_data.resize (
@@ -114,10 +118,47 @@ public:
         return m_fftSize;
     }
 
+    /// @brief Returns original audio buffer duration in frames
+    size_t getSizeInTimeDomainFrames() const
+    {
+        return m_sizeInTimeDomainFrames;
+    }
+
     /// @brief Returns sample rate in Hz
     double getSampleRateHz() const
     {
         return m_sampleRateHz;
+    }
+
+    /// @brief Converts this spectrum to a time-domain audio buffer
+    /// @details
+    /// Reconstructs the omitted negative-frequency bins from Hermitian symmetry,
+    /// performs an inverse FFT, and trims the result to the original signal length.
+    /// @tparam SampleType Type of samples for the resulting buffer, typically
+    /// `float` or `double`
+    template <typename SampleType>
+    AudioBuffer<SampleType> toAudioBuffer() const
+    {
+        AudioBuffer<SampleType> buffer (m_numChannels, m_sizeInTimeDomainFrames, m_sampleRateHz);
+
+        for (size_t channel = 0; channel < m_numChannels; ++channel)
+        {
+            std::vector<std::complex<double>> fftBuffer (m_fftSize, std::complex<double> (0.0, 0.0));
+
+            for (size_t bin = 0; bin < m_numBins; ++bin)
+                fftBuffer[bin] = m_data[channel][bin];
+
+            for (size_t bin = 1; bin + 1 < m_numBins; ++bin)
+                fftBuffer[m_fftSize - bin] = std::conj (m_data[channel][bin]);
+
+            performFFT (fftBuffer, true);
+            SampleType* channelData = buffer[channel];
+
+            for (size_t frame = 0; frame < m_sizeInTimeDomainFrames; ++frame)
+                channelData[frame] = static_cast<SampleType> (fftBuffer[frame].real());
+        }
+
+        return buffer;
     }
 
     /// @brief Returns frequency corresponding to a bin index
@@ -240,7 +281,7 @@ public:
 private:
     Spectrum() = default;
 
-    static void performFFT (std::vector<std::complex<double>>& data)
+    static void performFFT (std::vector<std::complex<double>>& data, bool isInverse)
     {
         const size_t n = data.size();
 
@@ -267,7 +308,7 @@ private:
 
         for (size_t len = 2; len <= n; len <<= 1)
         {
-            const double angle = -hart::twoPi / static_cast<double> (len);
+            const double angle = (isInverse ? hart::twoPi : -hart::twoPi) / static_cast<double> (len);
             const std::complex<double> wlen (std::cos (angle), std::sin (angle));
 
             for (size_t i = 0; i < n; i += len)
@@ -286,6 +327,14 @@ private:
                 }
             }
         }
+
+        if (isInverse)
+        {
+            const double scale = 1.0 / static_cast<double> (n);
+
+            for (size_t i = 0; i < n; ++i)
+                data[i] *= scale;
+        }
     }
 
     double m_sampleRateHz = 0.0;
@@ -293,6 +342,7 @@ private:
     size_t m_numChannels = 0;
     size_t m_fftSize = 0;
     size_t m_numBins = 0;
+    size_t m_sizeInTimeDomainFrames = 0;
 
     std::vector<std::vector<std::complex<double>>> m_data;
 };
