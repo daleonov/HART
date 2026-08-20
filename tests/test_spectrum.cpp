@@ -64,19 +64,8 @@ HART_TEST ("Spectrum - Spectrum::colouredNoise() is deterministic")
     const size_t numChannels = spectrumA.getNumChannels();
     const size_t cutoffBin = spectrumA.findClosestBin (lowCutoffFrequencyHz);
 
-    // TODO: Implement "==" for a pair of spectra
-    for (size_t channel = 0; channel < numChannels; ++channel)
-    {
-        for (size_t bin = cutoffBin; bin < spectrumA.getNumBins(); ++bin)
-        {
-            const std::complex<double> binA = spectrumA.getBinValue (channel, bin);
-            const std::complex<double> binB = spectrumB.getBinValue (channel, bin);
-            const std::complex<double> binC = spectrumC.getBinValue (channel, bin);
-            HART_EXPECT_FLOAT_EQ (std::real (binA), std::real (binB), 1e-16);
-            HART_EXPECT_FLOAT_EQ (std::imag (binA), std::imag (binB), 1e-16);
-            HART_EXPECT_FALSE (std::real (binA) == std::real (binC) && std::imag (binA) == std::imag (binC));
-        }
-    }
+    HART_EXPECT_EQ (spectrumA, spectrumB);
+    HART_EXPECT_NE (spectrumA, spectrumC);
 }
 
 HART_TEST ("Spectrum - Spectrum::colouredNoise() converts to non-silent AudioBuffer")
