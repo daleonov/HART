@@ -517,3 +517,24 @@ HART_TEST ("Bypass")
         .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_GT (esr (input, output).ch ({1, 3}).get (max()), 0.0); }, "Different audio at channels 1, 3")
         .process();
 }
+
+HART_TEST ("Flip")
+{
+    using hart::esr;
+    using hart::max;
+
+    processAudioWith (Flip())
+        .withLabel ("All channels")
+        .withInputSignal (WhiteNoise())
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_TRUE (output.equalsTo (input * (-1.0f), 1e-16)); }, "Polarity flipped")
+        .process();
+    
+    processAudioWith (Flip().atChannels ({0, 2, 4}))
+        .withLabel ("Selected channels")
+        .withInputSignal (WhiteNoise())
+        .withInputChannels (5)
+        .withOutputChannels (5)
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (output, input * (-1.0f)).ch ({0, 2, 4}).get (max()), 0.0, 1e-16); }, "Flipped audio at channels 0, 2 and 4")
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (output, input).ch ({1, 3}).get (max()), 0.0, 1e-16); }, "Bypassed audio at channels 1, 3")
+        .process();
+}
