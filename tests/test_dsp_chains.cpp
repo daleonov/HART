@@ -51,13 +51,9 @@ std::array<double, ArraySize> generateRandomValues (uint_fast32_t seed, double m
     std::mt19937 rng (seed);
     std::uniform_real_distribution<double> dist (min, max);
     std::array<double, ArraySize> values;
-    double sum = 0;
 
     for (auto& value : values)
-    {
-        value = dist(rng);
-        sum += value;
-    }
+        value = dist (rng);
 
     return values;
 }
@@ -86,7 +82,7 @@ HART_TEST ("DSP Chains - Long Chains")
     auto signalWithLongFxChainB = SineWave();
     const uint_fast32_t seed = hart::CLIConfig::getInstance().getRandomSeed();
     const auto gainsDb = generateRandomValues<1000> (seed, -1.0, 1.0);  // A lot of values, but small ones, to avoid large accumulated gains
-    double gainTotalDb = 0.0;
+    hart::AccurateSum<double> gainTotalDb;
 
     for (const double gainDb : gainsDb)
     {
@@ -97,7 +93,7 @@ HART_TEST ("DSP Chains - Long Chains")
     processAudioWith (GainDb (0_dB))
         .withLabel ("Random gains")
         .withInputSignal (signalWithLongFxChainB)
-        .expectTrue (PeaksAt (gainTotalDb))
+        .expectTrue (PeaksAt (gainTotalDb.getValue()))
         .process();
 
     // 3. Random tresholds
