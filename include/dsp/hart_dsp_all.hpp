@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dsp/hart_additive_noise.hpp"
+#include "dsp/hart_bypass.hpp"
 #include "dsp/hart_dsp_function.hpp"
 #include "dsp/hart_dsp_sequence.hpp"
 #include "dsp/hart_gaindb.hpp"

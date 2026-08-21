@@ -493,3 +493,27 @@ HART_TEST ("AdditiveNoise")
         .expectTrue (CorrelationAbove (0.999).atChannel (Channel::right))
         .process();
 }
+
+HART_TEST ("Bypass")
+{
+    using hart::esr;
+    using hart::max;
+
+    processAudioWith (Bypass())
+        .withLabel ("All channels")
+        .withInputSignal (WhiteNoise())
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_TRUE (input.equalsTo (output, 1e-16)); }, "Same audio")
+        .process();
+    
+    // It probably doesn't make too much sense to use "Bypass"
+    // on a subset of channels, but here we go, just to be in
+    // line with the rest of HART DSP effects.
+    processAudioWith (Bypass().atChannels ({0, 2, 4}))
+        .withLabel ("Selected channels")
+        .withInputSignal (WhiteNoise())
+        .withInputChannels (5)
+        .withOutputChannels (5)
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_FLOAT_EQ (esr (input, output).ch ({0, 2, 4}).get (max()), 0.0, 1e-16); }, "Same audio at channels 0, 2 and 4")
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_GT (esr (input, output).ch ({1, 3}).get (max()), 0.0); }, "Different audio at channels 1, 3")
+        .process();
+}
