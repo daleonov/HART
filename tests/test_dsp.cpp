@@ -9,7 +9,7 @@ using hart::MidSideChannel;
 using hart::ratioToDecibels;
 using std::tanh;
 
-HART_TEST ("GainDb - GainDb Values")
+HART_TEST ("DSP - GainDb - GainDb Values")
 {
     processAudioWith (GainDb())
         .withLabel ("Gain as mute button")
@@ -47,7 +47,7 @@ HART_TEST ("GainDb - GainDb Values")
         .process();
 }
 
-HART_TEST ("GainDb - Channel Layouts")
+HART_TEST ("DSP - GainDb - Channel Layouts")
 {
     processAudioWith (GainDb())
         .withLabel ("Mono")
@@ -75,7 +75,7 @@ HART_TEST ("GainDb - Channel Layouts")
         .process();
 }
 
-HART_TEST ("GainDb - Specific Channels")
+HART_TEST ("DSP - GainDb - Specific Channels")
 {
     processAudioWith (GainDb (-3_dB).atChannel (Channel::left))
         .withLabel ("Left Only")
@@ -105,7 +105,7 @@ HART_TEST ("GainDb - Specific Channels")
         .process();
 }
 
-HART_TEST ("HardClip - Threshold Values")
+HART_TEST ("DSP - HardClip - Threshold Values")
 {
     processAudioWith (HardClip())
         .withLabel ("HardClip as mute button")
@@ -136,7 +136,7 @@ HART_TEST ("HardClip - Threshold Values")
         .process();
 }
 
-HART_TEST ("GainLinear - Specific Channels")
+HART_TEST ("DSP - GainLinear - Specific Channels")
 {
     constexpr double gainLinear = 0.1;
     const double expectedPeakDb = hart::ratioToDecibels (gainLinear);
@@ -168,7 +168,7 @@ HART_TEST ("GainLinear - Specific Channels")
         .process();
 }
 
-HART_TEST ("HardClip - Specific Channels")
+HART_TEST ("DSP - HardClip - Specific Channels")
 {
     processAudioWith (HardClip (-3_dB).atChannel (Channel::right))
         .withLabel ("Right Only")
@@ -197,7 +197,7 @@ HART_TEST ("HardClip - Specific Channels")
         .process();
 }
 
-HART_TEST ("Mute")
+HART_TEST ("DSP - Mute")
 {
     processAudioWith (Mute())
         .withLabel ("Mute everything")
@@ -251,7 +251,7 @@ HART_TEST ("Mute")
         .process();
 }
 
-HART_TEST ("StereoToMidSide")
+HART_TEST ("DSP - StereoToMidSide")
 {
     processAudioWith (StereoToMidSide())
         .withLabel ("Side channel cancellation")
@@ -278,7 +278,7 @@ HART_TEST ("StereoToMidSide")
         .process();
 }
 
-HART_TEST ("DSPFunction - Explicit class instantiation")
+HART_TEST ("DSP - DSPFunction - Explicit class instantiation")
 {
     const float expectedSamplePeakDb = ratioToDecibels (tanh (1.0f));
 
@@ -347,7 +347,7 @@ HART_TEST ("DSPFunction - Explicit class instantiation")
         .process();
 }
 
-HART_TEST ("DSPFunction - Implicit class instantiation")
+HART_TEST ("DSP - DSPFunction - Implicit class instantiation")
 {
     const float expectedSamplePeakDb = ratioToDecibels (tanh (1.0f));
 
@@ -430,7 +430,7 @@ HART_TEST ("DSPFunction - Implicit class instantiation")
         .process();
 }
 
-HART_TEST ("TimeShift")
+HART_TEST ("DSP - TimeShift")
 {
     // TODO: Do a more robust test when latency-related matcher is introduced
 
@@ -452,7 +452,7 @@ HART_TEST ("TimeShift")
     }
 }
 
-HART_TEST ("AdditiveNoise")
+HART_TEST ("DSP - AdditiveNoise")
 {
     processAudioWith (AdditiveNoise (ratioToDecibels (0.25)))
         .withLabel ("Correct levels")
@@ -494,7 +494,7 @@ HART_TEST ("AdditiveNoise")
         .process();
 }
 
-HART_TEST ("Bypass")
+HART_TEST ("DSP - Bypass")
 {
     using hart::esr;
     using hart::max;
@@ -518,7 +518,7 @@ HART_TEST ("Bypass")
         .process();
 }
 
-HART_TEST ("Flip")
+HART_TEST ("DSP - Flip")
 {
     using hart::esr;
     using hart::max;

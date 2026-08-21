@@ -2,7 +2,7 @@
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
 
-HART_TEST ("DSPSequence - Rendering")
+HART_TEST ("DSP - DSPSequence - Rendering")
 {
     processAudioWith (HART_DSP_SEQUENCE (GainDb (-2_dB) >> GainDb (-4_dB)))
         .withLabel ("Gain accumulation - Short chain")
@@ -53,7 +53,7 @@ HART_TEST ("DSPSequence - Rendering")
         .process();
 }
 
-HART_TEST ("DSPSequence - Container properties")
+HART_TEST ("DSP - DSPSequence - Container properties")
 {
     auto dspSequence = HART_DSP_SEQUENCE (GainDb (-2_dB));
     HART_EXPECT_TRUE (dspSequence.size() == 1);
@@ -110,7 +110,7 @@ HART_TEST ("DSPSequence - Container properties")
     HART_EXPECT_TRUE (floatsEqual (-6_dB, dspSomewhereInTheMiddleOfTheChainButNotAnymore->getValue (HardClip::thresholdDb)));
 }
 
-HART_TEST ("DSPSequence - Deep copy")
+HART_TEST ("DSP - DSPSequence - Deep copy")
 {
     auto nestedDspSequence = HART_DSP_SEQUENCE (GainDb (-2_dB) >> GainDb (-4_dB));
 
