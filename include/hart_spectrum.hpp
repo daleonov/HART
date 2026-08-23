@@ -101,6 +101,16 @@ public:
         return spectrum;
     }
 
+    /// @brief Common values for `beta` argument in the `colouredNoise()` factory
+    enum BetaFor
+    {
+        whiteNoise = 0,  ///< `beta` value for white noise, for the `colouredNoise()` factory
+        pinkNoise = -1,  ///< `beta` value for pink noise, for the `colouredNoise()` factory
+        brownNoise = -2,  ///< `beta` value for brown (a.k.a. red, or Brownian) noise, for the `colouredNoise()` factory
+        blueNoise = 1,  ///< `beta` value for blue noise, for the `colouredNoise()` factory
+        violetNoise = 2  ///< `beta` value for violet noise, for the `colouredNoise()` factory
+    };
+
     /// @brief Creates deterministic coloured noise in the frequency domain
     /// @details `beta` is interpreted as a power-spectrum exponent, so the
     /// stored bin magnitudes follow:
