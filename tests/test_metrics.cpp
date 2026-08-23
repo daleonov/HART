@@ -1681,7 +1681,7 @@ HART_TEST ("Metrics - SNRa - Units")
     HART_EXPECT_FLOAT_EQ (snraDb, powerToDecibels (snraRatio), 1e-16) << "Decibels are calculated as power, and not voltage";
 }
 
-HART_TEST ("Metrics - Spectral Log-Log Slope")
+HART_TEST ("Metrics - Spectral Log-Log Slope - Coloured noise")
 {
     using AnalysisContext = hart::AnalysisContext<float>;
     using hart::Spectrum;
@@ -1762,4 +1762,32 @@ HART_TEST ("Metrics - Spectral Log-Log Slope")
             "Slope ~= 0"
             )
         .process();
+}
+
+HART_TEST ("Metrics - Spectral Log-Log Slope - Units")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::Spectrum;
+    using hart::spectralLogLogSlope;
+    using hart::powerToDecibels;
+
+    AudioBuffer audioBuffer;
+    processAudioWith (Bypass())
+        .withLabel ("Pink Noise")
+        .withInputSignal (Spectrum::colouredNoise (Spectrum::ColouredNoise::pink()).toSignal<float>())
+        .inMono()
+        .saveOutputTo (audioBuffer)
+        .process();
+
+    const Spectrum spectrum (audioBuffer);
+    const double slopeDefault = spectralLogLogSlope (spectrum);
+    const double slopeNative = spectralLogLogSlope (spectrum).as (native);
+    const double slopeUnitless = spectralLogLogSlope (spectrum).as (none);
+    const double slopeDbPerOctave = spectralLogLogSlope (spectrum).as (dB_per_octave);
+    const double threeDb = powerToDecibels (2.0);
+
+    HART_EXPECT_FLOAT_EQ (slopeDefault, slopeNative, 1e-8) << "Default is same as native unit";
+    HART_EXPECT_FLOAT_EQ (slopeNative, slopeUnitless, 1e-8) << "Native unit is unitless";
+    HART_EXPECT_FLOAT_NE (slopeUnitless, slopeDbPerOctave, 1e-8) << "Unitless and dB per octave have different numeric values";
+    HART_EXPECT_FLOAT_EQ (slopeDbPerOctave, slopeUnitless * threeDb, 1e-8) << "dB per octave is converted from unitless slope correctly";
 }

@@ -34,9 +34,6 @@ inline MetricQuery<double> spectralLogLogSlope (const Spectrum& spectrum, double
         hassert (channel < spectrum.getNumChannels());
         hassert (! std::isnan (spectrum.getSampleRateHz()));
 
-        if (requestedUnit != Unit::native && requestedUnit != Unit::none)
-            HART_THROW_OR_RETURN (hart::UnitError, "Unsupported unit", hart::nan<double>());
-
         const std::pair<size_t, size_t> binIndices = spectrum.getBinIndices (slice);
         const size_t startBin = std::max<size_t> (1, binIndices.first);
         const size_t stopBin = binIndices.second;
@@ -55,7 +52,7 @@ inline MetricQuery<double> spectralLogLogSlope (const Spectrum& spectrum, double
 
         std::vector<LogLogPoint> logLogPoints;
         const double bandRatio = centsToRatio (smoothingCents);
-        const double stopFrequencyHz = spectrum.getBinFrequencyHz (stopBin);
+        const double stopFrequencyHz = spectrum.getBinFrequencyHz (stopBin - 1);
         double currentBandStartHz = spectrum.getBinFrequencyHz (startBin);
         double currentBandEndHz = currentBandStartHz * bandRatio;
 
@@ -125,7 +122,22 @@ inline MetricQuery<double> spectralLogLogSlope (const Spectrum& spectrum, double
 
         // TODO: Slope can be in db per oct, so add support for dB/oct at some point:
         // slope_db_per_oct = beta * 10 * log10(2) 
-        return covariance.getValue() / varianceX.getValue();
+        const double slopeUnitless = covariance.getValue() / varianceX.getValue();
+        constexpr double threeDb = 3.010299956639812;  // 10 * log10 (2)
+
+        switch (requestedUnit)
+        {
+            case Unit::native:
+            case Unit::none: return slopeUnitless;
+
+            case Unit::dB_per_octave: return slopeUnitless * threeDb;
+
+            default: HART_THROW_OR_RETURN (hart::UnitError, "Unsupported unit",  nan<double>());
+        }
+        
+        if (requestedUnit != Unit::native && requestedUnit != Unit::none)
+            HART_THROW_OR_RETURN (hart::UnitError, "Unsupported unit", hart::nan<double>());
+
     };
 
     const size_t numChannels = spectrum.getNumChannels();
