@@ -22,6 +22,7 @@ enum class Unit
     native,  ///< Default (native) unit of whatever returns some value 
     linear,  ///< Value of a sample (voltage) in a linear domain
     dB,  ///< Value of something in decibels. Can represent voltage, power, or a domain-specific unit like "LUFS" or "dB TP"
+    dB_per_octave,  ///< Slope of something in decibels per octave
     frames,  ///< Value of something in frames (samples)
     seconds,  ///< Time stamps, intervals, durations
     Hz,  ///< Hertz
@@ -38,6 +39,7 @@ enum class Unit
     constexpr hart::Unit native = hart::Unit::native; \
     constexpr hart::Unit linear = hart::Unit::linear; \
     constexpr hart::Unit dB = hart::Unit::dB; \
+    constexpr hart::Unit dB_per_octave = hart::Unit::dB_per_octave; \
     constexpr hart::Unit frames = hart::Unit::frames; \
     constexpr hart::Unit seconds = hart::Unit::seconds; \
     constexpr hart::Unit Hz = hart::Unit::Hz; \
@@ -63,6 +65,8 @@ constexpr double operator"" _dB (long double val) { return static_cast<double> (
 constexpr double operator"" _dB (unsigned long long int val) { return static_cast<double> (val); }
 constexpr double operator"" _dBTP (long double val) { return static_cast<double> (val); }
 constexpr double operator"" _dBTP (unsigned long long int val) { return static_cast<double> (val); }
+constexpr double operator"" _dB_per_octave (long double val) { return static_cast<double> (val); }
+constexpr double operator"" _dB_per_octave (unsigned long long int val) { return static_cast<double> (val); }
 constexpr double operator"" _Hz (long double val) { return static_cast<double> (val); }
 constexpr double operator"" _Hz (unsigned long long int val) { return static_cast<double> (val); }
 constexpr double operator"" _kHz (long double val) { return static_cast<double> (1e3 * val); }
