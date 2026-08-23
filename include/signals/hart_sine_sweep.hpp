@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "hart_cliconfig.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_precision.hpp"
 #include "signals/hart_signal.hpp"
@@ -38,7 +39,7 @@ public:
     /// @see hart::Loop
     /// @param initialPhaseRadians Initial phase of the signal
     SineSweep (
-    	double durationSeconds = 1.0,
+    	double durationSeconds = CLIConfig::getInstance().getDefaultRenderDurationSeconds(),
         double startFrequencyHz = 20.0,
         double endFrequencyHz = 20.0e3,
         SweepType type = SweepType::log,
