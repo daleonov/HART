@@ -159,10 +159,16 @@ inline static size_t roundToSizeT (SampleType x)
     return static_cast<size_t> (x + (SampleType) 0.5);
 }
 
-/// @brief Anns an offset in cents to a frequency in Hz
+/// @brief Converts frequency difference in cents to frequence ratio
+inline double centsToRatio (double cents)
+{
+    return std::pow (2.0, cents / 1200.0);
+}
+
+/// @brief Adds an offset in cents to a frequency in Hz
 inline double addCents (double baseFrequencyHz, double cents)
 {
-    return baseFrequencyHz * std::pow (2.0, cents / 1200.0);
+    return baseFrequencyHz * centsToRatio (cents);
 }
 
 /// @brief Keeps phase in 0..twoPi range
