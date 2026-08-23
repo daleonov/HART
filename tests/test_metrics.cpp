@@ -1698,17 +1698,9 @@ HART_TEST ("Metrics - Spectral Log-Log Slope")
     const size_t renderDurationFrames = hart::nextPowerOfTwo (minRenderDurationFrames);
     const double renderDurationSeconds = static_cast<double> (renderDurationFrames) / sampleRateHz;
 
-    auto pinkNoiseFromIdealSpectrum = Spectrum::colouredNoise (
-        Spectrum::BetaFor::pinkNoise,
-        cliConfig.getRandomSeed(),
-        20_Hz,
-        cliConfig.getDefaultNumInputChannels(),
-        renderDurationFrames
-        ).toSignal<float>();
-
     processAudioWith (Bypass())
         .withLabel ("Pink Noise")
-        .withInputSignal (std::move (pinkNoiseFromIdealSpectrum))
+        .withInputSignal (Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withDuration (renderDurationFrames)).toSignal<float>())
         .withDuration (renderDurationSeconds)
         .expectTrue (
             [] (AnalysisContext context)
@@ -1719,17 +1711,9 @@ HART_TEST ("Metrics - Spectral Log-Log Slope")
             )
         .process();
 
-    auto whiteNoiseFromIdealSpectrum = Spectrum::colouredNoise (
-        Spectrum::BetaFor::whiteNoise,
-        cliConfig.getRandomSeed(),
-        20_Hz,
-        cliConfig.getDefaultNumInputChannels(),
-        renderDurationFrames
-        ).toSignal<float>();
-
     processAudioWith (Bypass())
         .withLabel ("White Noise generated in frequency domain")
-        .withInputSignal (std::move (whiteNoiseFromIdealSpectrum))
+        .withInputSignal (Spectrum::colouredNoise (Spectrum::ColouredNoise::white().withDuration (renderDurationFrames)).toSignal<float>())
         .withDuration (renderDurationSeconds)
         .expectTrue (
             [] (AnalysisContext context)

@@ -112,6 +112,158 @@ public:
         violetNoise = 2  ///< `beta` value for violet noise, for the `colouredNoise()` factory
     };
 
+    /// @brief Options for `colouredNoise()` method
+    class ColouredNoise
+    {
+        public:
+            /// @brief Creates ColouredNoise with a custom `beta` value
+            /// @details For common noise types, use provided factory methods:
+            ///
+            /// Noise type          | Method     | `beta`
+            /// --------------------|------------|-------
+            /// White               | `white()`  |  0
+            /// Pink                | `pink()`   | −1
+            /// Brown/Red/Brownian  | `brown()`  | −2
+            /// Blue                | `blue()`   | +1
+            /// Violet              | `violet()` | +2
+            ///
+            /// @param beta Power-spectrum exponent (slope):
+            /// @return Chainable `ColouredNoise` options instance
+            explicit ColouredNoise (float beta)
+            {
+                m_beta = beta;
+            }
+
+            /// @brief Creates ColouredNoise instance with `beta` value for white noise
+            /// @return Chainable `ColouredNoise` options instance
+            static ColouredNoise white()
+            {
+                return ColouredNoise (0.0);
+            }
+
+            /// @brief Creates ColouredNoise instance with `beta` value for pink noise
+            /// @return Chainable `ColouredNoise` options instance
+            static ColouredNoise pink()
+            {
+                return ColouredNoise (-1.0);
+            }
+
+            /// @brief Creates ColouredNoise instance with `beta` value for brown (a.k.a. red, or Brownian) noise
+            /// @return Chainable `ColouredNoise` options instance
+            static ColouredNoise brown()
+            {
+                return ColouredNoise (-2.0);
+            }
+
+            /// @brief Creates ColouredNoise instance with `beta` value for blue noise
+            /// @return Chainable `ColouredNoise` options instance
+            static ColouredNoise blue()
+            {
+                return ColouredNoise (1.0);
+            }
+
+            /// @brief Creates ColouredNoise instance with `beta` value for violet noise
+            /// @return Chainable `ColouredNoise` options instance
+            static ColouredNoise violet()
+            {
+                return ColouredNoise (2.0);
+            }
+
+            /// @brief Sets random seed
+            /// @param randomSeed RNG seed. While magnitudes will have ideal
+            /// values, the real and imaginary parts of bins will be randomized.
+            ///
+            /// Defaults to global default random seed.
+            /// @return Chainable `ColouredNoise` options instance
+            ColouredNoise withRandomSeed (uint_fast32_t randomSeed)
+            {
+                m_randomSeed = randomSeed;
+                return *this;
+            }
+
+            /// @brief Sets the lowest meaningful frequency in the spectrum
+            /// @param lowCutoffFrequencyHz The starting frequency of the noise.
+            /// Defaults to 20 Hz.
+            /// @note Bins below it will be zero. Must be at least 1 Hz.
+            /// @return Chainable `ColouredNoise` options instance
+            ColouredNoise withLowCutoff (double lowCutoffFrequencyHz)
+            {
+                if (lowCutoffFrequencyHz < 1.0)
+                    HART_THROW_OR_RETURN (hart::ValueError, "Low cutoff frequency should be at least 1 Hz", *this);
+
+                m_lowCutoffFrequencyHz = lowCutoffFrequencyHz;
+                return *this;
+            }
+
+            /// @brief Sets number of channels
+            /// @note Each channel will contain a difference noise instance
+            /// @param numChannels Number of channels in the generated spectrum
+            ///
+            /// Defaults to global default number of input channels.
+            ColouredNoise withNumChannels (size_t numChannels)
+            {
+                m_numChannels = numChannels;
+                return *this;
+            }
+
+            /// @brief Sets duration of time-domain audio that spectrum will represent
+            /// @param signalDurationFrames Desired duration of the signal this
+            /// noise represents. Can be arbitrary. If not a power of 2, the
+            /// spectrum will be padded to the next power of 2, but if converted
+            /// to time domain via `toAudioBuffer()`, the desired duration will
+            /// be respected.
+            ///
+            /// Defaults to global default render duration.
+            /// @return Chainable `ColouredNoise` options instance
+            ColouredNoise withDuration (size_t signalDurationFrames)
+            {
+                m_signalDurationFrames = signalDurationFrames;
+                return *this;
+            }
+
+            /// @brief Sets sample rate
+            /// @param sampleRateHz Sample rate of the generated spectrum in Hertz.
+            ///
+            /// Defaults to global default sample rate.
+            /// @return Chainable `ColouredNoise` options instance
+            ColouredNoise withSampleRate (double sampleRateHz)
+            {
+                if (sampleRateHz < 0.0 || floatsEqual (sampleRateHz, 0.0) || std::isnan (sampleRateHz))
+                    HART_THROW_OR_RETURN (hart::SampleRateError, "Invalid sample rate value", *this);
+
+                m_sampleRateHz = sampleRateHz;
+                return *this;
+            }
+
+            ///@private
+            double getBeta() { return m_beta; }
+
+            ///@private
+            double getLowCutoffHz() { return m_lowCutoffFrequencyHz; }
+
+            ///@private
+            double getSampleRateHz() { return m_sampleRateHz; }
+
+            ///@private
+            uint_fast32_t getRandomSeed() { return m_randomSeed; }
+
+            ///@private
+            size_t getNumChannels() { return m_numChannels; }
+
+            ///@private
+            size_t getDurationFrames() { return m_signalDurationFrames; }
+
+        private:
+            double m_beta = 0.0;
+            double m_lowCutoffFrequencyHz = 20.0;
+            double m_sampleRateHz = CLIConfig::getInstance().getDefaultSampleRateHz();
+            uint_fast32_t m_randomSeed = CLIConfig::getInstance().getRandomSeed();
+            size_t m_numChannels = CLIConfig::getInstance().getDefaultNumInputChannels();
+            size_t m_signalDurationFrames = CLIConfig::getInstance().getDefaultRenderDurationFrames();
+
+            ColouredNoise() = default;  // Beta must always be explicitly defined
+    };
+
     /// @brief Creates deterministic coloured noise in the frequency domain
     /// @details `beta` is interpreted as a power-spectrum exponent, so the
     /// stored bin magnitudes follow:
@@ -120,37 +272,17 @@ public:
     /// @f]
     /// (|X(f)| ~ f_rel ** (beta / 2)),
     ///
-    /// where f_rel = frequency / lowCutoffFrequencyHz.
-    /// @param beta Power-spectrum exponent (slope):
-    ///
-    /// Noise type | beta
-    /// -----------|------
-    /// white      |  0
-    /// pink       | −1
-    /// brown/red  | −2
-    /// blue       | +1
-    /// violet     | +2
-    /// @param lowCutoffFrequencyHz The starting frequency of the noise.
-    /// Bins below it will be zero. Must be at least 1 Hz.
-    /// @param numChannels Number of channels in the generated spectrum
-    /// @param signalDurationFrames Desired duration of the signal this
-    /// noise represents. Can be arbitrary. If not a power of 2, the
-    /// spectrum will be padded to the next power of 2, but if converted
-    /// to time domain via `toAudioBuffer()`, the desired duration will
-    /// be respected.
-    /// @param sampleRateHz Sample rate of the generated spectrum in Hertz
-    /// @param randomSeed RNG seed. While magnitudes will have ideal
-    /// values, the real and imaginary parts of bins will be randomized.
-    static Spectrum colouredNoise (double beta, uint_fast32_t randomSeed = CLIConfig::getInstance().getRandomSeed(), double lowCutoffFrequencyHz = 20.0, size_t numChannels = CLIConfig::getInstance().getDefaultNumInputChannels(), size_t signalDurationFrames = CLIConfig::getInstance().getDefaultRenderDurationFrames(), double sampleRateHz = CLIConfig::getInstance().getDefaultSampleRateHz())
+    /// where f_rel = frequency / lowCutoffHz.
+    /// @param options `ColouredNoise` containing 
+    static Spectrum colouredNoise (ColouredNoise options)
     {
-        if (lowCutoffFrequencyHz < 1.0)
-            HART_THROW_OR_RETURN (hart::ValueError, "Low cutoff frequency should be at least 1 Hz", Spectrum::zeros (numChannels, signalDurationFrames, sampleRateHz));
-
-        Spectrum spectrum = Spectrum::zeros (numChannels, signalDurationFrames, sampleRateHz);
-        std::mt19937 randomNumberGenerator (randomSeed);
+        Spectrum spectrum = Spectrum::zeros (options.getNumChannels(), options.getDurationFrames(), options.getSampleRateHz());
+        std::mt19937 randomNumberGenerator (options.getRandomSeed());
         std::uniform_real_distribution<double> phaseDistribution (0.0, hart::twoPi);
         std::uniform_int_distribution<int> signDistribution (0, 1);
 
+        const double lowCutoffHz = options.getLowCutoffHz();
+        const double beta = options.getBeta();
         const double magnitudeExponent = beta / 2.0;
 
         for (size_t channel = 0; channel < spectrum.m_numChannels; ++channel)
@@ -159,13 +291,13 @@ public:
             {
                 const double frequencyHz = spectrum.getBinFrequencyHz (bin);
 
-                if (frequencyHz < lowCutoffFrequencyHz || (frequencyHz == 0.0 && beta < 0.0))
+                if (frequencyHz < lowCutoffHz || (frequencyHz == 0.0 && beta < 0.0))
                 {
                     spectrum.m_data[channel][bin] = std::complex<double> (0.0, 0.0);
                     continue;
                 }
 
-                const double magnitude = std::pow (frequencyHz / lowCutoffFrequencyHz, magnitudeExponent);
+                const double magnitude = std::pow (frequencyHz / lowCutoffHz, magnitudeExponent);
 
                 if (bin == 0 || (spectrum.m_fftSize % 2 == 0 && bin == spectrum.m_numBins - 1))
                 {

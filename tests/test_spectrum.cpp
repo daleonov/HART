@@ -30,11 +30,12 @@ HART_TEST ("Spectrum - Spectrum::zeros() converts to a silent AudioBuffer")
 
 HART_TEST ("Spectrum - Spectrum::colouredNoise() creates ideal magnitudes")
 {
+    using hart::Spectrum;
     constexpr double lowCutoffFrequencyHz = 20_Hz;
 
-    const hart::Spectrum whiteNoiseSpectrum = hart::Spectrum::colouredNoise (0.0, lowCutoffFrequencyHz);
-    const hart::Spectrum pinkNoiseSpectrum = hart::Spectrum::colouredNoise (-1.0, lowCutoffFrequencyHz);
-    const hart::Spectrum brownNoiseSpectrum = hart::Spectrum::colouredNoise (-2.0, lowCutoffFrequencyHz);
+    const Spectrum whiteNoiseSpectrum = Spectrum::colouredNoise (Spectrum::ColouredNoise::white().withLowCutoff (lowCutoffFrequencyHz));
+    const Spectrum pinkNoiseSpectrum = Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withLowCutoff (lowCutoffFrequencyHz));
+    const Spectrum brownNoiseSpectrum = Spectrum::colouredNoise (Spectrum::ColouredNoise::brown().withLowCutoff (lowCutoffFrequencyHz));
 
     const size_t numChannels = whiteNoiseSpectrum.getNumChannels();
     const size_t cutoffBin = whiteNoiseSpectrum.findClosestBin (lowCutoffFrequencyHz);
@@ -54,12 +55,12 @@ HART_TEST ("Spectrum - Spectrum::colouredNoise() creates ideal magnitudes")
 
 HART_TEST ("Spectrum - Spectrum::colouredNoise() is deterministic")
 {
-    constexpr double beta = -1.0;
+    using hart::Spectrum;
     constexpr double lowCutoffFrequencyHz = 20_Hz;
 
-    const hart::Spectrum spectrumA = hart::Spectrum::colouredNoise (beta, 123, lowCutoffFrequencyHz);
-    const hart::Spectrum spectrumB = hart::Spectrum::colouredNoise (beta, 123, lowCutoffFrequencyHz);
-    const hart::Spectrum spectrumC = hart::Spectrum::colouredNoise (beta, 456, lowCutoffFrequencyHz);
+    const Spectrum spectrumA = Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withRandomSeed (123).withLowCutoff (lowCutoffFrequencyHz));
+    const Spectrum spectrumB = Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withRandomSeed (123).withLowCutoff (lowCutoffFrequencyHz));
+    const Spectrum spectrumC = Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withRandomSeed (456).withLowCutoff (lowCutoffFrequencyHz));
 
     const size_t numChannels = spectrumA.getNumChannels();
     const size_t cutoffBin = spectrumA.findClosestBin (lowCutoffFrequencyHz);
@@ -70,7 +71,8 @@ HART_TEST ("Spectrum - Spectrum::colouredNoise() is deterministic")
 
 HART_TEST ("Spectrum - Spectrum::colouredNoise() converts to non-silent AudioBuffer")
 {
-    const hart::Spectrum spectrum = hart::Spectrum::colouredNoise (-1.0, 20.0);
+    using hart::Spectrum;
+    const Spectrum spectrum = Spectrum::colouredNoise (Spectrum::ColouredNoise::pink());
 
     processAudioWith (GainDb (0_dB))
         .withInputSignal (AudioBufferSignal (spectrum.toAudioBuffer<float>()))
