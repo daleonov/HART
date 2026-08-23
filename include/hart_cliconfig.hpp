@@ -99,33 +99,33 @@ public:
     CLI::App& getCLIApp() { return app; }
 
     /// @brief Get data root path set by a "`--data-root-path`,`-d`" argument
-    std::string getDataRootPath() { return m_dataRootPath; }
+    std::string getDataRootPath() const { return m_dataRootPath; }
 
     /// @brief Gets random seed set by a "`--seed`/`-s`" argument
     /// @details You can use it in your test cases to keep your own random-ness dependent on the global random seed
-    uint_fast32_t getRandomSeed() { return m_seed; }
+    uint_fast32_t getRandomSeed() const { return m_seed; }
 
     /// @see linPrecision
-    int getLinDecimals() { return m_linDecimals; }
+    int getLinDecimals() const { return m_linDecimals; }
 
     /// @see dbPrecision
-    int getDbDecimals() { return m_dbDecimals; }
+    int getDbDecimals() const { return m_dbDecimals; }
 
     /// @see secPrecision
-    int getSecDecimals() { return m_secDecimals; }
+    int getSecDecimals() const { return m_secDecimals; }
 
     /// @see hzPrecision
-    int getHzDecimals() { return m_hzDecimals; }
+    int getHzDecimals() const { return m_hzDecimals; }
 
     /// @see radPrecision
-    int getRadDecimals() { return m_radDecimals; }
+    int getRadDecimals() const { return m_radDecimals; }
 
     /// @see centsPrecision
-    int getCentsDecimals() { return m_centsDecimals; }
+    int getCentsDecimals() const { return m_centsDecimals; }
 
-    bool shouldRunGenerators() { return m_runGeneratorsNotTests; }
-    bool shouldShuffleTasks() { return m_shuffle; }
-    std::string& getTags() { return m_tags; }
+    bool shouldRunGenerators() const { return m_runGeneratorsNotTests; }
+    bool shouldShuffleTasks() const { return m_shuffle; }
+    std::string getTags() const { return m_tags; }
 
     size_t getGefaultBlockSizeFrames() const { return m_defaultBlockSizeFrames; }
     size_t getDefaultNumInputChannels() const { return m_defaultNumInputChannels; }
