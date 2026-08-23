@@ -531,7 +531,7 @@ HART_TEST ("Metrics - Lag At Max Cross Correlation")
 
         processAudioWith (TimeShift (timeShiftSeconds))
             .withLabel (HART_STR ("Time shift = " << timeShiftSeconds << " s"))
-            .withInputSignal (SineSweep())
+            .withInputSignal (SineSweep (1_s))
             .withDuration (renderDurationSeconds)
             .expectTrue (
                 [timeShiftSeconds] (const AudioBuffer& input, const AudioBuffer& output)
@@ -1679,4 +1679,103 @@ HART_TEST ("Metrics - SNRa - Units")
     HART_EXPECT_FLOAT_EQ (snraNative, snraDefault, 1e-16) << "Native is the default";
     HART_EXPECT_FLOAT_EQ (snraRatio, snraNative, 1e-16) << "Ratio is the same as Native";
     HART_EXPECT_FLOAT_EQ (snraDb, powerToDecibels (snraRatio), 1e-16) << "Decibels are calculated as power, and not voltage";
+}
+
+HART_TEST ("Metrics - Spectral Log-Log Slope")
+{
+    using AnalysisContext = hart::AnalysisContext<float>;
+    using hart::Spectrum;
+    using hart::Slice;
+    using hart::spectralLogLogSlope;
+
+    const hart::CLIConfig& cliConfig = hart::CLIConfig::getInstance();
+    
+    // We want a long enough time to get a statistically significant reading, and also
+    // at power-of-2 length, so that it's not getting padded or truncated during FFT/IFFT
+    const double minRenderDurationSeconds = 2_s;
+    const double sampleRateHz = cliConfig.getDefaultSampleRateHz();
+    const size_t minRenderDurationFrames = hart::roundToSizeT (minRenderDurationSeconds * sampleRateHz);
+    const size_t renderDurationFrames = hart::nextPowerOfTwo (minRenderDurationFrames);
+    const double renderDurationSeconds = static_cast<double> (renderDurationFrames) / sampleRateHz;
+
+    auto pinkNoiseFromIdealSpectrum = Spectrum::colouredNoise (
+        Spectrum::BetaFor::pinkNoise,
+        cliConfig.getRandomSeed(),
+        20_Hz,
+        cliConfig.getDefaultNumInputChannels(),
+        renderDurationFrames
+        ).toSignal<float>();
+
+    processAudioWith (Bypass())
+        .withLabel ("Pink Noise")
+        .withInputSignal (std::move (pinkNoiseFromIdealSpectrum))
+        .withDuration (renderDurationSeconds)
+        .expectTrue (
+            [] (AnalysisContext context)
+            {
+                return HART_FLOAT_EQ (spectralLogLogSlope (context.outputSpectrum()).at (Slice::freq (20_Hz, 20_kHz)).get(), -1.0, 0.005);
+            },
+            "Slope ~= -1"
+            )
+        .process();
+
+    auto whiteNoiseFromIdealSpectrum = Spectrum::colouredNoise (
+        Spectrum::BetaFor::whiteNoise,
+        cliConfig.getRandomSeed(),
+        20_Hz,
+        cliConfig.getDefaultNumInputChannels(),
+        renderDurationFrames
+        ).toSignal<float>();
+
+    processAudioWith (Bypass())
+        .withLabel ("White Noise generated in frequency domain")
+        .withInputSignal (std::move (whiteNoiseFromIdealSpectrum))
+        .withDuration (renderDurationSeconds)
+        .expectTrue (
+            [] (AnalysisContext context)
+            {
+                return HART_FLOAT_EQ (spectralLogLogSlope (context.outputSpectrum()).at (Slice::freq (20_Hz, 20_kHz)).get(), 0.0, 0.005);
+            },
+            "Slope ~= 0"
+            )
+        .process();
+
+    processAudioWith (Bypass())
+        .withLabel ("White Noise generated in time domain")
+        .withInputSignal (WhiteNoise())
+        .withDuration (renderDurationSeconds)
+        .expectTrue (
+            [] (AnalysisContext context)
+            {
+                return HART_FLOAT_EQ (spectralLogLogSlope (context.outputSpectrum()).at (Slice::freq (20_Hz, 20_kHz)).get(), 0.0, 0.05);
+            },
+            "Slope ~= 0, with loose tolerance"
+            )
+        .process();
+
+    processAudioWith (Bypass())
+        .withLabel ("Linear Sine Sweep")
+        .withInputSignal (SineSweep (renderDurationSeconds).withType (SineSweep::SweepType::linear))
+        .withDuration (renderDurationSeconds)
+        .expectTrue (
+            [] (AnalysisContext context)
+            {
+                return HART_FLOAT_EQ (spectralLogLogSlope (context.outputSpectrum()).at (Slice::freq (20_Hz, 20_kHz)).get(), 0.0, 0.1);
+            },
+            "Slope ~= 0"
+            )
+        .process();
+
+    processAudioWith (Bypass())
+        .withLabel ("Log Sine Sweep")
+        .withInputSignal (SineSweep (renderDurationSeconds).withType (SineSweep::SweepType::log))
+        .withDuration (renderDurationSeconds)
+        .expectTrue (
+            [] (AnalysisContext context)
+            {
+                return HART_FLOAT_EQ (spectralLogLogSlope (context.outputSpectrum()).at (Slice::freq (20_Hz, 20_kHz)).get(), -1.0, 0.1);
+            },
+            "Slope ~= 0"
+            )
+        .process();
 }

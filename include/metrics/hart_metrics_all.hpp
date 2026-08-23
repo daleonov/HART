@@ -17,6 +17,7 @@
 #include "metrics/hart_snra.hpp"
 #include "metrics/hart_spectral_centroid.hpp"
 #include "metrics/hart_spectral_flatness.hpp"
+#include "metrics/hart_spectral_log_log_slope.hpp"
 #include "metrics/hart_thd.hpp"
 #include "metrics/hart_true_peak.hpp"
 #include "metrics/hart_zcr.hpp"
