@@ -1692,7 +1692,7 @@ HART_TEST ("Metrics - Spectral Log-Log Slope")
     
     // We want a long enough time to get a statistically significant reading, and also
     // at power-of-2 length, so that it's not getting padded or truncated during FFT/IFFT
-    const double minRenderDurationSeconds = 2_s;
+    const double minRenderDurationSeconds = 1_s;
     const double sampleRateHz = cliConfig.getDefaultSampleRateHz();
     const size_t minRenderDurationFrames = hart::roundToSizeT (minRenderDurationSeconds * sampleRateHz);
     const size_t renderDurationFrames = hart::nextPowerOfTwo (minRenderDurationFrames);
