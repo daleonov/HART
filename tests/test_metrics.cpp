@@ -1791,3 +1791,66 @@ HART_TEST ("Metrics - Spectral Log-Log Slope - Units")
     HART_EXPECT_FLOAT_NE (slopeUnitless, slopeDbPerOctave, 1e-8) << "Unitless and dB per octave have different numeric values";
     HART_EXPECT_FLOAT_EQ (slopeDbPerOctave, slopeUnitless * threeDb, 1e-8) << "dB per octave is converted from unitless slope correctly";
 }
+
+HART_TEST ("Metrics - Log Spectral Distance")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::Normalise;
+    using hart::Slice;
+    using hart::Spectrum;
+    using hart::logSpectralDistance;
+
+    // 1. A few ideal spectra, constructed in frequency domain
+
+    const Spectrum spectrumA = Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withRandomSeed (123));
+    const Spectrum spectrumB = Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withRandomSeed (456));
+    const Spectrum spectrumC = Spectrum::colouredNoise (Spectrum::ColouredNoise::white());
+
+    HART_EXPECT_FLOAT_EQ (logSpectralDistance (spectrumA, spectrumB).get(), 0_dB, 1e-8)
+        << "Different audio, but identical FFT bin magnitudes";
+
+    HART_EXPECT_FLOAT_NE (logSpectralDistance (spectrumA, spectrumC).get(), 0_dB, 1e-8)
+        << "Different spectra";
+
+    const Spectrum spectrumD = spectrumA * 0.5;
+
+    HART_EXPECT_FLOAT_EQ (logSpectralDistance (spectrumA, spectrumD).at (Slice::freq (20_Hz, 20_kHz)).get(), 6.02_dB, 0.01_dB)
+        << "2x scaled spectrum - gain matters";
+
+    HART_EXPECT_FLOAT_EQ (logSpectralDistance (spectrumA, spectrumD, Normalise::yes).at (Slice::freq (20_Hz, 20_kHz)).get(), 0_dB, 0.01_dB)
+        << "2x scaled spectrum - gain doesn't matter if levels are normalised";
+
+    // 2. White noise constructed in time domain vs white noise constructed in freq domain
+
+    // Relatively long signal, with power-of-two duration in frames
+    const hart::CLIConfig& cliConfig = hart::CLIConfig::getInstance();
+    const double minRenderDurationSeconds = 1_s;
+    const double sampleRateHz = cliConfig.getDefaultSampleRateHz();
+    const size_t minRenderDurationFrames = hart::roundToSizeT (minRenderDurationSeconds * sampleRateHz);
+    const size_t renderDurationFrames = hart::nextPowerOfTwo (minRenderDurationFrames);
+    const double renderDurationSeconds = static_cast<double> (renderDurationFrames) / sampleRateHz;
+
+    AudioBuffer audioBuffer;
+    processAudioWith (Bypass())
+        .withInputSignal (WhiteNoise())
+        .withDuration (renderDurationSeconds)
+        .saveOutputTo (audioBuffer)
+        .process();
+    const Spectrum spectrumE (audioBuffer);
+    const Spectrum spectrumF = Spectrum::colouredNoise (Spectrum::ColouredNoise::white().withDuration (renderDurationFrames));
+
+    HART_EXPECT_FLOAT_EQ (logSpectralDistance (spectrumE, spectrumF, Normalise::yes).at (Slice::freq (20_Hz, 20_kHz)).get(), 0_dB, 3_dB)
+        << "Two different white noise generators should yield similar spectra, within 3 dB tolerance";
+
+    // 3. Linear sine sweep sprctrum vs ideal white noise spectrum
+
+    processAudioWith (Bypass())
+        .withInputSignal (SineSweep().withType (SineSweep::SweepType::linear))
+        .withDuration (renderDurationSeconds)
+        .saveOutputTo (audioBuffer)
+        .process();
+    const Spectrum spectrumG (audioBuffer);
+
+    HART_EXPECT_FLOAT_EQ (logSpectralDistance (spectrumF, spectrumG, Normalise::yes).at (Slice::freq (20_Hz, 20_kHz)).get(), 0_dB, 3_dB)
+        << "Linear sine sweep should have similar spectrum to white noise, witin 3 dB tolerance";
+}
