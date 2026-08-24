@@ -2,6 +2,7 @@
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
 using AudioBuffer = hart::AudioBuffer<float>;
+using hart::Spectrum;
 
 HART_TEST ("Spectrum - Converts to AudioBuffer correctly")
 {
@@ -11,7 +12,7 @@ HART_TEST ("Spectrum - Converts to AudioBuffer correctly")
         .saveOutputTo (bufferA)
         .process();
 
-    const hart::Spectrum spectrum (bufferA);
+    const Spectrum spectrum (bufferA);
     const AudioBuffer bufferB = spectrum.toAudioBuffer<float>();
 
     HART_EXPECT_EQ (bufferA, bufferB);
@@ -19,7 +20,7 @@ HART_TEST ("Spectrum - Converts to AudioBuffer correctly")
 
 HART_TEST ("Spectrum - Spectrum::zeros() converts to a silent AudioBuffer")
 {
-    const hart::Spectrum spectrum = hart::Spectrum::zeros();
+    const Spectrum spectrum = Spectrum::zeros();
     const AudioBuffer buffer = spectrum.toAudioBuffer<float>();
 
     processAudioWith (GainDb (0_dB))
@@ -30,7 +31,6 @@ HART_TEST ("Spectrum - Spectrum::zeros() converts to a silent AudioBuffer")
 
 HART_TEST ("Spectrum - Spectrum::colouredNoise() creates ideal magnitudes")
 {
-    using hart::Spectrum;
     constexpr double lowCutoffFrequencyHz = 20_Hz;
 
     const Spectrum whiteNoiseSpectrum = Spectrum::colouredNoise (Spectrum::ColouredNoise::white().withLowCutoff (lowCutoffFrequencyHz));
@@ -55,7 +55,6 @@ HART_TEST ("Spectrum - Spectrum::colouredNoise() creates ideal magnitudes")
 
 HART_TEST ("Spectrum - Spectrum::colouredNoise() is deterministic")
 {
-    using hart::Spectrum;
     constexpr double lowCutoffFrequencyHz = 20_Hz;
 
     const Spectrum spectrumA = Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withRandomSeed (123).withLowCutoff (lowCutoffFrequencyHz));
@@ -71,7 +70,6 @@ HART_TEST ("Spectrum - Spectrum::colouredNoise() is deterministic")
 
 HART_TEST ("Spectrum - Spectrum::colouredNoise() converts to non-silent AudioBuffer")
 {
-    using hart::Spectrum;
     const Spectrum spectrum = Spectrum::colouredNoise (Spectrum::ColouredNoise::pink());
 
     processAudioWith (GainDb (0_dB))
