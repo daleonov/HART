@@ -440,6 +440,24 @@ public:
         return ! equalsTo (other);
     }
 
+    /// @brief Creates a new spectrum as a multiplying each complex bin value by a provided gain value
+    /// @param other gainLinear Gain to multiply each complex bin by
+    /// @return A new `Spectrum` that is a result of multiplication
+    Spectrum operator* (double gainLinear) const
+    {
+        Spectrum tmp (*this);
+
+        for (size_t channel = 0; channel < tmp.getNumChannels(); ++channel)
+        {
+            std::complex<double>* channelData = tmp[channel];
+
+            for (size_t bin = 0; bin < tmp.getNumBins(); ++bin)
+                channelData[bin] *= gainLinear;
+        }
+
+        return tmp;
+    }
+
     /// @brief Returns frequency corresponding to a bin index
     double getBinFrequencyHz (size_t binIndex) const
     {

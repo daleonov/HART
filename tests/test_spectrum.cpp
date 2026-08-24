@@ -77,3 +77,21 @@ HART_TEST ("Spectrum - Spectrum::colouredNoise() converts to non-silent AudioBuf
         .expectFalse (EqualsTo (Silence()))
         .process();
 }
+
+HART_TEST ("Spectrum - Multiply operation")
+{
+    const Spectrum spectrumA = Spectrum::colouredNoise (Spectrum::ColouredNoise::pink());
+    const Spectrum spectrumB = spectrumA * 2.0;
+
+    HART_EXPECT_NE (spectrumA, spectrumB);
+    HART_EXPECT_EQ (spectrumA, spectrumB * 0.5);
+
+    HART_EXPECT_EQ (spectrumA * 0.0, Spectrum::zeros());
+    HART_EXPECT_EQ (spectrumA * 1.0, spectrumA);
+
+    const Spectrum spectrumC = spectrumA * (-1.0);
+    HART_EXPECT_NE (spectrumA, spectrumC);
+    HART_EXPECT_EQ (spectrumA, spectrumC * (-1.0));
+
+    HART_EXPECT_EQ (((spectrumA * 0.2) * 12.0), (spectrumA * (-8.0)) * (-0.3));
+}
