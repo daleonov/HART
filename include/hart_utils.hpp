@@ -56,6 +56,13 @@ enum class Loop
     yes
 };
 
+/// @brief Helper values for something that could normalise something
+enum class Normalise
+{
+    no,
+    yes
+};
+
 /// @brief Oversampling ratio
 enum Oversampling
 {
