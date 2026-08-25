@@ -43,6 +43,6 @@ HART_TEST ("TimeIt")
         100_us
     );
 
-    p95ObservedRenderTimeSeconds = timeItRenderWholeBuffer.result (hart::percentile (0.95, hart::Interpolation::linear));
+    p95ObservedRenderTimeSeconds = timeItRenderBlockWise.result (hart::percentile (0.95, hart::Interpolation::linear));
     HART_EXPECT_LT (p95ObservedRenderTimeSeconds, 3 * expectedRenderTimeSeconds);
 }
