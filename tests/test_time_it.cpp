@@ -7,7 +7,7 @@ HART_TEST ("TimeIt")
     const size_t blockSizeFrames = hart::CLIConfig::getInstance().getGefaultBlockSizeFrames();
     hart::AudioBuffer<float> mockBuffer (2, 10 * blockSizeFrames, 44100_Hz);
 
-    constexpr double expectedRenderTimeSeconds = 0.0001_s;
+    constexpr double expectedRenderTimeSeconds = 0.0005_s;
     const double timeToRenderEachSampleSeconds = expectedRenderTimeSeconds / (mockBuffer.getNumFrames() * mockBuffer.getNumChannels());
     HART_ASSERT_FLOAT_NE (timeToRenderEachSampleSeconds, 0.0, 1_ns);
     DSPRenderTimeMock dspRenderTimeMock (timeToRenderEachSampleSeconds);
