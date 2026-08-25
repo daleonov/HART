@@ -1,6 +1,6 @@
 # HART
 
-High-level Audio Regression and Testing
+HART is a header-only C++11 framework for testing audio DSP output. It helps audio developers automate audio signal-driven tests, like regression, latency, peak, stereo etc, without depending on frameworks like JUCE, gtest, or Catch2.
 
 📚 Docs: https://daleonov.github.io/HART/
 
@@ -8,7 +8,7 @@ High-level Audio Regression and Testing
 
 🍲 DSP testing cookbook: https://daleonov.github.io/HART/DSPTestingCookbook.html
 
-Also, you might want to check the `develop` branch. I tend to keep perfectly good new stuff sitting at `develop` for a while, before merging it to `main`.
+📺 Episode on HART at The Audio Programmer channel: https://www.youtube.com/live/f4yMv35pVDQ?si=8nB1wVB9uHt4QPO6
 
 ## What is HART?
 
@@ -84,7 +84,7 @@ HART_TEST_WITH_TAGS ("OutputLimiter - Doesn't collapse stereo to mono", "[limite
     processAudioWith (OutputLimiterHartWrapper())
         .withInputSignal (WhiteNoise())
         .inStereo()
-        .expectTrue ([] (const auto& output) { return HART_LT (abs (channelCorrelation (output)), 0.5); }, "Output L and R channels are different")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_LT (abs (channelCorrelation (output)), 0.5); }, "Output L and R channels are different")
         .process();
 }
 ```
@@ -165,10 +165,6 @@ Expected sample value: 0.310784 (-10.2 dB), difference: 0.001190 (-58.5 dB)
 [ PASSED ] 6/8
 [ FAILED ] 2/8
 ```
-
-## What's next?
-
-Note that HART is still in its infancy! It still needs some time to land on somewhat final API, and become a complete and bug-free solution we all want it to be. Speaking of complete and bug-free, contributions are very welcome!
 
 ## Known issues, and important features yet to be implemented:
  - Doesn't support sidechain signals yet. The current workaround is to take advantage of multi-channel inputs.
