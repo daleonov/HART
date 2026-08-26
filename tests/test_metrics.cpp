@@ -1783,12 +1783,15 @@ HART_TEST ("Metrics - Spectral Log-Log Slope - Units")
     const double slopeDefault = spectralLogLogSlope (spectrum);
     const double slopeNative = spectralLogLogSlope (spectrum).as (native);
     const double slopeUnitless = spectralLogLogSlope (spectrum).as (none);
+    const double slopeDbPerDecade = spectralLogLogSlope (spectrum).as (dB_per_decade);
     const double slopeDbPerOctave = spectralLogLogSlope (spectrum).as (dB_per_octave);
     const double threeDb = powerToDecibels (2.0);
 
     HART_EXPECT_FLOAT_EQ (slopeDefault, slopeNative, 1e-8) << "Default is same as native unit";
     HART_EXPECT_FLOAT_EQ (slopeNative, slopeUnitless, 1e-8) << "Native unit is unitless";
     HART_EXPECT_FLOAT_NE (slopeUnitless, slopeDbPerOctave, 1e-8) << "Unitless and dB per octave have different numeric values";
+    HART_EXPECT_FLOAT_NE (slopeDbPerOctave, slopeDbPerDecade, 1e-8) << "dB per octave is different from dB per decade";
+    HART_EXPECT_FLOAT_EQ (slopeDbPerDecade, slopeUnitless * 10.0, 1e-8) << "dB per decade is converted from unitless slope correctly";
     HART_EXPECT_FLOAT_EQ (slopeDbPerOctave, slopeUnitless * threeDb, 1e-8) << "dB per octave is converted from unitless slope correctly";
 }
 

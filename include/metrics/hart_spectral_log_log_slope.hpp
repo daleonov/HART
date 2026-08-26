@@ -47,14 +47,10 @@ namespace hart
 /// the returned unitless slope is the exponent @f$ \beta @f$. Typical values are
 /// 0 for white noise, -1 for pink noise, and -2 for brown noise.
 ///
-/// Supports `Unit::none` (as native/default) and `Unit::dB_per_octave` units.
-/// When requested as `Unit::dB_per_octave`, the result is converted as
-///
-/// @f[
-/// s_{\mathrm{dB/oct}} = 10 \log_{10}(2)\,\beta
-/// @f]
-///
-/// (s_dB_per_octave = 10 * log10(2) * beta).
+/// Supports `Unit::none` (as native/default), `Unit::dB_per_octave` and 
+/// `Unit::dB_per_decade` units. When requested as `Unit::dB_per_octave`, the result
+/// is converted as `10 * log10(2) * beta`, while `Unit::dB_per_decade` is `10 * beta`,
+/// where `beta` is the unitless slope value.
 ///
 /// DC is excluded. Only complete logarithmic bands contained inside the selected
 /// frequency slice are used.
@@ -182,6 +178,8 @@ inline MetricQuery<double> spectralLogLogSlope (const Spectrum& spectrum, double
         {
             case Unit::native:
             case Unit::none: return slopeUnitless;
+
+            case Unit::dB_per_decade: return slopeUnitless * 10.0;
 
             case Unit::dB_per_octave: return slopeUnitless * threeDb;
 
