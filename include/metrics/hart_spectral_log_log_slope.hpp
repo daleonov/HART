@@ -14,17 +14,70 @@
 #include "hart_units.hpp"  // Unit
 #include "hart_utils.hpp"  // nan(), floatsEqual(), centsToRatio()
 
-// TODO: Document it properly
-
 namespace hart
 {
 
-/// @brief Calculates slope of the spectrum in logX-logY domain
+/// @brief Estimates the slope of spectral power in log-frequency / log-power space
+///
+/// The spectrum is divided into logarithmically spaced bands of @p smoothingCents
+/// width. Mean power is calculated for each non-empty band, then OLS linear regression
+/// is performed on the logarithm of band centre frequency and mean band power.
+///
+/// @f[
+/// \beta =
+/// \frac{\sum_i (\log f_i - \overline{\log f})
+///                    (\log P_i - \overline{\log P})}
+///      {\sum_i (\log f_i - \overline{\log f})^2}
+/// @f]
+///
+/// (beta = sum ((log (f_i) - mean (log(f))) * (log(P_i) - mean (log (P))))
+///         / sum ((log (f_i) - mean (log (f))) ** 2)),
+///
+/// where @f$ f_i @f$ is the geometric centre frequency of band @f$ i @f$ and
+/// @f$ P_i @f$ is its mean spectral power.
+///
+/// For a power-law spectrum
+///
+/// @f[
+/// P(f) \propto f^\beta
+/// @f]
+///
+/// (P (f) is proportional to (f ** beta)),
+///
+/// the returned unitless slope is the exponent @f$ \beta @f$. Typical values are
+/// 0 for white noise, -1 for pink noise, and -2 for brown noise.
+///
+/// Supports `Unit::none` (as native/default) and `Unit::dB_per_octave` units.
+/// When requested as `Unit::dB_per_octave`, the result is converted as
+///
+/// @f[
+/// s_{\mathrm{dB/oct}} = 10 \log_{10}(2)\,\beta
+/// @f]
+///
+/// (s_dB_per_octave = 10 * log10(2) * beta).
+///
+/// DC is excluded. Only complete logarithmic bands contained inside the selected
+/// frequency slice are used.
+///
+/// @note It is encouraged to be used on a slice of the spectrum, to exclude
+/// near-noise and near-Nyquist frequencies for a more accurate estimation:
+/// @code
+/// const double slope = hart::spectralLogLogSlope (someSpectrum)
+///    .at (hart::Slice::freq (20_Hz, 20_kHz))  // Audible range slice
+///    .get (hart::mean());
+/// @endcode
+///
+/// @param spectrum Spectrum to analyse.
+/// @param smoothingCents Width of each logarithmic averaging band in cents.
+/// Must be greater than zero. 1200 cents corresponds to one octave, 100 cents
+/// is one semitone.
+/// @return A metric query returning the log-log spectral slope, in the requested
+/// unit. May return `NaN`.
 /// @ingroup Metrics
 inline MetricQuery<double> spectralLogLogSlope (const Spectrum& spectrum, double smoothingCents = 1200.0)
 {
     if (smoothingCents <= 0.0)
-        HART_THROW_OR_RETURN (ValueError, "smoothingCents should be a non-negative band width", {});
+        HART_THROW_OR_RETURN (ValueError, "smoothingCents should be a positive band width", {});
 
     MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
         [&spectrum, smoothingCents]
@@ -134,10 +187,6 @@ inline MetricQuery<double> spectralLogLogSlope (const Spectrum& spectrum, double
 
             default: HART_THROW_OR_RETURN (hart::UnitError, "Unsupported unit",  nan<double>());
         }
-        
-        if (requestedUnit != Unit::native && requestedUnit != Unit::none)
-            HART_THROW_OR_RETURN (hart::UnitError, "Unsupported unit", hart::nan<double>());
-
     };
 
     const size_t numChannels = spectrum.getNumChannels();
