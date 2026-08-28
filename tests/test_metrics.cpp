@@ -1,5 +1,5 @@
 #include <algorithm>  // max()
-#include <cmath>  // abs(), isnan(), isinf()
+#include <cmath>  // abs(), isnan(), isinf(), cos(), acos()
 
 #include "hart.hpp"
 #include "exponential_decay.hpp"
@@ -118,6 +118,33 @@ HART_TEST ("Metrics - MetricQuery and Sample Peak")
 
     // TODO: Test selected channels
     // TODO: Test preserving index order for multi-channel selections
+}
+
+HART_TEST ("Metrics - MetricQuery::apply() modifies per-channel values before the reducer")
+{
+    const AudioBuffer silence (5, 1);
+    hart::MetricQuery<double> fiveZeros = hart::samplePeak (silence);
+
+    HART_ASSERT_TRUE (fiveZeros.get (hart::allFloatsEqualTo (0.0)));
+
+    // Function pointers - templated STL functions
+    HART_EXPECT_FLOAT_EQ (fiveZeros.apply (std::cos).get (hart::mean()), 1.0, 1e-8);
+    HART_EXPECT_FLOAT_EQ (fiveZeros.apply (std::cos).get (hart::sum()), 5.0, 1e-8);
+    HART_EXPECT_FLOAT_EQ (fiveZeros.apply (std::acos).get (hart::mean()), hart::halfPi, 1e-8);
+    HART_EXPECT_FLOAT_EQ (fiveZeros.apply (std::acos).get (hart::sum()), 2.5 * hart::pi, 1e-8);
+
+    // Functors - capturing lambdas
+    constexpr double y = 2.0;
+    HART_EXPECT_FLOAT_EQ (fiveZeros.apply ([y] (double x) { return std::pow (y, x); }).get (hart::mean()), 1.0, 1e-8);
+    HART_EXPECT_FLOAT_EQ (fiveZeros.apply ([y] (double x) { return std::pow (y, x); }).get (hart::sum()), 5.0, 1e-8);
+    HART_EXPECT_FLOAT_EQ (fiveZeros.apply ([y] (double x) { return x + y; }).get (hart::mean()), y, 1e-8);
+    HART_EXPECT_FLOAT_EQ (fiveZeros.apply ([y] (double x) { return x + y; }).get (hart::sum()), 5.0 * y, 1e-8);
+
+    // Functors - non-capturing lambdas
+    HART_EXPECT_FLOAT_EQ (fiveZeros.apply ([] (double x) { return std::pow (123.0, x); }).get (hart::mean()), 1.0, 1e-8);
+    HART_EXPECT_FLOAT_EQ (fiveZeros.apply ([] (double x) { return std::pow (123.0, x); }).get (hart::sum()), 5.0, 1e-8);
+    HART_EXPECT_FLOAT_EQ (fiveZeros.apply ([] (double x) { return x + 3.0; }).get (hart::mean()), 3.0, 1e-8);
+    HART_EXPECT_FLOAT_EQ (fiveZeros.apply ([] (double x) { return x + 3.0; }).get (hart::sum()), 15.0, 1e-8);
 }
 
 HART_TEST ("Metrics - Channel Correlation")

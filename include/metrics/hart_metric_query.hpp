@@ -243,6 +243,44 @@ public:
         return copy;
     }
 
+    /// @brief Requests to process each per-channel value with a function before reducing
+    /// @details Example:
+    /// @code
+    /// const double x = someMetric (someAudio).apply ([] (double x) { return pow (2.0, x); }).get (mean());
+    /// @endcode
+    /// @param preprocessFunction This functor will be applied for each per-channel (or
+    /// per-channel-pair) result of the metric, before calling the reducer.
+    /// Must be equivalent to a function with a signature like `ValueType f (ValueType x)`.
+    template <typename FunctorType>
+    MetricQuery apply (FunctorType preprocessFunction) const
+    {
+        /// Note: This method is templated just to avoid ambiguity with another overload which takes
+        /// a function pointer. Passing a non-capturing lambda would cause build error otherwise.
+
+        MetricQuery copy (*this);
+        copy.m_query = hart::make_unique<Query> (*m_query);
+        copy.m_query->preprocessFunction = std::function<ValueType (ValueType)> (preprocessFunction);
+        return copy;
+    }
+
+    /// @brief Requests to process each per-channel value with a function before reducing
+    /// @details Example:
+    /// @code
+    /// const double x = someMetric (someAudio).apply (abs).get (max());
+    /// @endcode
+    /// @param preprocessFunction This function will be applied for each per-channel (or
+    /// per-channel-pair) result of the metric, before calling the reducer.
+    MetricQuery apply (ValueType (*preprocessFunction) (ValueType)) const
+    {
+        // Technically still valid, but there's probably no real reason to pass a nullptr?
+        hassert (preprocessFunction != nullptr);
+
+        MetricQuery copy (*this);
+        copy.m_query = hart::make_unique<Query> (*m_query);
+        copy.m_query->preprocessFunction = preprocessFunction;
+        return copy;
+    }
+
     /// @brief Query a value of a calculated metric using a reducer
     /// @details Typically, metrics are calculated per channel, which result in a
     /// vector of per-channel values. And in most cases, you just want one scalar,
@@ -259,6 +297,7 @@ public:
         -> ReducerResultType<ReducerType, typename std::vector<ValueType>::const_iterator>
     {
         ensureCache();
+        preprocessIfNeeded();
         return reducer (m_query->cachedValues.begin(), m_query->cachedValues.end());
     }
 
@@ -287,6 +326,7 @@ private:
     {
         SingleChannelMetricEvaluator singleChannelMetricEvaluator = nullptr;
         ChannelPairMetricEvaluator channelPairMetricEvaluator = nullptr;
+        std::function<ValueType (ValueType)> preprocessFunction = nullptr;
         std::vector<size_t> channels;
         std::vector<std::pair<size_t, size_t>> channelPairs;
         size_t totalNumChannelsA = 0;
@@ -372,6 +412,17 @@ private:
                 )
             );
         }
+    }
+
+    void preprocessIfNeeded() const
+    {
+        hassert (m_query->cacheValid);  // Cached values should have been calculated first
+
+        if (m_query->preprocessFunction == nullptr)
+            return;
+
+        for (ValueType& value : m_query->cachedValues)
+            value = m_query->preprocessFunction (value);
     }
 
     std::shared_ptr<Query> m_query;
