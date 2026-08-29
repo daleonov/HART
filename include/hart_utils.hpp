@@ -8,6 +8,7 @@
 #include <limits>  // infinity(), nan()
 #include <memory>
 #include <ostream>
+#include <random>  // seed_seq
 #include <string>
 #include <unordered_map>
 
