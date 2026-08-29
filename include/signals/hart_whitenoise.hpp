@@ -12,7 +12,13 @@ namespace hart
 {
 
 /// @brief Produces deterministic white noise
-/// @details Outputs a signal uniformly distrubuted between -1.0 and +1.0, thus peaking below 0dB
+/// @details Outputs a signal uniformly distrubuted between -1.0 and +1.0, thus peaking below 0 dB.
+///
+/// This signal is an infinite source, constructed in time domain. You may also use
+/// `Spectrum::colouredNoise()`, combined with `Spectrum::toSignal()`, to get a
+/// finite signal source with ideal frequency response, if you want the highest
+/// frequency responce accuracy, and don't mind its finite nature, and substantially
+/// higher CPU cost.
 /// @ingroup Signals
 template<typename SampleType>
 class WhiteNoise:

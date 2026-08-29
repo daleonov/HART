@@ -273,6 +273,11 @@ public:
     /// (|X(f)| ~ f_rel ** (beta / 2)),
     ///
     /// where f_rel = frequency / lowCutoffHz.
+    ///
+    /// @note You may also check `hart::WhiteNoise` and `hart::PinkNoise`
+    /// signals, if you're looking for an infinite, and relatively accurate,
+    /// sources of audio, that are more cheaply constructed in time domain.
+    ///
     /// @param options `ColouredNoise` containing 
     static Spectrum colouredNoise (ColouredNoise options)
     {
