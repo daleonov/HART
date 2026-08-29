@@ -1,6 +1,7 @@
 #include "hart.hpp"
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
+HART_DECLARE_ALIASES_FOR_UNITS;
 using hart::Loop;
 using hart::decibelsToRatio;
 
@@ -426,4 +427,124 @@ HART_TEST ("Signal - WavFile - Resampling")
             .expectTrue ([] (AnalysisContext ac) { return HART_FREQUENCIES_EQUAL (quinns2 (ac.inputSpectrum()).get(), 1_kHz, 5_cents); }, "Fundamental frequency is 1 kHz" )
             .process();
     }
+}
+
+HART_TEST ("Signal - PinkNoise - Basics")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::channelCorrelation;
+    using hart::max;
+    using hart::min;
+    using std::abs;
+
+    processAudioWith (Bypass())
+        .withLabel ("Produces audio")
+        .withInputSignal (PinkNoise())
+        .withInputChannels (5)
+        .withOutputChannels (5)
+        .expectFalse (EqualsTo (Silence()))
+        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (rms (output).as (linear).get (min()), 0.0); }, "All channels are not silent" )
+        .process();
+
+    processAudioWith (Bypass())
+        .withLabel ("All channels have different noise instance")
+        .withInputSignal (PinkNoise())
+        .withInputChannels (5)
+        .withOutputChannels (5)
+        .expectTrue ([] (const AudioBuffer& output) { return HART_LT (channelCorrelation (output).apply (abs).get (max()), 0.5); }, "Best abs channel correlation < 0.5" )
+        .process();
+}
+
+HART_TEST ("Signal - PinkNoise - Output RMS")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::rms;
+    using hart::max;
+    using hart::min;
+
+    processAudioWith (Bypass())
+        .withLabel ("Output RMS is as specified in the docs")
+        .withInputSignal (PinkNoise())
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (rms (output).as (dB).get (max()), -12_dB, 1_dB); }, "Max RMS = -12 dB" )
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (rms (output).as (dB).get (min()), -12_dB, 1_dB); }, "Min RMS = -12 dB" )
+        .process();
+
+}
+
+HART_TEST ("Signal - PinkNoise - Output sample peaks")
+{
+    // This is not an API-level contract, unlike RMS level, but
+    // that RMS target level was chosen to keep sample peaks at
+    // reasonable level, so that p95 ~= unity gain. This test is
+    // somewhat brittle by its nature, but we'll do it anyways.
+
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::CLIConfig;
+    using hart::samplePeak;
+    using hart::max;
+    using hart::percentile;
+    using hart::makeRandomSeeds;
+
+    const std::vector<uint_fast32_t> randomSeeds = makeRandomSeeds<uint_fast32_t> (100);
+    std::vector<double> observedSamplePeaksDb;
+    observedSamplePeaksDb.reserve (randomSeeds.size());
+
+    for (const uint_fast32_t currentRandomSeed : randomSeeds)
+    {
+        AudioBuffer observedPinkNoiseAudio;
+            processAudioWith (Bypass())
+            .withInputSignal (PinkNoise (currentRandomSeed))
+            .saveOutputTo (observedPinkNoiseAudio)
+            .process();
+
+        observedSamplePeaksDb.push_back (samplePeak (observedPinkNoiseAudio).as (dB).get (max()));
+    }
+
+    const double typicalObservedSamplePeakDb = percentile (0.95) (observedSamplePeaksDb.begin(), observedSamplePeaksDb.end());
+
+    HART_EXPECT_FLOAT_EQ (typicalObservedSamplePeakDb, 0_dB, 1_dB)
+        << "Pink noise typically peaks around unity gain";
+}
+
+HART_TEST ("Signal - PinkNoise - Has correct spectrum")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::Spectrum;
+    using hart::Slice;
+    using hart::Normalise;
+    using hart::logSpectralDistance;
+    using hart::spectralLogLogSlope;
+    using hart::spectralCentroid;
+    using hart::max;
+    using hart::mean;
+    using std::sqrt;
+
+    AudioBuffer observedPinkNoiseAudio;
+    processAudioWith (Bypass())
+        .withInputSignal (PinkNoise())
+        .saveOutputTo (observedPinkNoiseAudio)
+        .process();
+
+    const Spectrum observedPinkNoiseSpectrum (observedPinkNoiseAudio);
+    const Spectrum idealPinkNoiseSpectrum = Spectrum::colouredNoise (Spectrum::ColouredNoise::pink());
+
+    // Given the Signal's stochastic nature, we can't have tight tolerances here
+    constexpr double logSpectralDistanceToleranceDb = 6_dB;
+    HART_EXPECT_LT (logSpectralDistance (observedPinkNoiseSpectrum, idealPinkNoiseSpectrum, Normalise::yes).at (Slice::freq (20_Hz, 20_kHz)).get (max()), logSpectralDistanceToleranceDb)
+        << "Pink noise spectrum is close to ideal one";
+
+    // Other "coloured" noises are 10 dB/dec apart from pink one
+    // so while +/- 3 dB/dec tolerance is pretty loose, it still
+    // reasonably qualifies as pink.
+    constexpr double slopeToleranceDbPerDecade = 3_dB_per_decade;
+    HART_EXPECT_FLOAT_EQ (spectralLogLogSlope (observedPinkNoiseSpectrum).as (dB_per_decade).at (Slice::freq (20_Hz, 20_kHz)).get (mean()), -10_dB_per_decade, slopeToleranceDbPerDecade)
+        << "Pink noise spectrum has correct -10 dB/decade slope";
+
+    const double sampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
+    const double fNyquistHz = sampleRateHz * 0.5;
+    const double fLowHz = 1.0;  // hart::PinkNoise doesn't promise anything near DC, so this is just arbitraty
+    const double expectedSpectralCentroidHz = (fLowHz + fNyquistHz + sqrt (fNyquistHz * fLowHz)) / 3.0;
+
+    HART_EXPECT_FREQ_EQ (spectralCentroid (observedPinkNoiseSpectrum).get (mean()), expectedSpectralCentroidHz, 100_cents)
+        << "Pink noise's spectral centroid is close to ideal one";
 }

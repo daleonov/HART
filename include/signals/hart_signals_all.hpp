@@ -4,6 +4,7 @@
 #include "signals/hart_dc.hpp"
 #include "signals/hart_impulse.hpp"
 #include "signals/hart_nyquist_signal.hpp"
+#include "signals/hart_pink_noise.hpp"
 #include "signals/hart_mixed_signal.hpp"
 #include "signals/hart_sawtooth.hpp"
 #include "signals/hart_signal_function.hpp"
