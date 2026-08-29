@@ -108,6 +108,7 @@ Signals are stimuli for HART test cases. Signals can be processed with built-in 
 | `SineSweep`                 | Sine sweep (chirp), log or linear, with flexible settings
 | `Sawtooth`                  | Band-limited sawtooth wave
 | `WhiteNoise`                | White noise, constructed in time domain, with parametric seed
+| `PinkNoise`                 | Pink noise, constructed in time domain, with parametric seed
 | `Spectrum::colouredNoise()` | Ideal coloured noise, constructed in frequency domain, with parametric seed
 | `Impulse`                   | Single-sample impulse (`{1, 0, 0, 0, ...}` sequence)
 | `DC`                        | Constant-value signal, a.k.a. "direct current"

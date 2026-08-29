@@ -257,6 +257,25 @@ inline static std::string toAbsolutePath (const std::string& path)
     return CLIConfig::getInstance().getDataRootPath() + '/' + path;
 }
 
+/// @brief Deterministically produces a sequence of well-dispersed random seeds from a single base seed
+/// @param numSeeds Number of random seeds to produce
+/// @param baseRandomSeed Initial seed, from which a sequence of new seed values is derived
+/// @return Vector containing `numSeeds` different random seeds
+/// @note Identical `baseRandomSeed` values are guaranteed to yield identical derived seed sequences
+template <typename ValueType>
+std::vector<ValueType> makeRandomSeeds (size_t numSeeds, uint_fast32_t baseRandomSeed = CLIConfig::getInstance().getRandomSeed())
+{
+    std::seed_seq seedGenerator { baseRandomSeed };
+    std::vector<ValueType> randomSeeds (numSeeds);
+
+    // std::seed_seq produces uint32_t values, which will be implicitly cast
+    // to ValueType here. It's either that, or we'll have to allocate an extra
+    // temporary vector for native values, which we're not doing that.
+    seedGenerator.generate (randomSeeds.begin(), randomSeeds.end());
+
+    return randomSeeds;
+}
+
 /// @brief `std::unordered_map::contains()` replacement for C++11
 template <typename KeyType, typename ValueType>
 inline static bool contains (const std::unordered_map<KeyType, ValueType>& map, const KeyType& key)
