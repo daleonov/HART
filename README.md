@@ -72,30 +72,30 @@ Matchers are similar to their namesakes from Catch2. In HART, they represent som
 
 Metrics are made for constructing more granular statements, as opposed to matchers. Generally, they represent some commonly used audio features, or derived versions of those. Usually, metrics are calculated per channel, or pair of channels, and can then be reduced to a scalar via built-in reducers like `min()`, `max()`, `nth()`, `percentile()` and others. Also, for most of those, a specific unit can be requested, and they can be applied to a specified slice of audio buffer, spectrum or IR.
 
-| Metric                       | Units                | Domain | What it measures
-| ---------------------------- | -------------------- | ------ | ----------------
-| `samplePeak`                 | linear, dB           | time   | Highest absolute sample peak value
-| `truePeak`                   | linear, dB           | time   | Estimated inter-sample peak level, based on ITU-R BS.1770-5
-| `rms`                        | linear, dB           | time   | Root mean square level
-| `crestFactor`                | linear, dB           | time   | Peak-to-RMS ratio, a.k.a crest factor, useful for dynamic range checks
-| `zcr`                        | Hz                   | time   | Zero-crossing rate
-| `channelCorrelation`         | none                 | time   | Correlation between channels
-| `maxCrossCorrelation`        | none                 | time   | Best correlation between two signals within a lag window
-| `lagAtMaxCrossCorrelation`   | frames, seconds      | time   | Lag at which the best cross-correlation occurs, useful for estimating latency
-| `esr`                        | ratio                | time   | Error-to-signal ratio against a reference audio
-| `snr`                        | ratio, dB            | time   | Signal-to-noise ratio against a reference audio
-| `snra`                       | ratio, dB            | time   | Signal-to-aliasing-noise ratio against a high-sample-rate reference
-| `thd`                        | ratio, dB, percent   | FFT    | Total harmonic distortion in a spectrum, assuming pure sine stimulus
-| `spectralCentroid`           | Hz                   | FFT    | Spectral centroid, useful for expressing perceived brightness of audio
-| `spectralFlatness`           | linear, dB           | FFT    | Spectral flatness, iseful for expressing how noise-like or tonal a spectrum is
-| `spectralLogLogSlope`        | none, dB/oct, dB/dec | FFT    | Spectral tilt in log-frequency/log-magnitude space, assuming coloured noise-like spectrum
-| `logSpectralDistance`        | dB                   | FFT    | Distance (difference) between two smoothed spectra
-| `loudestBinFrequency`        | Hz                   | FFT    | Frequency of the loudest FFT bin
-| `loudestBinMagnitude`        | linear, dB           | FFT    | Magnitude of the loudest FFT bin
-| `interpolatedPeakFrequency`  | Hz                   | FFT    | Interpolated frequency of the loudest FFT bin
-| `quinns2`                    | Hz                   | FFT    | Fundamental frequency estimation, using Quinn's second estimator
-| `rt60`                       | frames, seconds      | IR     | Reverb decay time estimated from an impulse response, based on ISO 3382
-| `centreTime`                 | frames, seconds      | IR     | Energy centre of an impulse response
+| Metric                       | Units                | Domain    | What it measures
+| ---------------------------- | -------------------- | --------- | ----------------
+| `samplePeak`                 | linear, dB           | time      | Highest absolute sample peak value
+| `truePeak`                   | linear, dB           | time      | Estimated inter-sample peak level, based on ITU-R BS.1770-5
+| `rms`                        | linear, dB           | time, FFT | Root mean square level
+| `crestFactor`                | linear, dB           | time      | Peak-to-RMS ratio, a.k.a crest factor, useful for dynamic range checks
+| `zcr`                        | Hz                   | time      | Zero-crossing rate
+| `channelCorrelation`         | none                 | time      | Correlation between channels
+| `maxCrossCorrelation`        | none                 | time      | Best correlation between two signals within a lag window
+| `lagAtMaxCrossCorrelation`   | frames, seconds      | time      | Lag at which the best cross-correlation occurs, useful for estimating latency
+| `esr`                        | ratio                | time      | Error-to-signal ratio against a reference audio
+| `snr`                        | ratio, dB            | time      | Signal-to-noise ratio against a reference audio
+| `snra`                       | ratio, dB            | time      | Signal-to-aliasing-noise ratio against a high-sample-rate reference
+| `thd`                        | ratio, dB, percent   | FFT       | Total harmonic distortion in a spectrum, assuming pure sine stimulus
+| `spectralCentroid`           | Hz                   | FFT       | Spectral centroid, useful for expressing perceived brightness of audio
+| `spectralFlatness`           | linear, dB           | FFT       | Spectral flatness, iseful for expressing how noise-like or tonal a spectrum is
+| `spectralLogLogSlope`        | none, dB/oct, dB/dec | FFT       | Spectral tilt in log-frequency/log-magnitude space, assuming coloured noise-like spectrum
+| `logSpectralDistance`        | dB                   | FFT       | Distance (difference) between two smoothed spectra
+| `loudestBinFrequency`        | Hz                   | FFT       | Frequency of the loudest FFT bin
+| `loudestBinMagnitude`        | linear, dB           | FFT       | Magnitude of the loudest FFT bin
+| `interpolatedPeakFrequency`  | Hz                   | FFT       | Interpolated frequency of the loudest FFT bin
+| `quinns2`                    | Hz                   | FFT       | Fundamental frequency estimation, using Quinn's second estimator
+| `rt60`                       | frames, seconds      | IR        | Reverb decay time estimated from an impulse response, based on ISO 3382
+| `centreTime`                 | frames, seconds      | IR        | Energy centre of an impulse response
 
 ### Signals
 

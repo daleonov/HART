@@ -1005,7 +1005,7 @@ HART_TEST ("Metrics - Spectral Centroid - Mock Spectra")
     }
 }
 
-HART_TEST ("Metrics - RMS")
+HART_TEST ("Metrics - RMS for AudioBuffer - Matches values for common waveforms")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
     using hart::rms;
@@ -1040,6 +1040,56 @@ HART_TEST ("Metrics - RMS")
         .inMono()
         .expectTrue ([invSqrt3] (const AudioBuffer& buffer) { return HART_FLOAT_EQ (rms (buffer).get(), invSqrt3, 0.01); }, "RMS ~= 1 / sqrt(3)")
         .process();
+}
+
+HART_TEST ("Metrics - RMS for Spectrum - Matches RMS for AudioBuffer")
+{
+    using AnalysisContext = hart::AnalysisContext<float>;
+    using hart::rms;
+    using hart::nextPowerOfTwoDuration;
+    using hart::CLIConfig;
+
+    const double renderDuration = nextPowerOfTwoDuration (CLIConfig::getInstance().getDefaultRenderDurationSeconds());
+
+    processAudioWith (Bypass())
+        .withLabel ("Sine wave")
+        .withInputSignal (SineWave())
+        .withDuration (renderDuration)
+        .inMono()
+        .expectTrue ([] (AnalysisContext ac) { return HART_FLOAT_EQ (rms (ac.outputAudio()).get(), rms (ac.outputSpectrum()).get(), 1e-6); }, "RMS in time domain = RMS of spectrum")
+        .process();
+
+    processAudioWith (Bypass())
+        .withLabel ("White noise")
+        .withInputSignal (WhiteNoise())
+        .withDuration (renderDuration)
+        .inMono()
+        .expectTrue ([] (AnalysisContext ac) { return HART_FLOAT_EQ (rms (ac.outputAudio()).get(), rms (ac.outputSpectrum()).get(), 1e-6); }, "RMS in time domain = RMS of spectrum")
+        .process();
+}
+
+HART_TEST ("Metrics - RMS for Spectrum - Units")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::Spectrum;
+    using hart::rms;
+    using hart::ratioToDecibels;
+
+    AudioBuffer audioBuffer;
+    processAudioWith (Bypass())
+        .withInputSignal (WhiteNoise())
+        .saveOutputTo (audioBuffer)
+        .inMono()
+        .process();
+
+    Spectrum spectrum (audioBuffer);
+    const double rmsNative = rms (spectrum);
+    const double rmsLinear = rms (spectrum).as (linear);
+    const double rmsDb = rms (spectrum).as (dB);
+
+    HART_EXPECT_FLOAT_EQ (rmsNative, rmsLinear, 1e-16) << "Linear is default (native)";
+    HART_EXPECT_FLOAT_NE (rmsDb, rmsLinear, 1e-16) << "dB value is different from linear one";
+    HART_EXPECT_FLOAT_EQ (rmsDb, ratioToDecibels (rmsLinear), 1e-16) << "dB is calculated as voltage, not power";
 }
 
 HART_TEST ("Metrics - Zero Crossing Rate - Basics")
