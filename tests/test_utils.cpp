@@ -100,7 +100,7 @@ HART_TEST ("Utils - nextPowerOfTwoDuration() - Output duration is power of 2 in 
     for (double targetDurationSeconds = 0.1_us; targetDurationSeconds < 100000_s; targetDurationSeconds *= 1.9)
     {
         const double suggestedDurationSeconds = hart::nextPowerOfTwoDuration (targetDurationSeconds);
-        const size_t suggestedDurationFrames = hart::roundToSizeT (suggestedDurationSeconds * sampleRateHz);
+        const size_t suggestedDurationFrames = hart::secondsToFrames (suggestedDurationSeconds);
 
         HART_EXPECT_TRUE (hart::isPowerOfTwo (suggestedDurationFrames));
     }
@@ -108,8 +108,7 @@ HART_TEST ("Utils - nextPowerOfTwoDuration() - Output duration is power of 2 in 
 
 HART_TEST ("Utils - nextPowerOfTwoDuration() - Output is at least 1 frame long")
 {
-    const double sampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
-    const double oneFrameDurationSeconds = 1.0 / sampleRateHz;
+    const double oneFrameDurationSeconds = hart::framesToSeconds (1);
 
     for (const double targetDurationSeconds : { 0.0, 1e-16, 0.1_us, 1_us, std::numeric_limits<double>::denorm_min(), std::numeric_limits<double>::min() })
     {
