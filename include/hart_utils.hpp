@@ -167,6 +167,33 @@ inline static size_t roundToSizeT (SampleType x)
     return static_cast<size_t> (x + (SampleType) 0.5);
 }
 
+/// @brief Converts time or duration from seconds to frames (samples), with provided sample rate value in mind
+/// @param seconds Time to convert to number of frames
+/// @param sampleRateHz Sample rate at which this frame amount will be calculated. Defaults to global CLI config sample rate
+/// @return Amount of frames that represents the provided time amount in provided sample rate
+inline static size_t secondsToFrames (double seconds, double sampleRateHz = CLIConfig::getInstance().getDefaultSampleRateHz())
+{
+    if (floatsEqual (sampleRateHz, 0.0) || sampleRateHz < 0.0 || std::isnan (sampleRateHz))
+        HART_THROW_OR_RETURN (ValueError, "Invalid sample rate", nan<double>());
+
+    if (seconds < 0.0 || std::isnan (seconds))
+        HART_THROW_OR_RETURN (ValueError, "Invalid seconds duration", nan<double>());
+
+    return roundToSizeT (seconds * sampleRateHz);
+}
+
+/// @brief Converts amount of frames (samples) to seconds, with provided sample rate value in mind
+/// @param frames Number of frames to convert to seconds
+/// @param sampleRateHz Sample rate at which this frame amount will be calculated. Defaults to global CLI config sample rate
+/// @return Amount of seconds that the provided number of frames represents at the provided sample rate
+inline static double framesToSeconds (size_t frames, double sampleRateHz = CLIConfig::getInstance().getDefaultSampleRateHz())
+{
+    if (floatsEqual (sampleRateHz, 0.0) || sampleRateHz < 0.0 || std::isnan (sampleRateHz))
+        HART_THROW_OR_RETURN (ValueError, "Invalid sample rate", nan<double>());
+
+    return static_cast<double> (frames) / sampleRateHz;
+}
+
 /// @brief Converts frequency difference in cents to frequence ratio
 inline double centsToRatio (double cents)
 {

@@ -40,6 +40,50 @@ HART_TEST ("Utils - makeRandomSeeds() - Different base seeds yields different se
     HART_EXPECT_FALSE (seedsA == seedsB);
 }
 
+HART_TEST ("Utils - secondsToFrames() - Normal use cases")
+{
+    using hart::secondsToFrames;
+    HART_EXPECT_EQ (secondsToFrames (1_s, 44100_Hz), 44100);
+    HART_EXPECT_EQ (secondsToFrames (1_s, 48000_Hz), 48000);
+    HART_EXPECT_EQ (secondsToFrames (1_s, 196000_Hz), 196000);
+    HART_EXPECT_EQ (secondsToFrames (100_ms, 44100_Hz), 4410);
+    HART_EXPECT_EQ (secondsToFrames (1_ms, 44100_Hz), 44);
+    HART_EXPECT_EQ (secondsToFrames (100_us, 44100_Hz), 4);
+    HART_EXPECT_EQ (secondsToFrames (100_us, 48000_Hz), 5);
+    HART_EXPECT_EQ (secondsToFrames (10_us, 44100_Hz), 0);
+    HART_EXPECT_EQ (secondsToFrames (10_us, 88200_Hz), 1);
+    HART_EXPECT_EQ (secondsToFrames (1_us, 88200_Hz), 0);
+    HART_EXPECT_EQ (secondsToFrames (0_s, 44100_Hz), 0);
+    HART_EXPECT_EQ (secondsToFrames (0_s, 48000_Hz), 0);
+}
+
+HART_TEST ("Utils - framesToSeconds() - Normal use cases")
+{
+    using hart::framesToSeconds;
+
+    HART_EXPECT_FLOAT_EQ (framesToSeconds (44100, 44100_Hz), 1_s, 1e-16);
+    HART_EXPECT_FLOAT_EQ (framesToSeconds (4410, 44100_Hz), 100_ms, 1e-16);
+    HART_EXPECT_FLOAT_EQ (framesToSeconds (441, 44100_Hz), 10_ms, 1e-16);
+    HART_EXPECT_FLOAT_EQ (framesToSeconds (44, 44100_Hz), 1_ms, 10_us);
+    HART_EXPECT_FLOAT_EQ (framesToSeconds (4, 44100_Hz), 100_us, 10_us);
+    HART_EXPECT_FLOAT_EQ (framesToSeconds (24000, 48000_Hz), 500_ms, 1e-16);
+    HART_EXPECT_FLOAT_EQ (framesToSeconds (196, 196_kHz), 1_ms, 1e-16);
+    HART_EXPECT_FLOAT_EQ (framesToSeconds (0, 44100_Hz), 0_s, 1e-16);
+    HART_EXPECT_FLOAT_EQ (framesToSeconds (0, 48000_Hz), 0_s, 1e-16);
+}
+
+HART_TEST ("Utils - framesToSeconds() vs secondsToFrames() round-trips")
+{
+    using hart::framesToSeconds;
+    using hart::secondsToFrames;
+
+    for (const double numSeconds : { 0_s, 500_us, 3.5_ms, 100_ms, 1_s, 123.456_s, 654321_s})
+        HART_EXPECT_FLOAT_EQ (framesToSeconds (secondsToFrames (numSeconds)), numSeconds, 10_us);
+    
+    for (const size_t numFrames : { 0, 1, 5, 100, 4000, 100000, 12345678, 999999999 })
+        HART_EXPECT_EQ (secondsToFrames (framesToSeconds (numFrames)), numFrames);
+}
+
 HART_TEST ("Utils - nextPowerOfTwoDuration() - Output value is no less than targer duration")
 {
     for (double targetDurationSeconds = 0.1_us; targetDurationSeconds < 100000_s; targetDurationSeconds *= 1.9)
