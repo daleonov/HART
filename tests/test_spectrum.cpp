@@ -1,6 +1,9 @@
+#include <array>
+
 #include "hart.hpp"
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
+HART_DECLARE_ALIASES_FOR_UNITS;
 using AudioBuffer = hart::AudioBuffer<float>;
 using hart::Spectrum;
 
@@ -29,6 +32,65 @@ HART_TEST ("Spectrum - Spectrum::zeros() converts to a silent AudioBuffer")
         .process();
 }
 
+HART_TEST ("Spectrum - Spectrum::colouredNoise() has correct RMS at power-of-two sizes")
+{
+    using hart::rms;
+    using hart::mean;
+
+    const std::array<Spectrum, 7> spectra = {{
+        Spectrum::colouredNoise (Spectrum::ColouredNoise::white().withDuration (1 << 12)),
+        Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withDuration (1 << 16)),
+        Spectrum::colouredNoise (Spectrum::ColouredNoise::brown().withDuration (1 << 15)),
+        Spectrum::colouredNoise (Spectrum::ColouredNoise::blue().withDuration (1 << 18)),
+        Spectrum::colouredNoise (Spectrum::ColouredNoise::violet().withDuration (1 << 10)),
+        Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withDuration (1 << 12).withLowCutoff (500_Hz)),
+        Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withDuration (1 << 12).withLowCutoff (5_Hz))
+    }};
+
+    for (const Spectrum& spectrum : spectra)
+    {
+        HART_EXPECT_FLOAT_EQ (rms (spectrum). as (dB). get (mean()), -12_dB, 1e-8)
+            << "RMS is 12 dB, when calculated in frequency domain";
+    
+        HART_EXPECT_FLOAT_EQ (rms (spectrum.toAudioBuffer<float>()). as (dB). get (mean()), -12_dB, 0.01_dB)
+            << "RMS is still 12 dB, when converted to time domain";
+    }
+}
+
+HART_TEST ("Spectrum - Spectrum::colouredNoise() has correct RMS at arbitrary sizes")
+{
+    using hart::rms;
+    using hart::max;
+
+    // Worst case would be (power of two) + 1 size, plus
+    // some unfortunate random phase distribution.
+    // Latter is not tested herer, as it's hard to produce.
+
+    constexpr double sqrt2 = 1.414213562373095;
+    constexpr double expectedRmsAtPowerOfTwoSizeDb = -12_dB;
+    const double worstCaseRmsDeviationDb = hart::ratioToDecibels (sqrt2);  // ~3 dB
+    const double expectedUpperRmsLimitDb = expectedRmsAtPowerOfTwoSizeDb + worstCaseRmsDeviationDb;
+
+    const std::array<Spectrum, 7> spectra = {{
+        Spectrum::colouredNoise (Spectrum::ColouredNoise::white().withDuration (4410)),
+        Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withDuration (12345)),
+        Spectrum::colouredNoise (Spectrum::ColouredNoise::brown().withDuration (100000)),
+        Spectrum::colouredNoise (Spectrum::ColouredNoise::blue().withDuration ((1 << 15) + 1)),
+        Spectrum::colouredNoise (Spectrum::ColouredNoise::violet().withDuration ((1 << 10) + 1)),
+        Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withDuration ((1 << 12) + 1).withLowCutoff (500_Hz)),
+        Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withDuration ((1 << 12) + 1).withLowCutoff (5_Hz))
+    }};
+    
+    for (const Spectrum& spectrum : spectra)
+    {
+        HART_ASSERT_FLOAT_EQ (rms (spectrum). as(dB). get (max()), -12_dB, 1e-8)
+            << "RMS is 12 dB, when calculated in frequency domain, even for worst-case sizes";
+
+        HART_EXPECT_LE (rms (spectrum.toAudioBuffer<float>()). as (dB). get (max()), expectedUpperRmsLimitDb)
+            << "RMS < 9 dB, when calculated in time domain, for non-power-of-two duratrions";
+    }
+}
+
 HART_TEST ("Spectrum - Spectrum::colouredNoise() creates ideal magnitudes")
 {
     constexpr double lowCutoffFrequencyHz = 20_Hz;
@@ -38,17 +100,33 @@ HART_TEST ("Spectrum - Spectrum::colouredNoise() creates ideal magnitudes")
     const Spectrum brownNoiseSpectrum = Spectrum::colouredNoise (Spectrum::ColouredNoise::brown().withLowCutoff (lowCutoffFrequencyHz));
 
     const size_t numChannels = whiteNoiseSpectrum.getNumChannels();
-    const size_t cutoffBin = whiteNoiseSpectrum.findClosestBin (lowCutoffFrequencyHz);
+    const size_t firstBin = static_cast<size_t> (std::ceil (lowCutoffFrequencyHz / whiteNoiseSpectrum.getBinWidthHz()));
+
+    const double firstBinFrequencyHz = whiteNoiseSpectrum.getBinFrequencyHz (firstBin);
+    HART_ASSERT_FLOAT_NE (firstBinFrequencyHz, 0_Hz, 1e-16);
 
     for (size_t channel = 0; channel < numChannels; ++channel)
     {
-        for (size_t bin = cutoffBin; bin < whiteNoiseSpectrum.getNumBins(); ++bin)
+
+        for (size_t bin = 0; bin < firstBin; ++bin)
+        {
+            // Expecting zeros in all bins under cutoff frequency
+            HART_EXPECT_FLOAT_EQ (whiteNoiseSpectrum.getBinMagnitude (channel, bin), 0.0, 1e-12);
+            HART_EXPECT_FLOAT_EQ (pinkNoiseSpectrum.getBinMagnitude (channel, bin), 0.0, 1e-12);
+            HART_EXPECT_FLOAT_EQ (brownNoiseSpectrum.getBinMagnitude (channel, bin), 0.0, 1e-12);
+        }
+
+        const double whiteNoiseA0 = whiteNoiseSpectrum.getBinMagnitude (channel, firstBin);
+        const double pinkNoiseA0 = pinkNoiseSpectrum.getBinMagnitude (channel, firstBin);
+        const double brownNoiseA0 = brownNoiseSpectrum.getBinMagnitude (channel, firstBin);
+
+        for (size_t bin = firstBin; bin < whiteNoiseSpectrum.getNumBins(); ++bin)
         {
             const double frequencyHz = whiteNoiseSpectrum.getBinFrequencyHz (bin);
 
-            HART_EXPECT_FLOAT_EQ (whiteNoiseSpectrum.getBinMagnitude (channel, bin), 1.0, 1e-12);
-            HART_EXPECT_FLOAT_EQ (pinkNoiseSpectrum.getBinMagnitude (channel, bin), std::pow (frequencyHz / lowCutoffFrequencyHz, -0.5), 1e-12);
-            HART_EXPECT_FLOAT_EQ (brownNoiseSpectrum.getBinMagnitude (channel, bin), lowCutoffFrequencyHz / frequencyHz, 1e-12);
+            HART_EXPECT_FLOAT_EQ (whiteNoiseSpectrum.getBinMagnitude (channel, bin), whiteNoiseA0, 1e-12);
+            HART_EXPECT_FLOAT_EQ (pinkNoiseSpectrum.getBinMagnitude (channel, bin), pinkNoiseA0 * std::pow (frequencyHz / firstBinFrequencyHz, -0.5), 1e-12);
+            HART_EXPECT_FLOAT_EQ (brownNoiseSpectrum.getBinMagnitude (channel, bin), brownNoiseA0 * firstBinFrequencyHz / frequencyHz, 1e-12);
         }
     }
 }

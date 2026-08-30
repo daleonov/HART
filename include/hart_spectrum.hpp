@@ -2,12 +2,13 @@
 
 #include <cstdint>  // uint_fast32_t
 #include <vector>
-#include <cmath>  // sin(), cos(), abs()
+#include <cmath>  // sin(), cos(), abs(), pow()
 #include <complex>  // complex, conj(), real(), imag()
 #include <algorithm>
 #include <random>
 #include <utility>  // swap(), make_pair(), pair
 
+#include "hart_accurate_sum.hpp"
 #include "hart_audio_buffer.hpp"
 #include "hart_cliconfig.hpp"
 #include "hart_exceptions.hpp"
@@ -213,10 +214,18 @@ public:
             /// to time domain via `toAudioBuffer()`, the desired duration will
             /// be respected.
             ///
+            /// Sizes of 0 and 1 will be rejected. While they do make mathematical
+            /// sense, they're not meaningful for this context, and would make the
+            /// colouredNoise() implementation a bit more complicated, so those
+            /// edge cases are considered invalid.
+            ///
             /// Defaults to global default render duration.
             /// @return Chainable `ColouredNoise` options instance
             ColouredNoise withDuration (size_t signalDurationFrames)
             {
+                if (signalDurationFrames <= 1)
+                    HART_THROW_OR_RETURN (SizeError, "Can't get a meaningful noise spectrum for such a duration", *this);
+            
                 m_signalDurationFrames = signalDurationFrames;
                 return *this;
             }
@@ -274,6 +283,11 @@ public:
     ///
     /// where f_rel = frequency / lowCutoffHz.
     ///
+    /// The generated spectrum will have exactly -12 dB RMS for power-of-two
+    /// durations. For non-power-of-two durations, the worst case scenario
+    /// range is -oo..-8.99 dB, but in reality you might expect deviations
+    /// under +/- 0.5 dB most of the time.
+    ///
     /// @note You may also check `hart::WhiteNoise` and `hart::PinkNoise`
     /// signals, if you're looking for an infinite, and relatively accurate,
     /// sources of audio, that are more cheaply constructed in time domain.
@@ -282,6 +296,8 @@ public:
     static Spectrum colouredNoise (ColouredNoise options)
     {
         Spectrum spectrum = Spectrum::zeros (options.getNumChannels(), options.getDurationFrames(), options.getSampleRateHz());
+        hassert (spectrum.getFFTSize() > 1);  // ColouredNoise builder shold reject tiny durations
+
         std::mt19937 randomNumberGenerator (options.getRandomSeed());
         std::uniform_real_distribution<double> phaseDistribution (0.0, hart::twoPi);
         std::uniform_int_distribution<int> signDistribution (0, 1);
@@ -289,6 +305,12 @@ public:
         const double lowCutoffHz = options.getLowCutoffHz();
         const double beta = options.getBeta();
         const double magnitudeExponent = beta / 2.0;
+
+        constexpr double targetRmsLinear = 0.2511886431509580;  // -12 dB
+        const double predictedRmsLinear = spectrum.predictColouredNoiseRmsLinear (options);
+        hassert (floatsNotEqual (predictedRmsLinear, 0.0));
+
+        const double calibrationGainLinear = targetRmsLinear / predictedRmsLinear;
 
         for (size_t channel = 0; channel < spectrum.m_numChannels; ++channel)
         {
@@ -302,7 +324,7 @@ public:
                     continue;
                 }
 
-                const double magnitude = std::pow (frequencyHz / lowCutoffHz, magnitudeExponent);
+                const double magnitude = calibrationGainLinear * std::pow (frequencyHz / lowCutoffHz, magnitudeExponent);
 
                 if (bin == 0 || (spectrum.m_fftSize % 2 == 0 && bin == spectrum.m_numBins - 1))
                 {
@@ -652,6 +674,45 @@ private:
             for (size_t i = 0; i < n; ++i)
                 data[i] *= scale;
         }
+    }
+
+    /// @brief Calculates expected RMS, assuming the spectrum will contain coloured noise.
+    /// @details Meant to be used by the colouredNoise() factory.
+    /// @private
+    double predictColouredNoiseRmsLinear (ColouredNoise options) const
+    {
+        // Single-bin FFT is technically valid, but doesn't make practical sense,
+        // so this case is supposed to be rejected by the ColouredNoise builder.
+        hassert (getFFTSize() > 1);
+
+        const double beta = options.getBeta();
+        const double lowCutoffHz = options.getLowCutoffHz();
+        hassert (lowCutoffHz >= 1.0);  // Should have been caught by ColouredNoise options builder
+
+        const size_t firstBin = static_cast<size_t> (std::ceil (lowCutoffHz / getBinWidthHz()));
+        hassert (firstBin < getNumBins());
+
+        const bool spectrumIncludesNyquist = getFFTSize() % 2 == 0;
+        hassert (spectrumIncludesNyquist);  // Onlu exception is FFT size = 1, but it gets rejected by this point
+
+        AccurateSum<double> sum;
+        const double k0 = static_cast<double> (firstBin);
+
+        // TODO: Special case for pink noise
+        for (size_t k = firstBin; k < getNumBins() - 1; ++k)
+            sum += std::pow (static_cast<double> (k) / k0, beta);
+
+        // Nyquist bin
+        const size_t nyquistBin = getNumBins() - 1;
+        sum += 0.5 * std::pow (static_cast<double> (nyquistBin) / k0, beta);
+
+        hassert (getNumBins() != firstBin);
+        const double n = static_cast<double> (getFFTSize());
+
+        const double firstBinFrequencyHz = getBinFrequencyHz (firstBin);
+        const double a0 = std::pow (firstBinFrequencyHz / lowCutoffHz, 0.5 * beta);
+
+        return a0 / n * sqrt (2.0 * sum.getValue());
     }
 
     double m_sampleRateHz = 0.0;
