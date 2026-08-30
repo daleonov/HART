@@ -12,7 +12,6 @@
 #include "hart_units.hpp"  // Unit
 #include "hart_utils.hpp"  // nan(), ratioToDecibels()
 
-// TODO: Document RMS for Spectrum
 // TODO: Implement RMS for IR
 
 namespace hart
@@ -93,6 +92,52 @@ MetricQuery<double> rms (const AudioBuffer<SampleType>& buffer)
 }
 
 /// @brief  Calculates root mean square (RMS) of a spectrum
+
+/// @details
+/// Calculates the RMS of the time-domain signal represented by the selected
+/// frequency bins. For a partial frequency slice, this is equivalent to
+/// zeroing all bins outside the slice, converting the remaining spectrum to
+/// the time domain, and calculating the RMS of that band-limited signal.
+///
+/// HART spectra are one-sided, so the energy of ordinary positive-frequency
+/// bins is doubled to account for their omitted negative-frequency
+/// counterparts. DC and Nyquist bins, when present in the selected slice, are
+/// counted only once.
+///
+/// For an FFT size N, if requested for a full spectrum (and not a frequency
+/// slice), the RMS will be calculated as:
+///
+/// @f[
+/// \mathrm{RMS}
+/// =
+/// \frac{1}{N}
+/// \sqrt{
+/// |X_0|^2
+/// +
+/// |X_{N/2}|^2
+/// +
+/// 2\sum_{k=1}^{N/2-1}|X_k|^2
+/// }
+/// @f]
+///
+/// (RMS = sqrt (X_DCBin ** 2 + X_NyquistBin ** 2 + 2 * sum (X_OtherBins ** 2)) / FFTSize)
+///
+/// For a frequency slice, only bins belonging to that slice contribute to the
+/// sum, while the normalization remains based on the full FFT size. In other
+/// words, all partial slices' RMS will add up to a full spectrum RMS.
+///
+/// Supports `Unit::linear` (native/default value) and `Unit::dB`. Decibels
+/// are calculated as a voltage, not a power, variety.
+///
+/// @note If the Spectrum represents a time-domain signal whose original
+/// duration is shorter than its FFT size, this metric describes the RMS of the
+/// complete FFT-period signal represented by the spectrum. It therefore does
+/// not necessarily equal the RMS of a time-domain buffer returned by
+/// Spectrum::toAudioBuffer(), as `rms (spectrum)` includes contribution of
+/// zero-padded section of the audio, while `rms (audioBuffer)` does not.
+///
+/// @param spectrum Spectrum to analyse
+/// @return Chainable per-channel `MetricQuery` object
 /// @ingroup Metrics
 inline MetricQuery<double> rms (const Spectrum& spectrum)
 {
