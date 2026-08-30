@@ -2,7 +2,7 @@
 
 #include <algorithm>  // min(), max()
 #include <cctype>  // isalpha()
-#include <cmath>  // pow()
+#include <cmath>  // pow(), ceil()
 #include <exception>
 #include <fstream>
 #include <limits>  // infinity(), nan()
@@ -221,6 +221,26 @@ static size_t previousPowerOfTwo (size_t x)
 static bool isPowerOfTwo (size_t x)
 {
     return (x != 0) && ((x & (x - 1)) == 0);
+}
+
+/// @brief Calculates duration in seconds, that is a power of 2 in provided sample rate, and is a closest next value to requested target duration
+/// @details Useful for test cases that involve FFT, that are sensitive to FFT zero-padding.
+/// @note For very long target durations and/or very high sample rates may cause an potential `size_t` overflow, so be cautious.
+/// @param targetDurationSeconds Target arbitraty duration in seconds
+/// @param sampleRateHz Sample rate, in which the resulting duration should be a power of two
+/// @return Duration in seconds, that is represented by a power-of-two number of frames in the supplied sample rate.
+/// The result is guaranteed be greater or equal to @p targetDurationSeconds.
+static double nextPowerOfTwoDuration (double targetDurationSeconds, double sampleRateHz = CLIConfig::getInstance().getDefaultSampleRateHz())
+{
+    if (floatsEqual (sampleRateHz, 0.0) || sampleRateHz < 0.0 || std::isnan (sampleRateHz))
+        HART_THROW_OR_RETURN (ValueError, "Invalid sample rate", nan<double>());
+
+    if (targetDurationSeconds < 0.0 || std::isnan (targetDurationSeconds))
+        HART_THROW_OR_RETURN (ValueError, "Invalid target duration", nan<double>());
+
+    const size_t targetDurationFrames = static_cast<size_t> (std::ceil (targetDurationSeconds * sampleRateHz));
+    const size_t powerOfTwoDurationFrames = hart::nextPowerOfTwo (targetDurationFrames);
+    return static_cast<double> (powerOfTwoDurationFrames) / sampleRateHz;
 }
 
 // @brief Check if file exists and whether it's possible to read it
