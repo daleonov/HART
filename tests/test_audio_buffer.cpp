@@ -178,3 +178,49 @@ HART_TEST ("AudioBuffer - Resampling")
     HART_ASSERT_EQUAL (bufferA, bufferB)
         << "Resampled buffer is identical (within a threshold, but actually bit-identical) to original after resampling to identical SR";
 }
+
+HART_TEST ("AudioBuffer - makeCopyOf() - matching sample type")
+{
+    AudioBuffer bufferA (2, 3, 12345_Hz);
+    bufferA.clear();
+    bufferA[0][0] = 1.111f;
+    bufferA[0][1] = 2.222f;
+    bufferA[0][2] = 3.333f;
+    bufferA[1][0] = 4.444f;
+    bufferA[1][1] = 5.555f;
+    bufferA[1][2] = 6.666f;
+
+    AudioBuffer bufferB (5, 6, 45678_Hz);
+    bufferB.makeCopyOf (bufferA);
+
+    HART_EXPECT_EQ (bufferA, bufferB);
+}
+
+HART_TEST ("AudioBuffer - makeCopyOf() - different sample types")
+{
+    hart::AudioBuffer<double> bufferA (2, 3, 12345_Hz);
+    bufferA.clear();
+    bufferA[0][0] = 1.111;
+    bufferA[0][1] = 2.222;
+    bufferA[0][2] = 3.333;
+    bufferA[1][0] = 4.444;
+    bufferA[1][1] = 5.555;
+    bufferA[1][2] = 6.666;
+
+    hart::AudioBuffer<float> bufferB (5, 6, 45678_Hz);
+    bufferB.makeCopyOf (bufferA);
+
+    HART_EXPECT_EQ (bufferA.getNumChannels(), bufferB.getNumChannels());
+    HART_EXPECT_EQ (bufferA.getNumFrames(), bufferB.getNumFrames());
+    HART_EXPECT_FLOAT_EQ (bufferA.getSampleRateHz(), bufferB.getSampleRateHz(), 1e-12);
+    HART_EXPECT_FLOAT_EQ (bufferA[0][0], static_cast<double>(bufferB[0][0]), 1e-6);
+    HART_EXPECT_FLOAT_EQ (bufferA[0][1], static_cast<double>(bufferB[0][1]), 1e-6);
+    HART_EXPECT_FLOAT_EQ (bufferA[0][2], static_cast<double>(bufferB[0][2]), 1e-6);
+    HART_EXPECT_FLOAT_EQ (bufferA[1][0], static_cast<double>(bufferB[1][0]), 1e-6);
+    HART_EXPECT_FLOAT_EQ (bufferA[1][1], static_cast<double>(bufferB[1][1]), 1e-6);
+    HART_EXPECT_FLOAT_EQ (bufferA[1][2], static_cast<double>(bufferB[1][2]), 1e-6);
+    hart::AudioBuffer<double> bufferC (1, 4, 54321_Hz);
+    bufferC.makeCopyOf (bufferB);
+
+    HART_ASSERT_EQ (bufferC, bufferA) << "f64 - f32 - f64 round-trip matches the original buffer";
+}

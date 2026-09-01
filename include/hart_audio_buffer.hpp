@@ -461,6 +461,29 @@ public:
         std::copy (source, source + numFrames, m_channelPointers[destChannel] + destStartFrame);
     }
 
+    /// @brief Resizes this buffer so that the number of channels and frames match the other one, and copies all the data
+    /// @tparam OtherSampleType Sample type of other buffer, typically `float` or `double`
+    /// @param other Buffer to copy data from
+    template <typename OtherSampleType>
+    void makeCopyOf (const AudioBuffer<OtherSampleType>& other)
+    {
+        m_numChannels = other.getNumChannels();
+        m_numFrames = other.getNumFrames();
+        m_sampleRateHz = other.hasSampleRate() ? other.getSampleRateHz() : nan<double>();
+
+        const size_t newTotalSamples = m_numChannels * m_numFrames;
+        m_frames.resize (newTotalSamples);
+        m_channelPointers.resize (m_numChannels);
+        updateChannelPointers();
+
+        SampleType* const* thisSamples = getArrayOfWritePointers();
+        const OtherSampleType* const* otherSamples = other.getArrayOfReadPointers();
+
+        for (size_t channel = 0; channel < m_numChannels; ++channel)
+            for (size_t frame = 0; frame < m_numFrames; ++frame)
+                thisSamples[channel][frame] = static_cast<SampleType> (otherSamples[channel][frame]);
+    }
+
     /// @brief Clears the entire buffer
     /// @details Sets all frames in all channels to zeros, keeping the sample rate value intact
     void clear()
