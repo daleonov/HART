@@ -163,7 +163,6 @@ public:
         hassert (floatsEqual (output.getSampleRateHz(), m_wavFramesSource->getSampleRateHz(), m_sampleRateToleranceHz));
 
         const size_t numFrames = output.getNumFrames();
-        const size_t numChannels = output.getNumChannels();
         size_t frameInOutputBuffer = 0;
         size_t frameInWavBuffer = m_wavOffsetFrames;
 

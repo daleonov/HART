@@ -168,7 +168,7 @@ HART_TEST ("AudioBuffer - Resampling")
         const AudioBuffer bufferC = bufferB.resample (originalSampleRateHz);
         HART_ASSERT_EQ (bufferC.getNumFrames(), bufferA.getNumFrames());
 
-        const float maxAcceptableEsr = targetSampleRateHz < originalSampleRateHz ? 0.2 : 1e-3;
+        const double maxAcceptableEsr = targetSampleRateHz < originalSampleRateHz ? 0.2 : 1e-3;
         HART_EXPECT_LT (esr (bufferC, bufferA). get (max()), maxAcceptableEsr)
             << labelPrefix << "should re-resample back to the original SR without losing too much fidelity";
     }

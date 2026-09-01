@@ -95,8 +95,6 @@ HART_TEST ("Utils - nextPowerOfTwoDuration() - Output value is no less than targ
 
 HART_TEST ("Utils - nextPowerOfTwoDuration() - Output duration is power of 2 in frames")
 {
-    const double sampleRateHz = hart::CLIConfig::getInstance().getDefaultSampleRateHz();
-
     for (double targetDurationSeconds = 0.1_us; targetDurationSeconds < 100000_s; targetDurationSeconds *= 1.9)
     {
         const double suggestedDurationSeconds = hart::nextPowerOfTwoDuration (targetDurationSeconds);

@@ -139,9 +139,6 @@ HART_TEST ("Spectrum - Spectrum::colouredNoise() is deterministic")
     const Spectrum spectrumB = Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withRandomSeed (123).withLowCutoff (lowCutoffFrequencyHz));
     const Spectrum spectrumC = Spectrum::colouredNoise (Spectrum::ColouredNoise::pink().withRandomSeed (456).withLowCutoff (lowCutoffFrequencyHz));
 
-    const size_t numChannels = spectrumA.getNumChannels();
-    const size_t cutoffBin = spectrumA.findClosestBin (lowCutoffFrequencyHz);
-
     HART_EXPECT_EQ (spectrumA, spectrumB);
     HART_EXPECT_NE (spectrumA, spectrumC);
 }

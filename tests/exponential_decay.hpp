@@ -18,7 +18,7 @@ public:
         decayTimeSeconds
     };
 
-    void process (const hart::AudioBuffer<float>& input, hart::AudioBuffer<float>& output, const hart::EnvelopeBuffers& envelopeBuffers, hart::ChannelFlags channelsToProcess) override
+    void process (const hart::AudioBuffer<float>& input, hart::AudioBuffer<float>& output, const hart::EnvelopeBuffers& /* envelopeBuffers */, hart::ChannelFlags /* channelsToProcess */) override
     {
         hassert (input.getNumChannels() == 1);
         hassert (output.getNumChannels() == 1);
@@ -84,6 +84,6 @@ private:
     void calculateFeedback()
     {
         // After m_decayTimeSeconds, amplitude should be 0.001 (-60 dB)
-        m_feedback = std::pow (10.0, -3.0 / static_cast<float> (m_decayTimeSeconds * m_sampleRateHz));
+        m_feedback = static_cast<float> (std::pow (10.0, -3.0 / static_cast<float> (m_decayTimeSeconds * m_sampleRateHz)));
     }
 };

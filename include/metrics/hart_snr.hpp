@@ -63,21 +63,19 @@ namespace hart
 template <typename SampleType>
 MetricQuery<double> snr (const AudioBuffer<SampleType>& signalPlusNoise, const AudioBuffer<SampleType>& signal)
 {
-    if (! signalPlusNoise.hasSampleRate() || signalPlusNoise.getSampleRateHz() < 0.0 || floatsEqual (signalPlusNoise.getSampleRateHz(), 0.0))
-        HART_THROW_OR_RETURN (SampleRateError, "signalPlusNoise must have a valid sample rate", nan<double>());
-
-    if (! signal.hasSampleRate() || signal.getSampleRateHz() < 0.0 || floatsEqual (signal.getSampleRateHz(), 0.0))
-        HART_THROW_OR_RETURN (SampleRateError, "signal must have a valid sample rate", nan<double>());
-
-    if (floatsNotEqual (signalPlusNoise.getSampleRateHz(), signal.getSampleRateHz()))
-        HART_THROW_OR_RETURN (SampleRateError, "Both provided buffers should have same saple rate", nan<double>());
-
     MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
         [&signalPlusNoise, &signal]
         (size_t channel, Slice slice, Unit requestedUnit)
         -> double
     {
-        const double sampleRateHz = signal.getSampleRateHz();
+        if (! signalPlusNoise.hasSampleRate() || signalPlusNoise.getSampleRateHz() < 0.0 || floatsEqual (signalPlusNoise.getSampleRateHz(), 0.0))
+            HART_THROW_OR_RETURN (SampleRateError, "signalPlusNoise must have a valid sample rate", nan<double>());
+
+        if (! signal.hasSampleRate() || signal.getSampleRateHz() < 0.0 || floatsEqual (signal.getSampleRateHz(), 0.0))
+            HART_THROW_OR_RETURN (SampleRateError, "signal must have a valid sample rate", nan<double>());
+
+        if (floatsNotEqual (signalPlusNoise.getSampleRateHz(), signal.getSampleRateHz()))
+            HART_THROW_OR_RETURN (SampleRateError, "Both provided buffers should have same saple rate", nan<double>());
 
         if (channel >= signalPlusNoise.getNumChannels())
             HART_THROW_OR_RETURN (hart::IndexError, "Channel index is out of bounds for the signalPlusNoise buffer", nan<double>());

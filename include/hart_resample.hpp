@@ -7,7 +7,12 @@
 #define R8B_FASTTIMING 0  // On the fence here, but doesn't seem to have much of an impact either way
 #define R8B_EXTFFT 1  // We don't mind extra latency
 
+#include <cmath>  // ceil()
+
+#include "dependencies/choc/platform/choc_DisableAllWarnings.h"
 #include "dependencies/r8brain-free-src/CDSPResampler.h"
+#include "dependencies/choc/platform/choc_ReenableAllWarnings.h"
+
 #include "hart_audio_buffer.hpp"
 #include "hart_utils.hpp"  // roundToSizeT(), floatsEqual()
 
@@ -41,13 +46,13 @@ static void resample (const SampleType* sourceData, size_t sourceSizeFrames, dou
         HART_THROW_OR_RETURN_VOID (hart::SampleRateError, "Invalid destination sample rate");
 
     const double sampleRatesRatio = destinationSampleRateHz / sourceSampleRateHz;
-    const double minDestinationCapacityFrames = roundToSizeT (static_cast<double> (sourceSizeFrames) * destinationSampleRateHz / sourceSampleRateHz);
+    const size_t minDestinationCapacityFrames = roundToSizeT (static_cast<double> (sourceSizeFrames) * sampleRatesRatio);
 
     if (destinationCapacityFrames < minDestinationCapacityFrames)
         HART_THROW_OR_RETURN_VOID (SizeError, "Destination buffer doesn't have sufficient capacity");
 
     // It can also be r8b::CDSPResampler instead of r8b::CDSPResampler24, for even better fidelity
-    r8b::CDSPResampler24 resampler (sourceSampleRateHz, destinationSampleRateHz, sourceSizeFrames);
+    r8b::CDSPResampler24 resampler (sourceSampleRateHz, destinationSampleRateHz, static_cast<int> (sourceSizeFrames));
     hassert (floatsEqual (resampler.getLatencyFrac(), 0.0));  // We don't want SRC filters to introduce latency without us knowiung
 
     resampler.oneshot (const_cast<SampleType*> (sourceData), static_cast<int> (sourceSizeFrames), destinationData, static_cast<int> (destinationCapacityFrames));

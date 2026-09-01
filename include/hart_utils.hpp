@@ -257,7 +257,7 @@ static bool isPowerOfTwo (size_t x)
 /// @param sampleRateHz Sample rate, in which the resulting duration should be a power of two
 /// @return Duration in seconds, that is represented by a power-of-two number of frames in the supplied sample rate.
 /// The result is guaranteed be greater or equal to @p targetDurationSeconds.
-static double nextPowerOfTwoDuration (double targetDurationSeconds, double sampleRateHz = CLIConfig::getInstance().getDefaultSampleRateHz())
+inline static double nextPowerOfTwoDuration (double targetDurationSeconds, double sampleRateHz = CLIConfig::getInstance().getDefaultSampleRateHz())
 {
     if (floatsEqual (sampleRateHz, 0.0) || sampleRateHz < 0.0 || std::isnan (sampleRateHz))
         HART_THROW_OR_RETURN (ValueError, "Invalid sample rate", nan<double>());

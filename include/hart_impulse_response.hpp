@@ -40,11 +40,11 @@ public:
         if (! output.hasSampleRate())
             HART_THROW (hart::SampleRateError, "Output buffer should have sample rate associated with it");
 
-        const SampleType inputSampleRateHz = input.getSampleRateHz();
-        const SampleType outputSampleRateHz = output.getSampleRateHz();
+        const double inputSampleRateHz = input.getSampleRateHz();
+        const double outputSampleRateHz = output.getSampleRateHz();
 
-        if (hart::floatsEqual (inputSampleRateHz, (SampleType) 0)
-            || inputSampleRateHz < (SampleType) 0
+        if (hart::floatsEqual (inputSampleRateHz, 0.0)
+            || inputSampleRateHz < 0.0
             || std::isnan (inputSampleRateHz)
             || std::isinf (inputSampleRateHz)
         )
@@ -52,8 +52,8 @@ public:
             HART_THROW (hart::SampleRateError, "Input buffer should have valid sample rate");
         }
         
-        if (hart::floatsEqual (outputSampleRateHz, (SampleType) 0)
-            || outputSampleRateHz < (SampleType) 0
+        if (hart::floatsEqual (outputSampleRateHz, 0.0)
+            || outputSampleRateHz < 0.0
             || std::isnan (outputSampleRateHz)
             || std::isinf (outputSampleRateHz)
         )

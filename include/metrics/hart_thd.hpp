@@ -311,25 +311,23 @@ private:
         int maxHarmonic = 10
         )
     {
-        const double nan = hart::nan<double>();
-
         if (! isPowerOfTwo (fftSizeFrames))
-            HART_THROW_OR_RETURN (hart::SizeError, "FFT size is expected to be a power of 2", nan);
+            HART_THROW_OR_RETURN (hart::SizeError, "FFT size is expected to be a power of 2", hart::nan<double>());
 
         if (sampleRateHz < 0.0 || floatsEqual (sampleRateHz, 0.0) || std::isnan (sampleRateHz))
-            HART_THROW_OR_RETURN (hart::SampleRateError, "Invalid sample rate", nan);
+            HART_THROW_OR_RETURN (hart::SampleRateError, "Invalid sample rate", hart::nan<double>());
 
         if (desiredFrequencyHz < 0.0 || floatsEqual (desiredFrequencyHz, 0.0) || std::isnan (desiredFrequencyHz))
-            HART_THROW_OR_RETURN (hart::ValueError, "Invalid input fundamental frequency", nan);
+            HART_THROW_OR_RETURN (hart::ValueError, "Invalid input fundamental frequency", hart::nan<double>());
 
         if (maxHarmonic < 2)
-            HART_THROW_OR_RETURN (hart::ValueError, "Invalid max harmonic number", nan);
+            HART_THROW_OR_RETURN (hart::ValueError, "Invalid max harmonic number", hart::nan<double>());
 
         const double binWidthHz = sampleRateHz / static_cast<double> (fftSizeFrames);
         const size_t nyquistBin = fftSizeFrames / 2;
 
         if (static_cast<size_t> (maxHarmonic) >= nyquistBin)
-            HART_THROW_OR_RETURN (hart::ValueError, "FFT size is too small for the requested number of harmonics", nan);
+            HART_THROW_OR_RETURN (hart::ValueError, "FFT size is too small for the requested number of harmonics", hart::nan<double>());
 
         const size_t maxFundamentalBin = (nyquistBin - 1) / static_cast<size_t> (maxHarmonic);
 
@@ -435,30 +433,29 @@ inline MetricQuery<double> thd (const Spectrum& spectrum, THD::ExperimentSetup e
         hassert (channel < spectrum.getNumChannels());
         hassert (! std::isnan (spectrum.getSampleRateHz()));
 
-        const double nan = hart::nan<double>();
         const double fundamentalFrequencyHz = experimentSetup.frequencyHz;
 
         // Make sure your test's render time is exactly experimentSetup.durationSeconds (or experimentSetup.durationFrames)
         if (spectrum.getFFTSize() != experimentSetup.durationFrames)
-            HART_THROW_OR_RETURN (hart::ValueError, "FFT size doesn't match duration in the provided experiment setup", nan);
+            HART_THROW_OR_RETURN (hart::ValueError, "FFT size doesn't match duration in the provided experiment setup", hart::nan<double>());
 
         if (experimentSetup.durationFrames == 0 || floatsEqual (experimentSetup.durationSeconds, 0.0))
-            HART_THROW_OR_RETURN (hart::SizeError, "Experiment setup should not have duration of zero - nothing to analyze", nan);
+            HART_THROW_OR_RETURN (hart::SizeError, "Experiment setup should not have duration of zero - nothing to analyze", hart::nan<double>());
 
         const double experimentSetupSampleRateHz = static_cast<double> (experimentSetup.durationFrames) / experimentSetup.durationSeconds;
 
         // The duration of input signal should be exactly experimentSetup.durationSeconds and experimentSetup.durationFrames
         if (floatsNotEqual (spectrum.getSampleRateHz(), experimentSetupSampleRateHz))
-            HART_THROW_OR_RETURN (hart::ValueError, "Spectrum's sample rate doesn't match one derived from the provided experiment setup instance", nan);
+            HART_THROW_OR_RETURN (hart::ValueError, "Spectrum's sample rate doesn't match one derived from the provided experiment setup instance", hart::nan<double>());
 
         if (slice.type != Slice::Type::whole)
-            HART_THROW_OR_RETURN (hart::ValueError, "Cannot calculate THD of a portion of spectrum", nan);
+            HART_THROW_OR_RETURN (hart::ValueError, "Cannot calculate THD of a portion of spectrum", hart::nan<double>());
 
         const size_t fundamentalBin = spectrum.findClosestBin (fundamentalFrequencyHz);
 
         // The input signal in the experiment should be a sine wave at exactly experimentSetup.frequencyHz
         if (floatsNotEqual (fundamentalFrequencyHz, spectrum.getBinFrequencyHz (fundamentalBin)))
-            HART_THROW_OR_RETURN (hart::ValueError, "Fundamental frequency in the provided spectrum doesn't match one in experiment setup", nan);
+            HART_THROW_OR_RETURN (hart::ValueError, "Fundamental frequency in the provided spectrum doesn't match one in experiment setup", hart::nan<double>());
 
         const double fundamentalPower = std::norm (spectrum.getBinValue (channel, fundamentalBin));
         

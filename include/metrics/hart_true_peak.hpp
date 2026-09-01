@@ -83,9 +83,8 @@ public:
         hassert (sliceStop > sliceStart);
         hassert (sliceStop - sliceStart != 0);
         hassert (sliceStop <= observedOutputAudio.getNumFrames());
-
-        const size_t ratio = getRatio();
-
+        
+        const size_t oversamplingRatio = getRatio();
         SampleType truePeakValueLinear = (SampleType) 0;
         size_t truePeakChannel = 0;
         double truePeakFrame = 0.0;
@@ -101,7 +100,7 @@ public:
 
                 m_history[historyChannelIndex][m_historyTapIndex] = observedOutputAudio[channel][frame];
 
-                for (size_t phase = 0; phase < ratio; ++phase)
+                for (size_t phase = 0; phase < oversamplingRatio; ++phase)
                 {
                     const SampleType oversampledPeakLinear = evaluatePolyphaseFIR (historyChannelIndex, phase);
                     const SampleType rectifiedPeakLinear = std::abs (oversampledPeakLinear);
@@ -112,7 +111,7 @@ public:
                         truePeakChannel = channel;
                         truePeakFrame =
                             static_cast<double> (m_offsetFrames) +
-                            static_cast<double> (phase) / static_cast<double> (ratio);
+                            static_cast<double> (phase) / static_cast<double> (oversamplingRatio);
                     }
 
                 }
@@ -204,16 +203,16 @@ private:
         // Windowed-sinc polyphase FIR generator
         // TODO: Implement coefficients caching?
 
-        const size_t ratio = getRatio();
+        const size_t oversamplingRatio = getRatio();
         const size_t tapsPerPhase = getTapsPerPhase();
-        m_phaseCoefficients.assign (ratio, std::vector<SampleType> (tapsPerPhase, (SampleType) 0));
+        m_phaseCoefficients.assign (oversamplingRatio, std::vector<SampleType> (tapsPerPhase, (SampleType) 0));
 
         const double center = static_cast<double> (tapsPerPhase - 1) / 2.0;
 
-        for (size_t phase = 0; phase < ratio; ++phase)
+        for (size_t phase = 0; phase < oversamplingRatio; ++phase)
         {
             AccurateSum<SampleType> norm;
-            const double frac = static_cast<double> (phase) / static_cast<double> (ratio);
+            const double frac = static_cast<double> (phase) / static_cast<double> (oversamplingRatio);
 
             for (size_t tap = 0; tap < tapsPerPhase; ++tap)
             {

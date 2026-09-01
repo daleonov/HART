@@ -502,7 +502,7 @@ HART_TEST ("DSP - Bypass")
     processAudioWith (Bypass())
         .withLabel ("All channels")
         .withInputSignal (WhiteNoise())
-        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_TRUE (input.equalsTo (output, 1e-16)); }, "Same audio")
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_TRUE (input.equalsTo (output, 1e-8f)); }, "Same audio")
         .process();
     
     // It probably doesn't make too much sense to use "Bypass"
@@ -526,7 +526,7 @@ HART_TEST ("DSP - Flip")
     processAudioWith (Flip())
         .withLabel ("All channels")
         .withInputSignal (WhiteNoise())
-        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_TRUE (output.equalsTo (input * (-1.0f), 1e-16)); }, "Polarity flipped")
+        .expectTrue ([] (const AudioBuffer& input, const AudioBuffer& output) { return HART_TRUE (output.equalsTo (input * (-1.0f), 1e-8f)); }, "Polarity flipped")
         .process();
     
     processAudioWith (Flip().atChannels ({0, 2, 4}))

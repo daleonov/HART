@@ -8,7 +8,7 @@ class SimpleFIRFilter:
     public hart::DSP<float, SimpleFIRFilter>
 {
 public:
-    void process (const hart::AudioBuffer<float>& input, hart::AudioBuffer<float>& output, const hart::EnvelopeBuffers& envelopeBuffers, hart::ChannelFlags channelsToProcess) override
+    void process (const hart::AudioBuffer<float>& input, hart::AudioBuffer<float>& output, const hart::EnvelopeBuffers& /* envelopeBuffers */, hart::ChannelFlags /* channelsToProcess */) override
     {
         hassert (input.getNumChannels() == 1);
         hassert (output.getNumChannels() == 1);
@@ -26,7 +26,7 @@ public:
     }
 
     void setValue (int /* id */, double /* value */) override {}
-    void prepare (double /* sampleRateHz */, size_t /* numInputChannels */, size_t /* numOutputChannels */, size_t maxBlockSizeFrames) override {}
+    void prepare (double /* sampleRateHz */, size_t /* numInputChannels */, size_t /* numOutputChannels */, size_t /* maxBlockSizeFrames */) override {}
 
     void reset() override
     {
