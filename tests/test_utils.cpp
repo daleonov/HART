@@ -7,7 +7,7 @@
 HART_TEST ("Utils - makeRandomSeeds() - Makes correct number of seeds")
 {
     std::vector<uint_fast32_t> seedsA = hart::makeRandomSeeds<uint_fast32_t> (10);
-    HART_EXPECT_EQ (seedsA.size(), 10);
+    HART_EXPECT_EQ (seedsA.size(), 10u);
     
     std::vector<uint_fast32_t> seedsB = hart::makeRandomSeeds<uint_fast32_t> (0);
     HART_EXPECT_TRUE (seedsB.empty());
@@ -16,10 +16,10 @@ HART_TEST ("Utils - makeRandomSeeds() - Makes correct number of seeds")
 HART_TEST ("Utils - makeRandomSeeds() - Produces unique seed values")
 {
     std::vector<uint_fast32_t> seeds = hart::makeRandomSeeds<uint_fast32_t> (1000);
-    HART_EXPECT_EQ (seeds.size(), 1000);
+    HART_EXPECT_EQ (seeds.size(), 1000u);
 
     const std::unordered_set<uint_fast32_t> uniqueSeeds (seeds.begin(), seeds.end());
-    HART_EXPECT_GT (uniqueSeeds.size(), 1);
+    HART_EXPECT_GT (uniqueSeeds.size(), 1u);
 }
 
 HART_TEST ("Utils - makeRandomSeeds() - Identical base seeds yield identical seed sequences")

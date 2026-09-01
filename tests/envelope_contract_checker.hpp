@@ -79,7 +79,7 @@ private:
     bool m_prepareCalled = false;
 
     std::thread::id m_threadIdWhereInstanceWasConstructed {};
-    int m_numRenderNextBlockCalls = 0;
+    size_t m_numRenderNextBlockCalls = 0;
     size_t m_numFramesRendered = 0;
 
     void verify() const
