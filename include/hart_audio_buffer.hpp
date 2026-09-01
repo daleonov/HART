@@ -10,7 +10,7 @@
 #include "hart_preparation.hpp"
 #include "hart_resample.hpp"
 #include "hart_slice.hpp"
-#include "hart_utils.hpp"  // nan(), floatsEqual(), roundToSizeT()
+#include "hart_utils.hpp"  // nan(), floatsEqual(), floatsNotEqual(), roundToSizeT()
 
 /// @defgroup DataStructures Data Structures
 /// @brief Custom data structures and containers
@@ -459,6 +459,29 @@ public:
             HART_THROW_OR_RETURN_VOID (hart::IndexError, "Invalid frame range");
 
         std::copy (source, source + numFrames, m_channelPointers[destChannel] + destStartFrame);
+    }
+
+    /// @brief Copies audio from another audio buffer
+    /// @details Assumes both buffers have same sizes (number channels and frames) and sample rates
+    /// (or both don't have sample rates assigned to them). For mismatched buffers, or uninitialized
+    /// destination buffer, consider using `makeCopyOf()` or the copy ctor or assignement.
+    /// @param other Buffer to copy data from
+    void copyFrom (const AudioBuffer& other)
+    {
+        if (other.getNumChannels() != m_numChannels)
+            HART_THROW_OR_RETURN_VOID (ChannelLayoutError, "Number of channels mismatch");
+
+        if (other.getNumFrames() != m_numFrames)
+            HART_THROW_OR_RETURN_VOID (SizeError, "Frame number mismatch");
+
+        if (hasSampleRate() ^ other.hasSampleRate())
+            HART_THROW_OR_RETURN_VOID (SampleRateError, "One of the audio buffers has sample rate, while other one doesn't");
+
+        if ((hasSampleRate() && other.hasSampleRate()) && floatsNotEqual (getSampleRateHz(), other.getSampleRateHz()))
+            HART_THROW_OR_RETURN_VOID (SampleRateError, "Sample rate mismatch");
+
+        hassert (m_frames.size() == other.m_frames.size());
+        std::copy (other.m_frames.begin(), other.m_frames.end(), m_frames.begin());
     }
 
     /// @brief Resizes this buffer so that the number of channels and frames match the other one, and copies all the data

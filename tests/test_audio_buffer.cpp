@@ -224,3 +224,19 @@ HART_TEST ("AudioBuffer - makeCopyOf() - different sample types")
 
     HART_ASSERT_EQ (bufferC, bufferA) << "f64 - f32 - f64 round-trip matches the original buffer";
 }
+
+HART_TEST ("AudioBuffer - copyFrom() for entire matched AudioBuffer")
+{
+    AudioBuffer bufferA (2, 3, 42424_Hz);
+    bufferA[0][0] = 1.111f;
+    bufferA[0][1] = 2.222f;
+    bufferA[0][2] = 3.333f;
+    bufferA[1][0] = 4.444f;
+    bufferA[1][1] = 5.555f;
+    bufferA[1][2] = 6.666f;
+    
+    AudioBuffer bufferB (2, 3, 42424_Hz);
+    bufferB.copyFrom (bufferA);
+
+    HART_ASSERT_EQ (bufferA, bufferB);
+}
