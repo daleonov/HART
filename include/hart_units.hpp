@@ -55,37 +55,37 @@ constexpr double pi_rad = hart::pi;
 constexpr double twoPi_rad = hart::twoPi;
 constexpr double halfPi_rad = hart::halfPi;
 
-constexpr double operator"" _s (long double val) { return static_cast<double> (val); }
-constexpr double operator"" _s (unsigned long long int val) { return static_cast<double> (val); }
-constexpr double operator"" _ms (long double val) { return static_cast<double> (1e-3 * val); }
-constexpr double operator"" _ms (unsigned long long int val) { return static_cast<double> (1e-3 * val); }
-constexpr double operator"" _us (long double val) { return static_cast<double> (1e-6 * val); }
-constexpr double operator"" _us (unsigned long long int val) { return static_cast<double> (1e-6 * val); }
-constexpr double operator"" _ns (long double val) { return static_cast<double> (1e-9 * val); }
-constexpr double operator"" _ns (unsigned long long int val) { return static_cast<double> (1e-9 * val); }
-constexpr double operator"" _dB (long double val) { return static_cast<double> (val); }
-constexpr double operator"" _dB (unsigned long long int val) { return static_cast<double> (val); }
-constexpr double operator"" _dBTP (long double val) { return static_cast<double> (val); }
-constexpr double operator"" _dBTP (unsigned long long int val) { return static_cast<double> (val); }
-constexpr double operator"" _dB_per_octave (long double val) { return static_cast<double> (val); }
-constexpr double operator"" _dB_per_octave (unsigned long long int val) { return static_cast<double> (val); }
-constexpr double operator"" _dB_per_decade (long double val) { return static_cast<double> (val); }
-constexpr double operator"" _dB_per_decade (unsigned long long int val) { return static_cast<double> (val); }
-constexpr double operator"" _Hz (long double val) { return static_cast<double> (val); }
-constexpr double operator"" _Hz (unsigned long long int val) { return static_cast<double> (val); }
-constexpr double operator"" _kHz (long double val) { return static_cast<double> (1e3 * val); }
-constexpr double operator"" _kHz (unsigned long long val) { return static_cast<double> (1e3 * val); }
-constexpr double operator"" _rad (long double val) { return static_cast<double> (val); }
-constexpr double operator"" _rad (unsigned long long val) { return static_cast<double>(val); }
-constexpr double operator"" _deg (long double val) { return static_cast<double> (val * hart::pi / 180.0); }
-constexpr double operator"" _deg (unsigned long long val) { return static_cast<double>(val) * hart::pi / 180.0; }
-constexpr double operator"" _cents (long double val) { return static_cast<double> (val); }
-constexpr double operator"" _cents (unsigned long long val) { return static_cast<double>(val); }
+constexpr double operator""_s (long double val) { return static_cast<double> (val); }
+constexpr double operator""_s (unsigned long long int val) { return static_cast<double> (val); }
+constexpr double operator""_ms (long double val) { return static_cast<double> (1e-3 * val); }
+constexpr double operator""_ms (unsigned long long int val) { return static_cast<double> (1e-3 * val); }
+constexpr double operator""_us (long double val) { return static_cast<double> (1e-6 * val); }
+constexpr double operator""_us (unsigned long long int val) { return static_cast<double> (1e-6 * val); }
+constexpr double operator""_ns (long double val) { return static_cast<double> (1e-9 * val); }
+constexpr double operator""_ns (unsigned long long int val) { return static_cast<double> (1e-9 * val); }
+constexpr double operator""_dB (long double val) { return static_cast<double> (val); }
+constexpr double operator""_dB (unsigned long long int val) { return static_cast<double> (val); }
+constexpr double operator""_dBTP (long double val) { return static_cast<double> (val); }
+constexpr double operator""_dBTP (unsigned long long int val) { return static_cast<double> (val); }
+constexpr double operator""_dB_per_octave (long double val) { return static_cast<double> (val); }
+constexpr double operator""_dB_per_octave (unsigned long long int val) { return static_cast<double> (val); }
+constexpr double operator""_dB_per_decade (long double val) { return static_cast<double> (val); }
+constexpr double operator""_dB_per_decade (unsigned long long int val) { return static_cast<double> (val); }
+constexpr double operator""_Hz (long double val) { return static_cast<double> (val); }
+constexpr double operator""_Hz (unsigned long long int val) { return static_cast<double> (val); }
+constexpr double operator""_kHz (long double val) { return static_cast<double> (1e3 * val); }
+constexpr double operator""_kHz (unsigned long long val) { return static_cast<double> (1e3 * val); }
+constexpr double operator""_rad (long double val) { return static_cast<double> (val); }
+constexpr double operator""_rad (unsigned long long val) { return static_cast<double>(val); }
+constexpr double operator""_deg (long double val) { return static_cast<double> (val * hart::pi / 180.0); }
+constexpr double operator""_deg (unsigned long long val) { return static_cast<double>(val) * hart::pi / 180.0; }
+constexpr double operator""_cents (long double val) { return static_cast<double> (val); }
+constexpr double operator""_cents (unsigned long long val) { return static_cast<double>(val); }
 
-inline double operator"" _dB_as_ratio (long double val) { return hart::decibelsToRatio (static_cast<double> (val)); }
-inline double operator"" _dB_as_ratio (unsigned long long int val) { return hart::decibelsToRatio (static_cast<double> (val)); }
-inline double operator"" _ratio_as_dB (long double val) { return hart::ratioToDecibels (static_cast<double> (val)); }
-inline double operator"" _ratio_as_dB (unsigned long long int val) { return hart::ratioToDecibels (static_cast<double> (val)); }
+inline double operator""_dB_as_ratio (long double val) { return hart::decibelsToRatio (static_cast<double> (val)); }
+inline double operator""_dB_as_ratio (unsigned long long int val) { return hart::decibelsToRatio (static_cast<double> (val)); }
+inline double operator""_ratio_as_dB (long double val) { return hart::ratioToDecibels (static_cast<double> (val)); }
+inline double operator""_ratio_as_dB (unsigned long long int val) { return hart::ratioToDecibels (static_cast<double> (val)); }
 
 // TODO: percent <-> ratio conversions
 
