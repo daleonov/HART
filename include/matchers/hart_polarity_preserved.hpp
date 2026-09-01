@@ -43,7 +43,6 @@ namespace hart
 /// - Gain differences do not affect the result due to normalization.
 /// - Constant DC offset may bias the signed correlation.
 /// - Heavy nonlinear processing may reduce confidence in polarity detection.
-/// - Unlike @ref hart::CorrelationAbove, the sign of correlation is preserved.
 /// @tparam SampleType Floating point sample type, typically `float` or `double`
 /// @ingroup Matchers
 template <typename SampleType>

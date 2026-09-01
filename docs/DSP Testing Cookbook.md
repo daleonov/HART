@@ -110,7 +110,13 @@ HART_TEST ("Modifies audio - Correlation method")
         .withLabel ("Sawtooth")
         .withInputSignal (Sawtooth())
         .inStereo()
-        .expectFalse (CorrelationAbove (0.999))
+        .expectFalse (
+            [] (const auto& input, const auto& output)
+            {
+                return HART_GT (maxCrossCorrelation (input, output, 10_ms), 0.999).apply (abs).get (min());
+            },
+            "|Correlation| < 0.999"
+            )
         .process();
 }
 ```

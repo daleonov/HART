@@ -61,7 +61,6 @@ Matchers are similar to their namesakes from Catch2. In HART, they represent som
 | `PeaksAt`             | Sample peaks match an expected level
 | `PeaksBelow`          | Sample peaks stay below some threshold
 | `TruePeaksBelow`      | Estimated inter-sample peaks stay below some threshold
-| `CorrelationAbove`    | Input and output are correlated above a requested value
 | `FundamentalEquals`   | Estimated fundamental frequency matches the expected value
 | `LatencyBelow`        | Measured latency stays below a specified time amount
 | `NoDenormals`         | Output contains no subnormal floating-point samples

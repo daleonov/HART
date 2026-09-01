@@ -1,6 +1,7 @@
 #include <cmath>  // tanh()
 
 #include "hart.hpp"
+#include "hart_condition_macros.hpp"
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
 using AudioBuffer = hart::AudioBuffer<float>;
@@ -454,6 +455,11 @@ HART_TEST ("DSP - TimeShift")
 
 HART_TEST ("DSP - AdditiveNoise")
 {
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::maxCrossCorrelation;
+    using hart::min;
+    using std::abs;
+
     processAudioWith (AdditiveNoise (ratioToDecibels (0.25)))
         .withLabel ("Correct levels")
         .withInputSignal (SineWave() >> GainLinear (0.75))
@@ -466,31 +472,57 @@ HART_TEST ("DSP - AdditiveNoise")
     processAudioWith (AdditiveNoise (-10_dB))
         .withLabel ("Slightly noisy signal")
         .withInputSignal (SineWave() >> GainDb (-6_dB))
-        .expectTrue (CorrelationAbove (0.85))
-        .expectFalse (CorrelationAbove (0.999))
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_IN_RANGE (maxCrossCorrelation (input, output, 10_ms).apply (abs).get (min()), 0.85, 0.999, 1e-8);
+            },
+            "0.85 <= |Correlation| <= 0.999"
+            )
         .process();
 
     processAudioWith (AdditiveNoise (-3_dB))
         .withLabel ("Very noisy signal")
         .withInputSignal (SineWave() >> GainDb (-6_dB))
-        .expectTrue (CorrelationAbove (0.5))
-        .expectFalse (CorrelationAbove (0.85))
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_IN_RANGE (maxCrossCorrelation (input, output, 10_ms).apply (abs).get (min()), 0.50, 0.85, 1e-8);
+            },
+            "0.5 <= |Correlation| <= 0.85"
+            )
         .process();
 
     processAudioWith (AdditiveNoise (-3_dB))
         .withLabel ("Signal drowned in noise")
         .withInputSignal (SineWave() >> GainDb (-20_dB))
-        .expectTrue (CorrelationAbove (0.1))
-        .expectFalse (CorrelationAbove (0.25))
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_FLOAT_IN_RANGE (maxCrossCorrelation (input, output, 10_ms).apply (abs).get (min()), 0.10, 0.25, 1e-8);
+            },
+            "0.10 <= |Correlation| <= 0.25"
+            )
         .process();
 
     processAudioWith (AdditiveNoise (-3_dB).atChannel (Channel::left))
         .withLabel ("One of the channels drowned in noise")
         .withInputSignal (SineWave() >> GainDb (-20_dB))
         .inStereo()
-        .expectFalse (CorrelationAbove (0.25))
-        .expectFalse (CorrelationAbove (0.25).atChannel (Channel::left))
-        .expectTrue (CorrelationAbove (0.999).atChannel (Channel::right))
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_LT (maxCrossCorrelation (input, output, 10_ms).apply (abs).ch (Channel::left).get(), 0.25);
+            },
+            "|Left channel output vs input correlation| < 0.25"
+            )
+        .expectTrue (
+            [] (const AudioBuffer& input, const AudioBuffer& output)
+            {
+                return HART_GT (maxCrossCorrelation (input, output, 10_ms).apply (abs).ch (Channel::right).get(), 0.999);
+            },
+            "|Right channel output vs input correlation| > 0.999"
+            )
         .process();
 }
 
