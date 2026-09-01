@@ -46,10 +46,7 @@ public:
     /// audio to check. Otherwise, it may still get a full piece of audio, or get data on a block-by-block basis.
     /// @param analysisContext Carries everything matcher should know about the input and output audio.
     /// @returns `true` if the audio satisfies the Matcher's condition, `false` otherwise
-    virtual bool match (AnalysisContext<SampleType> analysisContext)
-    {
-        return match (analysisContext); 
-    }
+    virtual bool match (AnalysisContext<SampleType> analysisContext) = 0;
 
     /// @brief Tells the host if it can operate on a block-by-block basis
     /// @details Some types of conditions absolutely require having a full piece of audio
