@@ -65,7 +65,7 @@ void AudioBuffer<SampleType>::copyFromJuceAudioBuffer (const JuceAudioBufferType
     if (numChannels != getNumChannels())
         HART_THROW_OR_RETURN_VOID (ChannelLayoutError, "Number of channels mismatch");
 
-    for (const size_t channel = 0; channel < numChannels; ++channel)
+    for (size_t channel = 0; channel < numChannels; ++channel)
     {
         copyFrom (
             channel,
@@ -96,7 +96,7 @@ void AudioBuffer<SampleType>::copyFromJuceAudioBlock (const JuceAudioBlockType& 
     if (numChannels != getNumChannels())
         HART_THROW_OR_RETURN_VOID (ChannelLayoutError, "Number of channels mismatch");
 
-    for (const size_t channel = 0; channel < numChannels; ++channel)
+    for (size_t channel = 0; channel < numChannels; ++channel)
     {
         copyFrom (
             channel,
