@@ -772,6 +772,15 @@ public:
         return resampledBuffer;
     }
 
+    template <typename JuceAudioBufferType> static AudioBuffer fromJuceAudioBuffer (const JuceAudioBufferType& juceAudioBuffer, double sampleRateHz = nan<double>());
+    template <typename JuceAudioBlockType> static AudioBuffer fromJuceAudioBlock (const JuceAudioBlockType& juceAudioBlock, double sampleRateHz = nan<double>());
+    template <typename JuceAudioBufferType> void copyFromJuceAudioBuffer (const JuceAudioBufferType& juceAudioBuffer);
+    template <typename JuceAudioBlockType> void copyFromJuceAudioBlock (const JuceAudioBlockType& juceAudioBlock);
+    template <typename JuceAudioBufferType> JuceAudioBufferType toJuceAudioBufferView();
+    template <typename JuceAudioBufferType> JuceAudioBufferType toJuceAudioBufferCopy() const;
+    template <typename JuceAudioBlockType> JuceAudioBlockType toJuceAudioBlock();
+    template <typename JuceAudioBlockType> JuceAudioBlockType toJuceAudioBlock() const;
+
     AudioBufferSignal<SampleType> toSignal (Loop loop = Loop::no) const &;
     AudioBufferSignal<SampleType> toSignal (Loop loop = Loop::no) &&;
 
@@ -803,5 +812,6 @@ private:
 }  // namespace hart
 
 #include "hart_audio_buffer_fill_with.hpp"
+#include "hart_audio_buffer_juce.hpp"
 #include "hart_audio_buffer_process_with.hpp"
 #include "hart_audio_buffer_to_signal.hpp"
