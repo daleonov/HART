@@ -22,7 +22,7 @@ struct ChannelSubsets
         for (size_t i = 0; i < channelIndices.size(); ++i)
             channelIndices[i] = i;
         
-            return channelIndices;
+        return channelIndices;
     }
 
     static std::vector<std::pair<size_t, size_t>> upperTriangleChannelPairs (size_t numChannels)
@@ -39,11 +39,11 @@ struct ChannelSubsets
 
     static std::vector<std::pair<size_t, size_t>> diagonalChannelPairs (size_t numChannels)
     {
-    std::vector<std::pair<size_t, size_t>> channelPairIndices;
-    channelPairIndices.reserve (numChannels);
+        std::vector<std::pair<size_t, size_t>> channelPairIndices;
+        channelPairIndices.reserve (numChannels);
 
-    for (size_t channel = 0; channel < numChannels; ++channel)
-        channelPairIndices.emplace_back (channel, channel);
+        for (size_t channel = 0; channel < numChannels; ++channel)
+            channelPairIndices.emplace_back (channel, channel);
 
         return channelPairIndices;
     }
