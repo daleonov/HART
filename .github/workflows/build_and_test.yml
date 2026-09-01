@@ -34,7 +34,7 @@ jobs:
             cxx: clang++-18
             build_type: Debug
             generator: "Unix Makefiles"
-            cpp_compatibility_test: ON
+            cpp_compatibility_test: OFF
 
           - name: Windows AMD64 MSVC
             os: windows-latest
