@@ -45,13 +45,13 @@ public:
         }
     }
 
-    void setValue (int /* paramId */, double /* value */)
+    void setValue (int /* paramId */, double /* value */) override
     {
         // Doesn't support any settable parameters
         hassertfalse;
     }
 
-    bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const
+    bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const override
     {
         return numInputChannels == numOutputChannels;
     }

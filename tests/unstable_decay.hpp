@@ -28,7 +28,7 @@ public:
         }
     }
 
-    void setValue (int /* id */, double /* value */) {}
+    void setValue (int /* id */, double /* value */) override {}
     void prepare (double /* sampleRateHz */, size_t /* numInputChannels */, size_t /* numOutputChannels */, size_t /* maxBlockSizeFrames */) override {}
 
     void reset() override

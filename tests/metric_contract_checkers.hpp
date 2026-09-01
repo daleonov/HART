@@ -86,7 +86,7 @@ public:
         };
 
         if (m_defaultChannels.empty())
-            m_defaultChannels = std::move (hart::ChannelSubsets::allChannels (m_reportedNumChannels));
+            m_defaultChannels = hart::ChannelSubsets::allChannels (m_reportedNumChannels);
 
         if (m_expectDefaultChannels)
         {

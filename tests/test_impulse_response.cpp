@@ -19,8 +19,8 @@ HART_TEST ("ImpulseResponse - Has correct number of frames")
             .saveOutputTo (outputAudio)
             .process();
         
-        HART_ASSERT_GT (inputAudio.getNumFrames(), 0);
-        HART_ASSERT_GT (outputAudio.getNumFrames(), 0);
+        HART_ASSERT_GT (inputAudio.getNumFrames(), 0u);
+        HART_ASSERT_GT (outputAudio.getNumFrames(), 0u);
         HART_ASSERT_EQ (inputAudio.getNumFrames(), outputAudio.getNumFrames());
 
         const ImpulseResponse observedIr (inputAudio, outputAudio);
@@ -30,7 +30,7 @@ HART_TEST ("ImpulseResponse - Has correct number of frames")
 
 HART_TEST ("ImpulseResponse - Has correct number of channels")
 {
-    for (const size_t numChannels : {1, 2, 5, 15})
+    for (const size_t numChannels : {1u, 2u, 5u, 15u})
     {
         AudioBuffer inputAudio;
         AudioBuffer outputAudio;
@@ -91,8 +91,8 @@ HART_TEST ("ImpulseResponse - Matches expected FIR filter's coefficients")
         .process();
 
     const ImpulseResponse observedIr (inputAudio, outputAudio);
-    HART_ASSERT_EQ (observedIr.getNumChannels(), 1);
-    HART_ASSERT_GE (observedIr.getNumFrames(), 3);
+    HART_ASSERT_EQ (observedIr.getNumChannels(), 1u);
+    HART_ASSERT_GE (observedIr.getNumFrames(), 3u);
 
     constexpr float epsilon = 1.0e-8f;
     const float* observedIrData = observedIr[hart::Channel::left];
@@ -100,6 +100,6 @@ HART_TEST ("ImpulseResponse - Matches expected FIR filter's coefficients")
     HART_EXPECT_FLOAT_EQUAL (observedIrData[0], 0.123f, epsilon) << "0th frame in the IR matches filter's x[n] coefficient";
     HART_EXPECT_FLOAT_EQUAL (observedIrData[1], 0.456f, epsilon) << "1th frame in the IR matches filter's x[n - 1] coefficient";
 
-    for (int frame = 2; frame < observedIr.getNumFrames(); ++frame)
+    for (size_t frame = 2; frame < observedIr.getNumFrames(); ++frame)
         HART_EXPECT_FLOAT_EQUAL (observedIrData[frame], 0.0f, epsilon) << "Frame " << frame << " in the IR is zero";
 }

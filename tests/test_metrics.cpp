@@ -78,7 +78,7 @@ HART_TEST ("Metrics - MetricQuery and Sample Peak")
         .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).get (first()), -3_dB, 1e-2); }, "Sample Peak in dB, first() reducer")
         .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).get (last()), -12_dB, 1e-2); }, "Sample Peak in dB, last() reducer")
 
-        .expectTrue ([expectedDbMean] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).get (mean()), expectedDbMean, 1e-2); }, "Sample Peak in dB, mean() reducer")
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (samplePeak (output).as (dB).get (mean()), expectedDbMean, 1e-2); }, "Sample Peak in dB, mean() reducer")
         .expectTrue ([expectedLinToDbMean] (const AudioBuffer& output) { return HART_FLOAT_EQ (ratioToDecibels (samplePeak (output).as (linear).get (mean())), expectedLinToDbMean, 1e-3); }, "Sample Peak linear, mean() reducer, then converted to dB")
 
         .process();
@@ -134,7 +134,7 @@ HART_TEST ("Metrics - MetricQuery::apply() modifies per-channel values before th
     HART_EXPECT_FLOAT_EQ (fiveZeros.apply (std::acos).get (hart::sum()), 2.5 * hart::pi, 1e-8);
 
     // Functors - capturing lambdas
-    constexpr double y = 2.0;
+    const double y = 2.0;  // Not constexpr on purpose, so that it *has* to be captured in lambdas
     HART_EXPECT_FLOAT_EQ (fiveZeros.apply ([y] (double x) { return std::pow (y, x); }).get (hart::mean()), 1.0, 1e-8);
     HART_EXPECT_FLOAT_EQ (fiveZeros.apply ([y] (double x) { return std::pow (y, x); }).get (hart::sum()), 5.0, 1e-8);
     HART_EXPECT_FLOAT_EQ (fiveZeros.apply ([y] (double x) { return x + y; }).get (hart::mean()), y, 1e-8);
@@ -1016,14 +1016,14 @@ HART_TEST ("Metrics - RMS for AudioBuffer - Matches values for common waveforms"
         .withLabel ("Sine wave")
         .withInputSignal (SineWave ())
         .inMono()
-        .expectTrue ([invSqrt2] (const AudioBuffer& buffer) { return HART_FLOAT_EQ (rms (buffer).get(), invSqrt2, 1e-6); }, "RMS = 1 / sqrt(2)")
+        .expectTrue ([] (const AudioBuffer& buffer) { return HART_FLOAT_EQ (rms (buffer).get(), invSqrt2, 1e-6); }, "RMS = 1 / sqrt(2)")
         .process();
 
     processAudioWith (GainDb (0_dB))
         .withLabel ("Sine sweep")
         .withInputSignal (SineSweep ())
         .inMono()
-        .expectTrue ([invSqrt2] (const AudioBuffer& buffer) { return HART_FLOAT_EQ (rms (buffer).get(), invSqrt2, 0.01); }, "RMS ~= 1 / sqrt(2)")
+        .expectTrue ([] (const AudioBuffer& buffer) { return HART_FLOAT_EQ (rms (buffer).get(), invSqrt2, 0.01); }, "RMS ~= 1 / sqrt(2)")
         .process();
 
     processAudioWith (GainDb (0_dB))
@@ -1038,7 +1038,7 @@ HART_TEST ("Metrics - RMS for AudioBuffer - Matches values for common waveforms"
         .withLabel ("Band-limited sawtooth")
         .withInputSignal (Sawtooth())
         .inMono()
-        .expectTrue ([invSqrt3] (const AudioBuffer& buffer) { return HART_FLOAT_EQ (rms (buffer).get(), invSqrt3, 0.01); }, "RMS ~= 1 / sqrt(3)")
+        .expectTrue ([] (const AudioBuffer& buffer) { return HART_FLOAT_EQ (rms (buffer).get(), invSqrt3, 0.01); }, "RMS ~= 1 / sqrt(3)")
         .process();
 }
 

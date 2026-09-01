@@ -43,18 +43,18 @@ HART_TEST ("Utils - makeRandomSeeds() - Different base seeds yields different se
 HART_TEST ("Utils - secondsToFrames() - Normal use cases")
 {
     using hart::secondsToFrames;
-    HART_EXPECT_EQ (secondsToFrames (1_s, 44100_Hz), 44100);
-    HART_EXPECT_EQ (secondsToFrames (1_s, 48000_Hz), 48000);
-    HART_EXPECT_EQ (secondsToFrames (1_s, 196000_Hz), 196000);
-    HART_EXPECT_EQ (secondsToFrames (100_ms, 44100_Hz), 4410);
-    HART_EXPECT_EQ (secondsToFrames (1_ms, 44100_Hz), 44);
-    HART_EXPECT_EQ (secondsToFrames (100_us, 44100_Hz), 4);
-    HART_EXPECT_EQ (secondsToFrames (100_us, 48000_Hz), 5);
-    HART_EXPECT_EQ (secondsToFrames (10_us, 44100_Hz), 0);
-    HART_EXPECT_EQ (secondsToFrames (10_us, 88200_Hz), 1);
-    HART_EXPECT_EQ (secondsToFrames (1_us, 88200_Hz), 0);
-    HART_EXPECT_EQ (secondsToFrames (0_s, 44100_Hz), 0);
-    HART_EXPECT_EQ (secondsToFrames (0_s, 48000_Hz), 0);
+    HART_EXPECT_EQ (secondsToFrames (1_s, 44100_Hz), 44100u);
+    HART_EXPECT_EQ (secondsToFrames (1_s, 48000_Hz), 48000u);
+    HART_EXPECT_EQ (secondsToFrames (1_s, 196000_Hz), 196000u);
+    HART_EXPECT_EQ (secondsToFrames (100_ms, 44100_Hz), 4410u);
+    HART_EXPECT_EQ (secondsToFrames (1_ms, 44100_Hz), 44u);
+    HART_EXPECT_EQ (secondsToFrames (100_us, 44100_Hz), 4u);
+    HART_EXPECT_EQ (secondsToFrames (100_us, 48000_Hz), 5u);
+    HART_EXPECT_EQ (secondsToFrames (10_us, 44100_Hz), 0u);
+    HART_EXPECT_EQ (secondsToFrames (10_us, 88200_Hz), 1u);
+    HART_EXPECT_EQ (secondsToFrames (1_us, 88200_Hz), 0u);
+    HART_EXPECT_EQ (secondsToFrames (0_s, 44100_Hz), 0u);
+    HART_EXPECT_EQ (secondsToFrames (0_s, 48000_Hz), 0u);
 }
 
 HART_TEST ("Utils - framesToSeconds() - Normal use cases")
