@@ -32,22 +32,26 @@ enum class Unit
     none  ///< Unitless value
 };
 
+namespace aliases_units
+{
+    constexpr Unit native = Unit::native;
+    constexpr Unit linear = Unit::linear;
+    constexpr Unit dB = Unit::dB;
+    constexpr Unit dB_per_decade = Unit::dB_per_decade;
+    constexpr Unit dB_per_octave = Unit::dB_per_octave;
+    constexpr Unit frames = Unit::frames;
+    constexpr Unit seconds = Unit::seconds;
+    constexpr Unit Hz = Unit::Hz;
+    constexpr Unit ratio = Unit::ratio;
+    constexpr Unit percent = Unit::percent;
+    constexpr Unit none = Unit::none;
+}  // namespace aliases_units
+
 }  // namespace hart
 
 /// @brief Pre-C++20 macro to use units without namespace
 /// @details For C++20 and later, you can just use `using enum Unit`
-#define HART_DECLARE_ALIASES_FOR_UNITS \
-    constexpr hart::Unit native = hart::Unit::native; \
-    constexpr hart::Unit linear = hart::Unit::linear; \
-    constexpr hart::Unit dB = hart::Unit::dB; \
-    constexpr hart::Unit dB_per_decade = hart::Unit::dB_per_decade; \
-    constexpr hart::Unit dB_per_octave = hart::Unit::dB_per_octave; \
-    constexpr hart::Unit frames = hart::Unit::frames; \
-    constexpr hart::Unit seconds = hart::Unit::seconds; \
-    constexpr hart::Unit Hz = hart::Unit::Hz; \
-    constexpr hart::Unit ratio = hart::Unit::ratio; \
-    constexpr hart::Unit percent = hart::Unit::percent; \
-    constexpr hart::Unit none = hart::Unit::none;
+#define HART_DECLARE_ALIASES_FOR_UNITS using namespace hart::aliases_units;
 
 constexpr double inf_dB = hart::inf;
 constexpr double oo_dB = hart::inf;
