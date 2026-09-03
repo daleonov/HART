@@ -14,7 +14,8 @@
 #include "hart_cliconfig.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_expectation_failure_messages.hpp"
-#include "hart_utils.hpp"
+#include "hart_parametric_tasks.hpp"
+#include "hart_utils.hpp"  // quoted()
 
 namespace hart
 {
@@ -165,7 +166,10 @@ private:
 
         const auto timestampStart = std::chrono::high_resolution_clock::now();
 
-        TaskRunResult taskRunResult = runOneShotTask (task);
+        TaskRunResult taskRunResult =
+            task.isParametric == IsParametric::yes
+                ? runParametricTask (task)
+                : runOneShotTask (task);
 
         const auto timestampFinish = std::chrono::high_resolution_clock::now();
         const auto testDuration = timestampFinish - timestampStart;
@@ -221,6 +225,39 @@ private:
         try
         {
             task.func();
+            return { false, "" };
+        }
+        catch (const hart::TestAssertException& e)
+        {
+            return { true, e.what() };
+        }
+        catch (const hart::ConfigurationError& e)
+        {
+            return { true, e.what() };
+        }
+    }
+
+    TaskRunResult runParametricTask (const TaskInfo& task)
+    {
+        // TODO: Return number of permutations
+
+        try
+        {
+            ParametricTaskContext context;
+
+            while (context.hasUnusedValuePermutations())
+            {
+                context.beginPermutation();
+
+                {
+                    const ParametricTaskContextScope scope (context);
+                    task.func();
+                }
+
+                context.endPermutation();
+                context.advanceToNextValuePermutation();
+            }
+
             return { false, "" };
         }
         catch (const hart::TestAssertException& e)
