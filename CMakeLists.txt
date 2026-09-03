@@ -21,6 +21,7 @@ set(HART_TEST_SOURCES
         tests/generate_data.cpp
         tests/test_assertion_macros.cpp
         tests/test_audio_buffer.cpp
+        tests/test_basics.cpp
         tests/test_contracts.cpp
         tests/test_dsp.cpp
         tests/test_dsp_chains.cpp
