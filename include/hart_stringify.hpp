@@ -91,10 +91,20 @@ toString (const Type& value)
     return stream.str();
 }
 
+/// @brief Creates a string representation of an enum that doesn't support printing via the "<<" operator
+/// @private
+template <typename Type>
+typename std::enable_if<! IsStreamInsertable<Type>::value && std::is_enum<Type>::value, std::string>::type
+toString (const Type& value)
+{
+    using UnderlyingType = typename std::underlying_type<Type>::type;
+    return toString (static_cast<UnderlyingType> (value));
+}
+
 /// @brief Creates a fallback string representation of an object that doesn't support printing via the "<<" operator
 /// @private
 template <typename Type>
-typename std::enable_if<! IsStreamInsertable<Type>::value, std::string>::type
+typename std::enable_if<! IsStreamInsertable<Type>::value && ! std::is_enum<Type>::value, std::string>::type
 toString (const Type& value)
 {
     return objectAddressToString (value);
