@@ -145,11 +145,6 @@ public:
         m_isExhausted = true;
     }
 
-    void representCurrentValuePermutation (std::ostream& stream) const
-    {
-        // TODO: Print the values
-    }
-
 private:
     std::vector<ParametricValuesSlot> m_parametricValuesSlots;
     std::vector<size_t> m_currentIndices;
