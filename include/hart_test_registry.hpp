@@ -26,6 +26,14 @@ enum class TaskCategory
     generate
 };
 
+/// @brief States whether the task is parametric or not
+/// @private
+enum class IsParametric
+{
+    no,
+    yes
+};
+
 /// @brief Runs the test cases
 /// @details For internal use by HART. You're not supposed to interact with it directly, only through the macros
 /// such as @ref HART_RUN_ALL_TESTS(), @ref HART_TEST(), @ref HART_TEST_WITH_TAGS(), @ref HART_GENERATE(), @ref HART_GENERATE_WITH_TAGS()
@@ -43,7 +51,7 @@ public:
     /// @brief Adds a task (test or generator)
     /// @details Gets called when a test case is declared with a macro like @ref HART_TEST()
     /// @private
-    void add (const std::string& name, const std::string& tags, const std::string& file, int line, TaskCategory testCategory, void (*func)())
+    void add (const IsParametric isParametric, const std::string& name, const std::string& tags, const std::string& file, int line, TaskCategory testCategory, void (*func)())
     {
         std::unordered_set<std::string>& registeredNamesContainer =
             testCategory == TaskCategory::test
@@ -61,7 +69,7 @@ public:
                 ? tests
                 : generators;
 
-        tasks.emplace_back (TaskInfo {name, tags, file, line, func});
+        tasks.emplace_back (TaskInfo {isParametric, name, tags, file, line, func});
     }
 
     /// @brief Runs all tests or generators
@@ -126,6 +134,7 @@ public:
 private:
     struct TaskInfo
     {
+        IsParametric isParametric;
         std::string name;
         std::string tags;
         std::string file;

@@ -42,12 +42,12 @@ namespace hart
 #define HART_CONCAT(x, y) HART_CONCAT_IMPL(x, y)
 #define HART_UNIQUE_ID(x) HART_CONCAT(x, __LINE__)
 
-#define HART_ITEM_WITH_TAGS(name, tags, category) \
+#define HART_ITEM_WITH_TAGS(isParametric, name, tags, category) \
     static void HART_UNIQUE_ID(HART_RunTask)(); \
         namespace { \
             struct HART_UNIQUE_ID(HART_RegistrarType) { \
                 HART_UNIQUE_ID(HART_RegistrarType)() { \
-                    hart::TestRegistry::getInstance().add (name, tags, __FILE__, __LINE__, category, &HART_UNIQUE_ID (HART_RunTask)); \
+                    hart::TestRegistry::getInstance().add (isParametric, name, tags, __FILE__, __LINE__, category, &HART_UNIQUE_ID (HART_RunTask)); \
                 } \
             }; \
         } \
@@ -59,7 +59,7 @@ namespace hart
 /// @param name Name for the test case
 /// @param tags Tags like "[my-tag-1][my-tag-2]"
 /// @ingroup TestRunner
-#define HART_TEST_WITH_TAGS(name, tags) HART_ITEM_WITH_TAGS(name, tags, hart::TaskCategory::test)
+#define HART_TEST_WITH_TAGS(name, tags) HART_ITEM_WITH_TAGS(hart::IsParametric::no, name, tags, hart::TaskCategory::test)
 
 /// @brief Declares a generator with tags
 /// @details Pretty much the same as a usual test case, but will be called only if the `--run-generators` CLI flag is set
@@ -67,7 +67,7 @@ namespace hart
 /// @param name Name for the generator
 /// @param tags Tags like "[my-tag-1][my-tag-2]"
 /// @ingroup TestRunner
-#define HART_GENERATE_WITH_TAGS(name, tags) HART_ITEM_WITH_TAGS(name, tags, hart::TaskCategory::generate)
+#define HART_GENERATE_WITH_TAGS(name, tags) HART_ITEM_WITH_TAGS(hart::IsParametric::no, name, tags, hart::TaskCategory::generate)
 
 /// @brief Declares a test case
 /// @param name Name for the test case
