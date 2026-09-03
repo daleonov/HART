@@ -114,3 +114,20 @@ HART_TEST ("Utils - nextPowerOfTwoDuration() - Output is at least 1 frame long")
         HART_EXPECT_GE (suggestedDurationSeconds, oneFrameDurationSeconds);
     }
 }
+
+HART_TEST ("Utils - quoted() with rvalue string")
+{
+    using hart::quoted;
+
+    HART_EXPECT_EQ (quoted ("blah"), "\"blah\"");
+    HART_EXPECT_EQ (quoted (""), "\"\"");
+}
+
+HART_TEST ("Utils - quoted() with lvalue string")
+{
+    using hart::quoted;
+    const std::string bleh = "bleh";
+    const std::string empty;
+
+    HART_EXPECT_EQ (quoted (empty), "\"\"");
+}

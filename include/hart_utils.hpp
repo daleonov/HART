@@ -324,6 +324,22 @@ std::vector<ValueType> makeRandomSeeds (size_t numSeeds, uint_fast32_t baseRando
     return randomSeeds;
 }
 
+/// @brief Adds double quote character before and after the provided string
+/// @param str String to add quite characters to
+/// @return String with double quote characters added to it
+inline static std::string quoted (std::string&& str)
+{
+    return '\"' + str + '\"';
+}
+
+/// @brief Adds double quote character before and after the provided string
+/// @param str String to add quite characters to
+/// @return String with double quote characters added to it
+inline static std::string quoted (const std::string& str)
+{
+    return '\"' + str + '\"';
+}
+
 /// @brief `std::unordered_map::contains()` replacement for C++11
 template <typename KeyType, typename ValueType>
 inline static bool contains (const std::unordered_map<KeyType, ValueType>& map, const KeyType& key)
