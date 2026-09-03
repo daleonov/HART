@@ -50,3 +50,14 @@ HART_PARAMETRIC_TEST("Basics - Parametric test with values from iterators")
 
     HART_EXPECT_GT (value, 0);
 }
+
+HART_PARAMETRIC_TEST("Basics - Parametric test with values from an iterable")
+{
+    constexpr std::array<int, 3> valuesA {{ 11, 22, 33 }};
+    const std::vector<int> valuesB {{ 33, 44, 55 }};
+
+    const int valueA = HART_GENERATE_VALUE (valuesA);
+    const int valueB = HART_GENERATE_VALUE (valuesB);
+
+    HART_EXPECT_GT (valueA + valueB, 0);
+}

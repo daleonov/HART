@@ -51,7 +51,7 @@ private:
     std::vector<ValueType> m_values;
 };
 
-/// @brief Value sequence factory for variadic arguments, as in HART_GEVERATE_VALUE (11, 22, 33)
+/// @brief Value sequence factory for variadic arguments, as in `HART_GEVERATE_VALUE (11, 22, 33)`
 /// @private
 template <typename FirstValueType, typename... OtherValueTypes>
 auto makeParametricValueSet (FirstValueType&& firstValue, OtherValueTypes&&... otherValues)
@@ -69,7 +69,7 @@ auto makeParametricValueSet (FirstValueType&& firstValue, OtherValueTypes&&... o
     return ParametricValueSequence<ResolvedValueType> (std::move (values));
 }
 
-/// @brief Value sequence factory for a pair of iterators, as in HART_GEVERATE_VALUE (x.begin(), x.end())
+/// @brief Value sequence factory for a pair of iterators, as in `HART_GEVERATE_VALUE (x.begin(), x.end())`
 /// @private
 template <typename IteratorType>
 auto makeParametricValueSet (IteratorType begin, IteratorType end)
@@ -77,6 +77,39 @@ auto makeParametricValueSet (IteratorType begin, IteratorType end)
 {
     using ValueType = typename std::iterator_traits<IteratorType>::value_type;
     return ParametricValueSequence<ValueType> (std::vector<ValueType> (begin, end));
+}
+
+/// @brief A helper to determine if something is an iterable container with `begin()` and `end()` methods
+/// @private 
+template <typename ValueType>
+class IsIterable
+{
+private:
+    template <typename CandidateType>
+    static auto test (int) -> decltype (
+        std::declval<const CandidateType&>().begin(),
+        std::declval<const CandidateType&>().end(),
+        typename CandidateType::value_type(),
+        std::true_type()
+    );
+
+    template <typename>
+    static std::false_type test (...);
+
+public:
+    static const bool value = decltype (test<ValueType> (42))::value;
+};
+
+/// @brief Value sequence factory for a container, as in `HART_GENERATE_VALUE (someVector)`
+/// @private 
+template <typename IterableType>
+typename std::enable_if<
+    IsIterable<IterableType>::value,
+    ParametricValueSequence<typename IterableType::value_type>
+>::type
+makeParametricValueSet (const IterableType& iterable)
+{
+    return makeParametricValueSet (iterable.begin(), iterable.end());
 }
 
 class ParametricTaskContext
