@@ -7,6 +7,7 @@
 #include <stdexcept>
 
 #include "hart_audio_buffer.hpp"
+#include "hart_capture.hpp"
 #include "hart_assertion_macros.hpp"
 #include "dsp/hart_dsp_all.hpp"
 #include "hart_cliconfig.hpp"

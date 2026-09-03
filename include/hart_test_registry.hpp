@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "hart_ascii_art.hpp"
+#include "hart_capture.hpp"
 #include "hart_cliconfig.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_expectation_failure_messages.hpp"
@@ -148,6 +149,7 @@ private:
     {
         bool assertionFailed;
         std::string assertionFailMessage;
+        std::string capturedValues;
         size_t numFuncRuns;
     };
 
@@ -206,6 +208,14 @@ private:
                 std::cout << separator << std::endl << taskRunResult.assertionFailMessage << std::endl;
             }
 
+            if (! taskRunResult.capturedValues.empty())
+            {
+                std::cout
+                    << separator << std::endl
+                    << "Captured values:" << std::endl
+                    << taskRunResult.capturedValues;
+            }
+
             for (const std::string& expectationFailureMessage : ExpectationFailureMessages::get())
             {
                 std::cout << separator << std::endl << expectationFailureMessage << std::endl;
@@ -240,24 +250,28 @@ private:
 
     TaskRunResult runOneShotTask (const TaskInfo& task)
     {
+        CapturedValuesContext capturedValuesContext;
+
         try
         {
+            const CapturedValuesContextScope capturedValuesScope (capturedValuesContext);
             task.func();
-            return { false, "", 1u };
+            return { false, "", "", 1u };
         }
         catch (const hart::TestAssertException& e)
         {
-            return { true, e.what(), 1u };
+            return { true, e.what(), "", 1u };
         }
         catch (const hart::ConfigurationError& e)
         {
-            return { true, e.what(), 1u };
+            return { true, e.what(), capturedValuesContext.toString(), 1u };
         }
     }
 
     TaskRunResult runParametricTask (const TaskInfo& task)
     {
         size_t numFuncRuns = 0;
+        CapturedValuesContext capturedValuesContext;
 
         try
         {
@@ -265,9 +279,11 @@ private:
 
             while (context.hasUnusedValuePermutations())
             {
+                capturedValuesContext.clear();
                 context.beginPermutation();
 
                 {
+                    const CapturedValuesContextScope capturedValuesScope (capturedValuesContext);
                     const ParametricTaskContextScope scope (context);
                     task.func();
                 }
@@ -278,15 +294,19 @@ private:
                 ++numFuncRuns;
             }
 
-            return { false, "", numFuncRuns };
+            // No failures, so no need to render capturedValues
+            // for the non-existing test failure report here
+            return { false, "", "", numFuncRuns };
         }
         catch (const hart::TestAssertException& e)
         {
-            return { true, e.what(), numFuncRuns };
+            // HART_ASSERT dispatcher will handle the captured
+            // values itself, so capturedValues is empty here.
+            return { true, e.what(), "", numFuncRuns };
         }
         catch (const hart::ConfigurationError& e)
         {
-            return { true, e.what(), numFuncRuns };
+            return { true, e.what(), capturedValuesContext.toString(), numFuncRuns };
         }
     }
 
