@@ -143,6 +143,12 @@ private:
         void (*func)();
     };
 
+    struct TaskRunResult
+    {
+        bool assertionFailed;
+        std::string assertionFailMessage;
+    };
+
     TestRegistry() = default;  // Private ctor for singleton
     std::vector<TaskInfo> tests;
     std::vector<TaskInfo> generators;
@@ -155,26 +161,11 @@ private:
     void runTask (const TaskInfo& task)
     {
         std::cout << "[  ...   ] Running " << task.name;
-        bool assertionFailed = false;
-        std::string assertionFailMessage;
         ExpectationFailureMessages::clear();
 
         const auto timestampStart = std::chrono::high_resolution_clock::now();
 
-        try
-        {
-            task.func();
-        }
-        catch (const hart::TestAssertException& e)
-        {
-            assertionFailMessage = e.what();
-            assertionFailed = true;
-        }
-        catch (const hart::ConfigurationError& e)
-        {
-            assertionFailMessage = e.what();
-            assertionFailed = true;
-        }
+        TaskRunResult taskRunResult = runOneShotTask (task);
 
         const auto timestampFinish = std::chrono::high_resolution_clock::now();
         const auto testDuration = timestampFinish - timestampStart;
@@ -183,7 +174,7 @@ private:
         const bool expectationsFailed = ExpectationFailureMessages::get().size() > 0;
         const std::string testDurationLabel = formatDuration (testDuration);
 
-        if (assertionFailed || expectationsFailed)
+        if (taskRunResult.assertionFailed || expectationsFailed)
         {
             // TODO: It would be nice to escape the characters in task.name that need to be escaped for taskSignature... but it's not very important.
             constexpr char separator[] = "-------------------------------------------";
@@ -205,9 +196,9 @@ private:
                 << task.file << ':' << task.line << std::endl
                 << taskSignatureStream.str() << std::endl;
 
-            if (assertionFailed)
+            if (taskRunResult.assertionFailed)
             {
-                std::cout << separator << std::endl << assertionFailMessage << std::endl;
+                std::cout << separator << std::endl << taskRunResult.assertionFailMessage << std::endl;
             }
 
             for (const std::string& expectationFailureMessage : ExpectationFailureMessages::get())
@@ -222,6 +213,23 @@ private:
         {
             std::cout << "[   <3   ] " << testDurationLabel << task.name << " - passed" << std::endl;
             ++tasksPassed;
+        }
+    }
+
+    TaskRunResult runOneShotTask (const TaskInfo& task)
+    {
+        try
+        {
+            task.func();
+            return { false, "" };
+        }
+        catch (const hart::TestAssertException& e)
+        {
+            return { true, e.what() };
+        }
+        catch (const hart::ConfigurationError& e)
+        {
+            return { true, e.what() };
         }
     }
 
