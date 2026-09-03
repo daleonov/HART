@@ -1,3 +1,5 @@
+#include <array>
+
 #include "hart.hpp"
 
 HART_TEST ("Basics - Simple one-shot test case")
@@ -39,4 +41,12 @@ HART_TEST ("Basics - One-shot test with a value capture")
         HART_CAPTURE_VALUE (i);
         HART_EXPECT_LT (i, 10);
     }
+}
+
+HART_PARAMETRIC_TEST("Basics - Parametric test with values from iterators")
+{
+    constexpr std::array<int, 3> values {{ 11, 22, 33 }};
+    const int value = HART_GENERATE_VALUE (values.begin(), values.end());
+
+    HART_EXPECT_GT (value, 0);
 }

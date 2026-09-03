@@ -51,6 +51,8 @@ private:
     std::vector<ValueType> m_values;
 };
 
+/// @brief Value sequence factory for variadic arguments, as in HART_GEVERATE_VALUE (11, 22, 33)
+/// @private
 template <typename FirstValueType, typename... OtherValueTypes>
 auto makeParametricValueSet (FirstValueType&& firstValue, OtherValueTypes&&... otherValues)
     -> ParametricValueSequence<typename std::common_type<typename std::decay<FirstValueType>::type, typename std::decay<OtherValueTypes>::type...>::type>
@@ -65,6 +67,16 @@ auto makeParametricValueSet (FirstValueType&& firstValue, OtherValueTypes&&... o
     (void) dummy;
 
     return ParametricValueSequence<ResolvedValueType> (std::move (values));
+}
+
+/// @brief Value sequence factory for a pair of iterators, as in HART_GEVERATE_VALUE (x.begin(), x.end())
+/// @private
+template <typename IteratorType>
+auto makeParametricValueSet (IteratorType begin, IteratorType end)
+    -> ParametricValueSequence<typename std::iterator_traits<IteratorType>::value_type>
+{
+    using ValueType = typename std::iterator_traits<IteratorType>::value_type;
+    return ParametricValueSequence<ValueType> (std::vector<ValueType> (begin, end));
 }
 
 class ParametricTaskContext
