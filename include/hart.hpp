@@ -60,6 +60,12 @@ namespace hart
 /// @ingroup TestRunner
 #define HART_TEST_WITH_TAGS(name, tags) HART_ITEM_WITH_TAGS(hart::IsParametric::no, name, tags, hart::TaskCategory::test)
 
+/// @brief Declares a parametric test case with tags
+/// @param name Name for the test case
+/// @param tags Tags like "[my-tag-1][my-tag-2]"
+/// @ingroup TestRunner
+#define HART_PARAMETRIC_TEST_WITH_TAGS(name, tags) HART_ITEM_WITH_TAGS(hart::IsParametric::yes, name, tags, hart::TaskCategory::test)
+
 /// @brief Declares a generator with tags
 /// @details Pretty much the same as a usual test case, but will be called only if the `--run-generators` CLI flag is set
 /// @param name Name for the generator
@@ -71,6 +77,11 @@ namespace hart
 /// @param name Name for the test case
 /// @ingroup TestRunner
 #define HART_TEST(name) HART_TEST_WITH_TAGS(name, "")
+
+/// @brief Declares a parametric test case
+/// @param name Name for the test case
+/// @ingroup TestRunner
+#define HART_PARAMETRIC_TEST(name) HART_PARAMETRIC_TEST_WITH_TAGS(name, "")
 
 /// @brief Declares a generator
 /// @details Pretty much the same as a usual test case, but will be called only if the `--run-generators` CLI flag is set

@@ -14,6 +14,7 @@
 #include "hart_cliconfig.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_expectation_failure_messages.hpp"
+#include "hart_utils.hpp"
 
 namespace hart
 {
@@ -187,16 +188,22 @@ private:
             // TODO: It would be nice to escape the characters in task.name that need to be escaped for taskSignature... but it's not very important.
             constexpr char separator[] = "-------------------------------------------";
             const bool isGenerateTask = CLIConfig::getInstance().shouldRunGenerators();
-            const std::string taskSignature =
-                isGenerateTask
-                ? (task.tags.empty() ? "HART_GENERATE (\"" + task.name + "\")" : "HART_GENERATE_WITH_TAGS (\"" + task.name + "\", " + task.tags + "\")")
-                : (task.tags.empty() ? "HART_TEST (\"" + task.name + "\")" : "HART_TEST_WITH_TAGS (\"" + task.name + "\", " + task.tags + "\")");
+
+            std::ostringstream taskSignatureStream;
+            taskSignatureStream
+                << "HART_"
+                << (task.isParametric == IsParametric::yes ? "PARAMETRIC_" : "")
+                << (isGenerateTask ? "GENERATE" : "TEST")
+                << (task.tags.empty() ? " (" : "_WITH_TAGS (")
+                << quoted (task.name)
+                << (task.tags.empty() ? "" : ", " + quoted (task.tags))
+                << ')';
 
             std::cout 
                 << "[  </3   ] " << testDurationLabel << task.name << " - failed" << std::endl
                 << separator << std::endl
                 << task.file << ':' << task.line << std::endl
-                << taskSignature << std::endl;
+                << taskSignatureStream.str() << std::endl;
 
             if (assertionFailed)
             {
