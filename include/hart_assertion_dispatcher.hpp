@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "hart_assertion.hpp"
+#include "hart_capture.hpp"
 #include "hart_expectation_failure_messages.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_utils.hpp"
@@ -68,6 +69,17 @@ public:
 
         if (m_hasUserLabel)
             m_messageStream << '\"';
+
+        if (ActiveCapturedValuesContext::hasActiveContext())
+        {
+            const CapturedValuesContext& capturedValuesContext = ActiveCapturedValuesContext::get();
+
+            if (! capturedValuesContext.isEmpty())
+            {
+                m_messageStream << "\nCaptured values:\n";
+                capturedValuesContext.represent (m_messageStream);
+            }
+        }
 
         const std::string message = m_messageStream.str();
 

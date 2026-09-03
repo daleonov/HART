@@ -11,9 +11,12 @@
 #include <vector>
 
 #include "hart_ascii_art.hpp"
+#include "hart_capture.hpp"
 #include "hart_cliconfig.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_expectation_failure_messages.hpp"
+#include "hart_parametric_tasks.hpp"
+#include "hart_utils.hpp"  // quoted()
 
 namespace hart
 {
@@ -24,6 +27,14 @@ enum class TaskCategory
 {
     test,
     generate
+};
+
+/// @brief States whether the task is parametric or not
+/// @private
+enum class IsParametric
+{
+    no,
+    yes
 };
 
 /// @brief Runs the test cases
@@ -43,7 +54,7 @@ public:
     /// @brief Adds a task (test or generator)
     /// @details Gets called when a test case is declared with a macro like @ref HART_TEST()
     /// @private
-    void add (const std::string& name, const std::string& tags, const std::string& file, int line, TaskCategory testCategory, void (*func)())
+    void add (const IsParametric isParametric, const std::string& name, const std::string& tags, const std::string& file, int line, TaskCategory testCategory, void (*func)())
     {
         std::unordered_set<std::string>& registeredNamesContainer =
             testCategory == TaskCategory::test
@@ -61,7 +72,7 @@ public:
                 ? tests
                 : generators;
 
-        tasks.emplace_back (TaskInfo {name, tags, file, line, func});
+        tasks.emplace_back (TaskInfo {isParametric, name, tags, file, line, func});
     }
 
     /// @brief Runs all tests or generators
@@ -126,11 +137,20 @@ public:
 private:
     struct TaskInfo
     {
+        IsParametric isParametric;
         std::string name;
         std::string tags;
         std::string file;
         int line;
         void (*func)();
+    };
+
+    struct TaskRunResult
+    {
+        bool assertionFailed;
+        std::string assertionFailMessage;
+        std::string capturedValues;
+        size_t numFuncRuns;
     };
 
     TestRegistry() = default;  // Private ctor for singleton
@@ -145,26 +165,14 @@ private:
     void runTask (const TaskInfo& task)
     {
         std::cout << "[  ...   ] Running " << task.name;
-        bool assertionFailed = false;
-        std::string assertionFailMessage;
         ExpectationFailureMessages::clear();
 
         const auto timestampStart = std::chrono::high_resolution_clock::now();
 
-        try
-        {
-            task.func();
-        }
-        catch (const hart::TestAssertException& e)
-        {
-            assertionFailMessage = e.what();
-            assertionFailed = true;
-        }
-        catch (const hart::ConfigurationError& e)
-        {
-            assertionFailMessage = e.what();
-            assertionFailed = true;
-        }
+        TaskRunResult taskRunResult =
+            task.isParametric == IsParametric::yes
+                ? runParametricTask (task)
+                : runOneShotTask (task);
 
         const auto timestampFinish = std::chrono::high_resolution_clock::now();
         const auto testDuration = timestampFinish - timestampStart;
@@ -173,25 +181,39 @@ private:
         const bool expectationsFailed = ExpectationFailureMessages::get().size() > 0;
         const std::string testDurationLabel = formatDuration (testDuration);
 
-        if (assertionFailed || expectationsFailed)
+        if (taskRunResult.assertionFailed || expectationsFailed)
         {
             // TODO: It would be nice to escape the characters in task.name that need to be escaped for taskSignature... but it's not very important.
             constexpr char separator[] = "-------------------------------------------";
             const bool isGenerateTask = CLIConfig::getInstance().shouldRunGenerators();
-            const std::string taskSignature =
-                isGenerateTask
-                ? (task.tags.empty() ? "HART_GENERATE (\"" + task.name + "\")" : "HART_GENERATE_WITH_TAGS (\"" + task.name + "\", " + task.tags + "\")")
-                : (task.tags.empty() ? "HART_TEST (\"" + task.name + "\")" : "HART_TEST_WITH_TAGS (\"" + task.name + "\", " + task.tags + "\")");
+
+            std::ostringstream taskSignatureStream;
+            taskSignatureStream
+                << "HART_"
+                << (task.isParametric == IsParametric::yes ? "PARAMETRIC_" : "")
+                << (isGenerateTask ? "GENERATE" : "TEST")
+                << (task.tags.empty() ? " (" : "_WITH_TAGS (")
+                << quoted (task.name)
+                << (task.tags.empty() ? "" : ", " + quoted (task.tags))
+                << ')';
 
             std::cout 
                 << "[  </3   ] " << testDurationLabel << task.name << " - failed" << std::endl
                 << separator << std::endl
                 << task.file << ':' << task.line << std::endl
-                << taskSignature << std::endl;
+                << taskSignatureStream.str() << std::endl;
 
-            if (assertionFailed)
+            if (taskRunResult.assertionFailed)
             {
-                std::cout << separator << std::endl << assertionFailMessage << std::endl;
+                std::cout << separator << std::endl << taskRunResult.assertionFailMessage << std::endl;
+            }
+
+            if (! taskRunResult.capturedValues.empty())
+            {
+                std::cout
+                    << separator << std::endl
+                    << "Captured values:" << std::endl
+                    << taskRunResult.capturedValues;
             }
 
             for (const std::string& expectationFailureMessage : ExpectationFailureMessages::get())
@@ -204,8 +226,87 @@ private:
         }
         else
         {
-            std::cout << "[   <3   ] " << testDurationLabel << task.name << " - passed" << std::endl;
+            std::ostringstream numFuncRunsLabel;
+
+            if (task.isParametric == IsParametric::yes)
+            {
+                // We actually don't know number of total permutations vs number of successful run permutations,
+                // as those values are lazily generated. But if the run did not throw a HART_ASSERT, and all
+                // tasks (tests) pass, it's safe to assume number of passed task permutations and total number
+                // of task permutations are both just equal to number of func() calls.
+                numFuncRunsLabel << taskRunResult.numFuncRuns << '/' << taskRunResult.numFuncRuns << ' ';
+            }
+
+            std::cout
+                << "[   <3   ] "
+                << testDurationLabel
+                << task.name
+                << " - " << numFuncRunsLabel.str() << "passed"
+                << std::endl;
+
             ++tasksPassed;
+        }
+    }
+
+    TaskRunResult runOneShotTask (const TaskInfo& task)
+    {
+        CapturedValuesContext capturedValuesContext;
+
+        try
+        {
+            const CapturedValuesContextScope capturedValuesScope (capturedValuesContext);
+            task.func();
+            return { false, "", "", 1u };
+        }
+        catch (const hart::TestAssertException& e)
+        {
+            return { true, e.what(), "", 1u };
+        }
+        catch (const hart::ConfigurationError& e)
+        {
+            return { true, e.what(), capturedValuesContext.toString(), 1u };
+        }
+    }
+
+    TaskRunResult runParametricTask (const TaskInfo& task)
+    {
+        size_t numFuncRuns = 0;
+        CapturedValuesContext capturedValuesContext;
+
+        try
+        {
+            ParametricTaskContext context;
+
+            while (context.hasUnusedValuePermutations())
+            {
+                capturedValuesContext.clear();
+                context.beginPermutation();
+
+                {
+                    const CapturedValuesContextScope capturedValuesScope (capturedValuesContext);
+                    const ParametricTaskContextScope scope (context);
+                    task.func();
+                }
+
+                context.endPermutation();
+                context.advanceToNextValuePermutation();
+
+                ++numFuncRuns;
+            }
+
+            // No failures, so no need to render capturedValues
+            // for the non-existing test failure report here
+            return { false, "", "", numFuncRuns };
+        }
+        catch (const hart::TestAssertException& e)
+        {
+            // HART_ASSERT dispatcher will handle the captured
+            // values itself, so capturedValues is empty here.
+            return { true, e.what(), "", numFuncRuns };
+        }
+        catch (const hart::ConfigurationError& e)
+        {
+            return { true, e.what(), capturedValuesContext.toString(), numFuncRuns };
         }
     }
 
