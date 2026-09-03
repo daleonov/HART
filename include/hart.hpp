@@ -55,7 +55,6 @@ namespace hart
     static void HART_UNIQUE_ID(HART_RunTask)()
 
 /// @brief Declares a test case with tags
-/// @warning Tags aren't supported yet
 /// @param name Name for the test case
 /// @param tags Tags like "[my-tag-1][my-tag-2]"
 /// @ingroup TestRunner
@@ -63,7 +62,6 @@ namespace hart
 
 /// @brief Declares a generator with tags
 /// @details Pretty much the same as a usual test case, but will be called only if the `--run-generators` CLI flag is set
-/// @warning Tags aren't supported yet
 /// @param name Name for the generator
 /// @param tags Tags like "[my-tag-1][my-tag-2]"
 /// @ingroup TestRunner
