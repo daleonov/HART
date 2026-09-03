@@ -148,6 +148,7 @@ private:
     {
         bool assertionFailed;
         std::string assertionFailMessage;
+        size_t numFuncRuns;
     };
 
     TestRegistry() = default;  // Private ctor for singleton
@@ -215,7 +216,24 @@ private:
         }
         else
         {
-            std::cout << "[   <3   ] " << testDurationLabel << task.name << " - passed" << std::endl;
+            std::ostringstream numFuncRunsLabel;
+
+            if (task.isParametric == IsParametric::yes)
+            {
+                // We actually don't know number of total permutations vs number of successful run permutations,
+                // as those values are lazily generated. But if the run did not throw a HART_ASSERT, and all
+                // tasks (tests) pass, it's safe to assume number of passed task permutations and total number
+                // of task permutations are both just equal to number of func() calls.
+                numFuncRunsLabel << taskRunResult.numFuncRuns << '/' << taskRunResult.numFuncRuns << ' ';
+            }
+
+            std::cout
+                << "[   <3   ] "
+                << testDurationLabel
+                << task.name
+                << " - " << numFuncRunsLabel.str() << "passed"
+                << std::endl;
+
             ++tasksPassed;
         }
     }
@@ -225,21 +243,21 @@ private:
         try
         {
             task.func();
-            return { false, "" };
+            return { false, "", 1u };
         }
         catch (const hart::TestAssertException& e)
         {
-            return { true, e.what() };
+            return { true, e.what(), 1u };
         }
         catch (const hart::ConfigurationError& e)
         {
-            return { true, e.what() };
+            return { true, e.what(), 1u };
         }
     }
 
     TaskRunResult runParametricTask (const TaskInfo& task)
     {
-        // TODO: Return number of permutations
+        size_t numFuncRuns = 0;
 
         try
         {
@@ -256,17 +274,19 @@ private:
 
                 context.endPermutation();
                 context.advanceToNextValuePermutation();
+
+                ++numFuncRuns;
             }
 
-            return { false, "" };
+            return { false, "", numFuncRuns };
         }
         catch (const hart::TestAssertException& e)
         {
-            return { true, e.what() };
+            return { true, e.what(), numFuncRuns };
         }
         catch (const hart::ConfigurationError& e)
         {
-            return { true, e.what() };
+            return { true, e.what(), numFuncRuns };
         }
     }
 
