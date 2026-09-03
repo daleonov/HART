@@ -11,6 +11,7 @@
 
 #include "hart_analysis_context.hpp"
 #include "hart_audio_buffer.hpp"
+#include "hart_capture.hpp"
 #include "hart_condition.hpp"
 #include "dsp/hart_dsp_all.hpp"
 #include "dsp/hart_dsp_function.hpp"
@@ -986,6 +987,7 @@ private:
 
                     stream << std::endl << "Condition: " << *matcher;
                     appendFailureDetails (stream, matcher->getFailureDetails(), inputAudio, outputAudio, baseFrameOffset);
+                    appendCapturedValues (stream);
 
                     throw hart::TestAssertException (std::string (stream.str()));
                 }
@@ -999,6 +1001,7 @@ private:
 
                     stream << std::endl << "Condition: " << * matcher;
                     appendFailureDetails (stream, matcher->getFailureDetails(), inputAudio, outputAudio, baseFrameOffset);
+                    appendCapturedValues (stream);
 
                     hart::ExpectationFailureMessages::get().emplace_back (stream.str());
                 }
@@ -1049,6 +1052,20 @@ private:
             << linPrecision << "Output sample value: " << outputSampleValue
             << dbPrecision << " (" << ratioToDecibels (std::abs (outputSampleValue)) << " dB)" << std::endl
             << details.description;
+    }
+
+    void appendCapturedValues (std::stringstream& stream)
+    {
+        if (! ActiveCapturedValuesContext::hasActiveContext())
+            return;
+
+        const CapturedValuesContext& capturedValuesContext = ActiveCapturedValuesContext::get();
+
+        if (capturedValuesContext.isEmpty())
+            return;
+
+        stream << std::endl << "Captured values:" << std::endl;
+        capturedValuesContext.represent (stream);
     }
 };
 
