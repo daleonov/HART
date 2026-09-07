@@ -160,6 +160,16 @@ inline static bool floatsNotEqual (SampleType a, SampleType b, SampleType epsilo
     return std::abs (a - b) >= epsilon;
 }
 
+/// @brief Checks if a floating point number is close to zero
+template <typename SampleType>
+inline static bool floatIsZero (SampleType value, SampleType epsilon = (SampleType) 1e-8)
+{
+    if (epsilon < (SampleType) 0)
+        HART_THROW_OR_RETURN (ValueError, "Epsilon should not be a negative number", false);
+
+    return std::abs (value) < epsilon;
+}
+
 /// @brief Rounds a floating point value to a `size_t` value
 template <typename SampleType>
 inline static size_t roundToSizeT (SampleType x)

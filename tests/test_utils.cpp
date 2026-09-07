@@ -131,3 +131,60 @@ HART_TEST ("Utils - quoted() with lvalue string")
 
     HART_EXPECT_EQ (quoted (empty), "\"\"");
 }
+
+HART_TEST ("Utils - floatIsZero() for float with default threshold")
+{
+    using hart::floatIsZero;
+    constexpr float inf32 = std::numeric_limits<float>::infinity();
+
+    HART_EXPECT_TRUE (floatIsZero (0.0f));
+    HART_EXPECT_TRUE (floatIsZero (1e-20f));
+    HART_EXPECT_TRUE (floatIsZero (-1e-20f));
+    HART_EXPECT_FALSE (floatIsZero (1e-3f)) << "Default threshold is below 0.001";
+    HART_EXPECT_FALSE (floatIsZero (1.0f));
+    HART_EXPECT_FALSE (floatIsZero (-1.0f));
+    HART_EXPECT_FALSE (floatIsZero (inf32));
+    HART_EXPECT_FALSE (floatIsZero (-inf32));
+    HART_EXPECT_FALSE (floatIsZero (hart::nan<float>()));
+    HART_EXPECT_FALSE (floatIsZero (-hart::nan<float>()));
+}
+
+HART_TEST ("Utils - floatIsZero() for float with custom threshold")
+{
+    using hart::floatIsZero;
+
+    HART_ASSERT_FALSE (floatIsZero (0.0005f)) << "Default threshold id lower than 0.0005";
+    HART_EXPECT_TRUE (floatIsZero (0.0005f, 0.001f));
+    HART_EXPECT_TRUE (floatIsZero (-0.0005f, 0.001f));
+    HART_EXPECT_FALSE (floatIsZero (0.005f, 0.001f));
+
+    // TODO: Check invalid epsilons
+}
+
+HART_TEST ("Utils - floatIsZero() for double with default threshold")
+{
+    using hart::floatIsZero;
+
+    HART_EXPECT_TRUE (floatIsZero (0.0));
+    HART_EXPECT_TRUE (floatIsZero (1e-20));
+    HART_EXPECT_TRUE (floatIsZero (-1e-20));
+    HART_EXPECT_FALSE (floatIsZero (1e-3)) << "Default threshold is below 0.001";
+    HART_EXPECT_FALSE (floatIsZero (1.0));
+    HART_EXPECT_FALSE (floatIsZero (-1.0));
+    HART_EXPECT_FALSE (floatIsZero (hart::inf));
+    HART_EXPECT_FALSE (floatIsZero (-hart::inf));
+    HART_EXPECT_FALSE (floatIsZero (hart::nan<double>()));
+    HART_EXPECT_FALSE (floatIsZero (-hart::nan<double>()));
+}
+
+HART_TEST ("Utils - floatIsZero() for double with custom threshold")
+{
+    using hart::floatIsZero;
+
+    HART_ASSERT_FALSE (floatIsZero (0.0005)) << "Default threshold id lower than 0.0005";
+    HART_EXPECT_TRUE (floatIsZero (0.0005, 0.001));
+    HART_EXPECT_TRUE (floatIsZero (-0.0005, 0.001));
+    HART_EXPECT_FALSE (floatIsZero (0.005, 0.001));
+
+    // TODO: Check invalid epsilons
+}
