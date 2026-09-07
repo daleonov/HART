@@ -148,14 +148,14 @@ inline static SampleType powerToDecibels (SampleType valueLinear)
 
 /// @brief Compares two floating point numbers within a given tolerance
 template <typename SampleType>
-inline static SampleType floatsEqual (SampleType a, SampleType b, SampleType epsilon = (SampleType) 1e-8)
+inline static bool floatsEqual (SampleType a, SampleType b, SampleType epsilon = (SampleType) 1e-8)
 {
     return std::abs (a - b) < epsilon;
 }
 
 /// @brief Compares two floating point numbers within a given tolerance
 template <typename SampleType>
-inline static SampleType floatsNotEqual (SampleType a, SampleType b, SampleType epsilon = (SampleType) 1e-8)
+inline static bool floatsNotEqual (SampleType a, SampleType b, SampleType epsilon = (SampleType) 1e-8)
 {
     return std::abs (a - b) >= epsilon;
 }
