@@ -758,6 +758,41 @@ HART_TEST ("Metrics - Quinn's Second Estimator")
     }
 }
 
+HART_PARAMETRIC_TEST ("Metrics - Jacobsen's Estimator")
+{
+    using AnalysisContext = hart::AnalysisContext<float>;
+    using hart::jacobsen;
+
+    const double expectedFundamentalHz = HART_GENERATE_VALUE (123_Hz, 456_Hz, 1_kHz, 5_kHz, 15_kHz);
+    HART_CAPTURE_VALUE (expectedFundamentalHz);
+
+    processAudioWith (Bypass())
+        .withInputSignal (SineWave (expectedFundamentalHz))
+        .inMono()
+        .expectTrue (
+            [expectedFundamentalHz] (AnalysisContext ac)
+            {
+                return HART_FREQUENCIES_EQUAL (jacobsen (ac.outputSpectrum()).get(), expectedFundamentalHz, 10_cents);
+            },
+            "Estimated sine wave frequency ~= Actual frequency"
+        )
+        .process();
+
+    processAudioWith (Bypass())
+        .withInputSignal (Sawtooth (expectedFundamentalHz))
+        .inMono()
+        .expectTrue (
+            [expectedFundamentalHz] (AnalysisContext ac)
+            {
+                return HART_FREQUENCIES_EQUAL (jacobsen (ac.outputSpectrum()).get(), expectedFundamentalHz, 10_cents);
+            },
+            "Estimated sawtooth frequency ~= Actual frequency"
+        )
+        .process();
+
+    // TODO: Test different correction types
+}
+
 HART_TEST ("Metrics - Loudest Bin Frequency")
 {
     using AudioBuffer = hart::AudioBuffer<float>;
