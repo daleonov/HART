@@ -188,3 +188,47 @@ HART_TEST ("Utils - floatIsZero() for double with custom threshold")
 
     // TODO: Check invalid epsilons
 }
+
+HART_TEST ("Utils - complexIsZero() for float")
+{
+    using hart::complexIsZero;
+    using complex = std::complex<float>;
+
+    HART_EXPECT_TRUE (complexIsZero (complex (0.0f, 0.0f)));
+    HART_EXPECT_TRUE (complexIsZero (complex (1e-20f, 0.0f)));
+    HART_EXPECT_TRUE (complexIsZero (complex (-1e-20f, 0.0f)));
+    HART_EXPECT_TRUE (complexIsZero (complex (0.0f, 1e-20f)));
+    HART_EXPECT_TRUE (complexIsZero (complex (0.0f, -1e-20f)));
+    HART_EXPECT_TRUE (complexIsZero (complex (1e-20f, 1e-20f)));
+
+    HART_EXPECT_TRUE (complexIsZero (complex (1e-20f, 1e-20f), 0.001f));
+    HART_EXPECT_FALSE (complexIsZero (complex (1e-20f, 1e-20f), 1e-21f));
+
+    HART_EXPECT_FALSE (complexIsZero (complex (1.0f, -1.0f)));
+    HART_EXPECT_FALSE (complexIsZero (complex (1.0f, 0.0f)));
+    HART_EXPECT_FALSE (complexIsZero (complex (-1.0f, 0.0f)));
+    HART_EXPECT_FALSE (complexIsZero (complex (0.0f, 1.0f)));
+    HART_EXPECT_FALSE (complexIsZero (complex (0.0f, -1.0f)));
+}
+
+HART_TEST ("Utils - complexIsZero() for double")
+{
+    using hart::complexIsZero;
+    using complex = std::complex<double>;
+
+    HART_EXPECT_TRUE (complexIsZero (complex (0.0, 0.0)));
+    HART_EXPECT_TRUE (complexIsZero (complex (1e-20, 0.0)));
+    HART_EXPECT_TRUE (complexIsZero (complex (-1e-20, 0.0)));
+    HART_EXPECT_TRUE (complexIsZero (complex (0.0, 1e-20)));
+    HART_EXPECT_TRUE (complexIsZero (complex (0.0, -1e-20)));
+    HART_EXPECT_TRUE (complexIsZero (complex (1e-20, 1e-20)));
+
+    HART_EXPECT_TRUE (complexIsZero (complex (1e-20, 1e-20), 0.001));
+    HART_EXPECT_FALSE (complexIsZero (complex (1e-20, 1e-20), 1e-21));
+
+    HART_EXPECT_FALSE (complexIsZero (complex (1.0, -1.0)));
+    HART_EXPECT_FALSE (complexIsZero (complex (1.0, 0.0)));
+    HART_EXPECT_FALSE (complexIsZero (complex (-1.0, 0.0)));
+    HART_EXPECT_FALSE (complexIsZero (complex (0.0, 1.0)));
+    HART_EXPECT_FALSE (complexIsZero (complex (0.0, -1.0)));
+}

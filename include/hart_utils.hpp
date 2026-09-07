@@ -3,6 +3,7 @@
 #include <algorithm>  // min(), max()
 #include <cctype>  // isalpha()
 #include <cmath>  // pow(), ceil()
+#include <complex>
 #include <exception>
 #include <fstream>
 #include <limits>  // infinity(), nan()
@@ -168,6 +169,13 @@ inline static bool floatIsZero (SampleType value, SampleType epsilon = (SampleTy
         HART_THROW_OR_RETURN (ValueError, "Epsilon should not be a negative number", false);
 
     return std::abs (value) < epsilon;
+}
+
+/// @brief Checks if a complex number is close to zero
+template <typename SampleType>
+inline static bool complexIsZero (std::complex<SampleType> value, SampleType epsilon = (SampleType) 1e-8)
+{
+    return floatIsZero (std::real (value), epsilon) && floatIsZero (std::imag (value), epsilon);
 }
 
 /// @brief Rounds a floating point value to a `size_t` value
