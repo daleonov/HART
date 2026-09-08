@@ -114,6 +114,23 @@ public:
         return *this;
     }
 
+    /// @brief Sets the initial param value for the tested DSP
+    /// @details It will call @ref DSP::getParamId() to get a numeric ID for @p readableParamName,
+    /// then @ref DSP::setValue() with the received numeric ID for DSP under test. To use this
+    /// overload, you must override `getParamId()` method in your DSP.
+    /// @param readableParamName Readable parameter name of the DSP
+    /// @param value Value that needs to be set
+    AudioTestBuilder& withValue (const std::string& readableParamName, double value)
+    {
+        if (m_processor == nullptr)
+            HART_THROW_OR_RETURN (hart::NullPointerError, "DSP instance is nullptr", *this);
+
+        // TODO: Handle ValueError exceptions for illegal param names
+        const int paramId = m_processor->getParamId (readableParamName);
+
+        return withValue (paramId, value);
+    }
+
     /// @brief Sets the total duration of the input signal to be processed
     /// @param durationSeconds of the signal in seconds. You can use time-related literails from @ref Units.
     AudioTestBuilder& withDuration (double durationSeconds)

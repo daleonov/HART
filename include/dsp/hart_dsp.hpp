@@ -94,6 +94,21 @@ public:
         return 0.0;
     }
 
+    /// @brief Get numeric param ID for some readable param name
+    /// @details Useful if you prefer to have param ids as text, rather than enums, named variables, or magic numbers.
+    /// This is completely optional. Overriding this will let you do `.withValue ("Some Readable Name", value)` for
+    /// your DSP testee. HART will call this function, and then your DSP will receive the usual `setValue()` callback
+    /// with the param ID it got from calling this method.
+    ///
+    /// For illegal param names, you're expected to throw `hart::ValueError`.
+    /// @param readableParamName Any readable parameter name
+    /// @return Param ID to be used by HART in the following `setValue()` callback.
+    /// @throws hart::ValueError If param name is incorrect or illegal
+    virtual int getParamId (const std::string readableParamName) const
+    {
+        return 0;
+    }
+
     /// @brief Tells the runner (host) whether this effect supports a specific i/o configuration.
     /// @details It is guaranteed that the effect will not receive unsupported number of channels in @ref process().
     /// However, it is not always possible to handle gracefully channel layout being unsupported, so in some circumstances
