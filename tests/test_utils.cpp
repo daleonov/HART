@@ -247,3 +247,26 @@ HART_TEST ("Utils - integerLog2()")
     HART_EXPECT_EQ (integerLog2 (31), integerLog2 (16));
     HART_EXPECT_EQ (integerLog2 (17), integerLog2 (16));
 }
+
+HART_TEST("Utils - ratioToCents()")
+{
+    using hart::ratioToCents;
+
+    constexpr double a4 = 440_Hz;
+    constexpr double aSharp4 = 466.16_Hz;
+    constexpr double b4 = 493.88_Hz;
+    constexpr double a6 = 1760_Hz;
+    constexpr double aSharp6 = 1864.66_Hz;
+
+    HART_EXPECT_FLOAT_EQ (ratioToCents (a6 / a4), 2400_cents, 1e-10);
+    HART_EXPECT_FLOAT_EQ (ratioToCents (a4 / a6), -2400_cents, 1e-10);
+
+    HART_EXPECT_FLOAT_EQ (ratioToCents (aSharp4 / a4), 100_cents, 0.1_cents);
+    HART_EXPECT_FLOAT_EQ (ratioToCents (a4 / aSharp4), -100_cents, 0.1_cents);
+
+    HART_EXPECT_FLOAT_EQ (ratioToCents (b4 / a4), 200_cents, 0.1_cents);
+    HART_EXPECT_FLOAT_EQ (ratioToCents (a4 / b4), -200_cents, 0.1_cents);
+
+    HART_EXPECT_FLOAT_EQ (ratioToCents (aSharp4 / a4), ratioToCents (b4 / aSharp4), 0.1_cents);
+    HART_EXPECT_FLOAT_EQ (ratioToCents (aSharp4 / a4), ratioToCents (aSharp6 / a6), 0.1_cents);
+}

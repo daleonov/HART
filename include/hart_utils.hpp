@@ -2,7 +2,7 @@
 
 #include <algorithm>  // min(), max()
 #include <cctype>  // isalpha()
-#include <cmath>  // pow(), ceil()
+#include <cmath>  // pow(), ceil(), log2()
 #include <complex>
 #include <exception>
 #include <fstream>
@@ -212,10 +212,16 @@ inline static double framesToSeconds (size_t frames, double sampleRateHz = CLICo
     return static_cast<double> (frames) / sampleRateHz;
 }
 
-/// @brief Converts frequency difference in cents to frequence ratio
+/// @brief Converts frequency difference in cents to frequency ratio
 inline double centsToRatio (double cents)
 {
     return std::pow (2.0, cents / 1200.0);
+}
+
+/// @brief Converts frequency ratio to cents
+inline double ratioToCents (double frequencyRatio)
+{
+    return 1200.0 * std::log2 (frequencyRatio);
 }
 
 /// @brief Adds an offset in cents to a frequency in Hz
