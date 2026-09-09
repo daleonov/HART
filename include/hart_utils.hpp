@@ -87,7 +87,7 @@ inline std::ostream& operator<< (std::ostream& os, Oversampling oversampling)
 
 /// @brief Returns a quiet NaN value for the given floating-point type.
 template<typename FloatType>
-inline FloatType nan()
+static constexpr FloatType nan()
 {
     return std::numeric_limits<FloatType>::quiet_NaN();
 }
