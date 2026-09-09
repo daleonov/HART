@@ -1,4 +1,4 @@
-#include <limits>  // double: denorm_min(), min()
+#include <limits>  // double: denorm_min(), min(); size_t: digits()
 #include <vector>
 #include <unordered_set>
 
@@ -231,4 +231,19 @@ HART_TEST ("Utils - complexIsZero() for double")
     HART_EXPECT_FALSE (complexIsZero (complex (-1.0, 0.0)));
     HART_EXPECT_FALSE (complexIsZero (complex (0.0, 1.0)));
     HART_EXPECT_FALSE (complexIsZero (complex (0.0, -1.0)));
+}
+
+HART_TEST ("Utils - integerLog2()")
+{
+    using hart::integerLog2;
+    constexpr size_t largestPowerOfTwoOnThisPlatform = std::numeric_limits<size_t>::digits - 1;
+
+    HART_EXPECT_EQ (integerLog2 (1024), 10);
+    HART_EXPECT_EQ (integerLog2 (size_t (1) << largestPowerOfTwoOnThisPlatform), largestPowerOfTwoOnThisPlatform);
+    HART_EXPECT_EQ (integerLog2 (1), 0);
+
+    HART_EXPECT_EQ (integerLog2 (1023), integerLog2 (512));
+    HART_EXPECT_EQ (integerLog2 (513), integerLog2 (512));
+    HART_EXPECT_EQ (integerLog2 (31), integerLog2 (16));
+    HART_EXPECT_EQ (integerLog2 (17), integerLog2 (16));
 }

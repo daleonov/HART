@@ -268,6 +268,27 @@ static bool isPowerOfTwo (size_t x)
     return (x != 0) && ((x & (x - 1)) == 0);
 }
 
+// TODO: Template it for other int types?
+/// @brief Returns a log2 for integers
+/// @details This is designed to be used with power-of-two integers,
+/// but will work for arbitrary values too. For a non-power-of-two
+/// value, it will return an integer equivalent of floor (log2 (value)).
+static inline size_t integerLog2 (size_t value)
+{
+    if (value == 0)
+        HART_THROW_OR_RETURN (ValueError, "Log2 (0) in undefined", 0);
+
+    size_t res = 0;
+
+    while (value > 1)
+    {
+        value >>= 1;
+        ++res;
+    }
+
+    return res;
+}
+
 /// @brief Calculates duration in seconds, that is a power of 2 in provided sample rate, and is a closest next value to requested target duration
 /// @details Useful for test cases that involve FFT, that are sensitive to FFT zero-padding.
 /// @note For very long target durations and/or very high sample rates may cause an potential `size_t` overflow, so be cautious.
