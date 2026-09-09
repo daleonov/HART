@@ -1,5 +1,5 @@
 #include <algorithm>  // max()
-#include <cmath>  // abs(), isnan(), isinf(), cos(), acos()
+#include <cmath>  // abs(), isnan(), isinf(), cos(), acos(), tan()
 
 #include "hart.hpp"
 #include "exponential_decay.hpp"
@@ -756,6 +756,25 @@ HART_TEST ("Metrics - Quinn's Second Estimator")
         HART_EXPECT_FREQ_EQ (estimatedFundamentalHz, expectedFundamentalHz, 15_cents)
             << "Sawtooth at " << expectedFundamentalHz << " Hz";
     }
+}
+
+HART_PARAMETRIC_TEST ("Metrics - Jacobsen's Estimator - getCandan1Correction() helper")
+{
+    constexpr size_t largestPowerOfTwoOnThisPlatform = std::numeric_limits<size_t>::digits - 1;
+
+    const size_t fftSize = HART_GENERATE_VALUE (
+        size_t (1) << 5,
+        size_t (1) << 10,
+        size_t (1) << 15,
+        size_t (1) << largestPowerOfTwoOnThisPlatform
+    );
+
+    const double n = static_cast<double> (fftSize);
+    const double piOverN = hart::pi / n;
+    const double expectedValue = std::tan (piOverN) / (piOverN);
+    const double observedValue = hart::Jacobsen::getCandan1Correction (fftSize);
+
+    HART_EXPECT_FLOAT_EQ (expectedValue, observedValue, 1e-16);
 }
 
 HART_PARAMETRIC_TEST ("Metrics - Jacobsen's Estimator")

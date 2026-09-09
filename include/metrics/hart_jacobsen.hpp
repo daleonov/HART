@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cmath>  // isnan(), tan(), atan()
 #include <complex>  // complex, norm(), real()
 
@@ -25,6 +26,66 @@ enum class Correction
     candan1,
     candan2
 };
+
+/// @brief Pre-calculated values for Candan's 1st correction
+/// @private
+constexpr std::array<double, 28> candan1Corrections =
+{{
+    nan<double>(),  // N = 1 (2 ** 0) - Estimator is designed for N >= 3
+    nan<double>(),  // N = 2 (2 ** 1) - Estimator is designed for N >= 3
+    1.2732395447351625,  // N = 4 (2 ** 2)
+    1.0547861751580989,  // N = 8 (2 ** 3)
+    1.0130523683386767,  // N = 16 (2 ** 4)
+    1.0032251965664247,  // N = 32 (2 ** 5)
+    1.0008039653559875,  // N = 64 (2 ** 6)
+    1.0002008460110010,  // N = 128 (2 ** 7)
+    1.0000502024280562,  // N = 256 (2 ** 8)
+    1.0000125500399752,  // N = 512 (2 ** 9)
+    1.0000031374745559,  // N = 1024 (2 ** 10)
+    1.0000007843664240,  // N = 2048 (2 ** 11)
+    1.0000001960914675,  // N = 4096 (2 ** 12)
+    1.0000000490228582,  // N = 8192 (2 ** 13)
+    1.0000000122557140,  // N = 16384 (2 ** 14)
+    1.0000000030639284,  // N = 32768 (2 ** 15)
+    1.0000000007659822,  // N = 65536 (2 ** 16)
+    1.0000000001914955,  // N = 131072 (2 ** 17)
+    1.0000000000478739,  // N = 262144 (2 ** 18)
+    1.0000000000119684,  // N = 524288 (2 ** 19)
+    1.0000000000029921,  // N = 1048576 (2 ** 20)
+    1.0000000000007481,  // N = 2097152 (2 ** 21)
+    1.0000000000001870,  // N = 4194304 (2 ** 22)
+    1.0000000000000469,  // N = 8388608 (2 ** 23)
+    1.0000000000000118,  // N = 16777216 (2 ** 24)
+    1.0000000000000029,  // N = 33554432 (2 ** 25)
+    1.0000000000000007,  // N = 67108864 (2 ** 26)
+    1.0000000000000002  // N = 134217728 (2 ** 27)
+}};
+
+/// @brief Returns a Candan's 1st correction for the Jacobsen estimator
+/// @private 
+static inline double getCandan1Correction (size_t fftSize)
+{
+    if (fftSize > 134217728ull)  // 2 ** 27
+        return 1.0;
+    
+    if (! isPowerOfTwo (fftSize))
+    {
+        // Technically, it's still correct, but HART's
+        // spectra are power-of-two sized, and expected
+        // to use cached values. For arbitrary sizes,
+        // we'll  have to calculate it in runtime.
+        hassertfalse;
+    
+        const double n = static_cast<double> (fftSize);
+        const double piOverN = pi / n;
+        return std::tan (piOverN) / (piOverN);
+    }
+
+    const size_t i = integerLog2 (fftSize);
+    hassert (i < candan1Corrections.size());
+
+    return candan1Corrections[i];
+}
 
 }  // namespace Jacobsen
 
@@ -97,7 +158,7 @@ inline MetricQuery<double> jacobsen (const Spectrum& spectrum, Jacobsen::Correct
 
             const double n = static_cast<double> (nTwoSided);
             const double piOverN = pi / n;
-            const double candan1Correction = std::tan (piOverN) / (piOverN);  // TODO: Build a cache for common N's
+            const double candan1Correction = Jacobsen::getCandan1Correction (nTwoSided);
             const double deltaCandan1 = candan1Correction * deltaJacobsen;
 
             delta =  correction == Jacobsen::Correction::candan2
