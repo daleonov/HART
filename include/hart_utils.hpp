@@ -14,6 +14,7 @@
 #include <unordered_map>
 
 #include "hart_cliconfig.hpp"
+#include "hart_hassert.hpp"
 
 namespace hart
 {

@@ -161,16 +161,6 @@ class UnitError:
 #define HART_THROW_OR_CONTINUE(ExceptionType, message) HART_THROW (ExceptionType, message)
 #endif  // HART_DO_NOT_THROW_EXCEPTIONS
 
-// TODO: Make hassert() and hassertfalse not throw if HART_DO_NOT_THROW_EXCEPTIONS is set
-
-/// @brief Triggers a `HartAssertException`
-/// @ingroup Exceptions
-#define hassertfalse HART_THROW (hart::HartAssertException, "hassertfalse failed")
-
-/// @brief Triggers a `HartAssertException` if the `condition` is `false`
-/// @ingroup Exceptions
-#define hassert(condition) if (! (condition)) { HART_THROW (hart::HartAssertException, std::string ("hassert failed:") + #condition); }
-
 /// @brief Prints a warning message
 /// @ingroup Exceptions
 #define HART_WARNING(message) std::cout << "Warning: " << message << ", file: " << __FILE__ << ", line: " << __LINE__ << std::endl
