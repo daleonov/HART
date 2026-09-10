@@ -119,11 +119,8 @@ public:
     auto values (const char* file, int line, ValueSequenceType&& sequence)
         -> typename std::decay<ValueSequenceType>::type::ResolvedValueType
     {
-        using SequenceType = typename std::decay<ValueSequenceType>::type;
-        using ResolvedValueType = typename SequenceType::ResolvedValueType;
-
         if (sequence.size() == 0)
-            HART_THROW_OR_RETURN (SizeError, "HART_GENERATE_VALUE() received an empty value sequence", ResolvedValueType());
+            HART_THROW_OR_RETURN (SizeError, "HART_GENERATE_VALUE() received an empty value sequence", typename std::decay<ValueSequenceType>::type::ResolvedValueType());
 
         const size_t slotIndex = m_cursor;
 

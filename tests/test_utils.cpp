@@ -238,9 +238,9 @@ HART_TEST ("Utils - integerLog2()")
     using hart::integerLog2;
     constexpr size_t largestPowerOfTwoOnThisPlatform = std::numeric_limits<size_t>::digits - 1;
 
-    HART_EXPECT_EQ (integerLog2 (1024), 10);
+    HART_EXPECT_EQ (integerLog2 (1024), 10u);
     HART_EXPECT_EQ (integerLog2 (size_t (1) << largestPowerOfTwoOnThisPlatform), largestPowerOfTwoOnThisPlatform);
-    HART_EXPECT_EQ (integerLog2 (1), 0);
+    HART_EXPECT_EQ (integerLog2 (1), 0u);
 
     HART_EXPECT_EQ (integerLog2 (1023), integerLog2 (512));
     HART_EXPECT_EQ (integerLog2 (513), integerLog2 (512));

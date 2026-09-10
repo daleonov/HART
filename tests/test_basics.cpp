@@ -39,7 +39,7 @@ HART_TEST ("Basics - One-shot test with a value capture")
     for (size_t i = 0; i < 10; ++i)
     {
         HART_CAPTURE_VALUE (i);
-        HART_EXPECT_LT (i, 10);
+        HART_EXPECT_LT (i, 10u);
     }
 }
 
