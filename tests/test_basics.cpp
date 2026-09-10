@@ -12,19 +12,19 @@ HART_TEST_WITH_TAGS ("Basics - One-shot test case with tags", "[some-tag][some-o
     HART_EXPECT_EQ (2 + 2, 4);
 }
 
-HART_PARAMETRIC_TEST ("Basics - Parametric test case")
+HART_PARAMETRISED_TEST ("Basics - Parametrised test case")
 {
     const int x = HART_GENERATE_VALUE (11, 22, 33, 44);
     HART_EXPECT_EQ (x * 2,  x + x);
 }
 
-HART_PARAMETRIC_TEST_WITH_TAGS ("Basics - Parametric test case with tags", "[some-tag][some-other-tag]")
+HART_PARAMETRISED_TEST_WITH_TAGS ("Basics - Parametrised test case with tags", "[some-tag][some-other-tag]")
 {
     const int x = HART_GENERATE_VALUE (11, 22, 33, 44);
     HART_EXPECT_EQ (x * 2,  x + x);
 }
 
-HART_PARAMETRIC_TEST ("Basics - Parametric test case with multiple parametrics and captures")
+HART_PARAMETRISED_TEST ("Basics - Parametrised test case with multiple generated values and captures")
 {
     const int x = HART_GENERATE_VALUE (11, 22, 33, 44);
     const int y = HART_GENERATE_VALUE (555, 666, 777);
@@ -43,7 +43,7 @@ HART_TEST ("Basics - One-shot test with a value capture")
     }
 }
 
-HART_PARAMETRIC_TEST("Basics - Parametric test with values from iterators")
+HART_PARAMETRISED_TEST("Basics - Parametrised test with values from iterators")
 {
     constexpr std::array<int, 3> values {{ 11, 22, 33 }};
     const int value = HART_GENERATE_VALUE (values.begin(), values.end());
@@ -51,7 +51,7 @@ HART_PARAMETRIC_TEST("Basics - Parametric test with values from iterators")
     HART_EXPECT_GT (value, 0);
 }
 
-HART_PARAMETRIC_TEST("Basics - Parametric test with values from an iterable")
+HART_PARAMETRISED_TEST("Basics - Parametrised test with values from an iterable")
 {
     constexpr std::array<int, 3> valuesA {{ 11, 22, 33 }};
     const std::vector<int> valuesB {{ 33, 44, 55 }};

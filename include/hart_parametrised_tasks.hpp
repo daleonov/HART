@@ -11,15 +11,15 @@
 
 // TODO: Document this macro
 #define HART_GENERATE_VALUE(...) \
-    ::hart::ActiveParametricTaskContext::get().values( \
+    ::hart::ActiveParametrisedTaskContext::get().values( \
         __FILE__, \
         __LINE__, \
-        ::hart::makeParametricValueSet(__VA_ARGS__))
+        ::hart::makeParametrisedValueSet(__VA_ARGS__))
 
 namespace hart
 {
 
-struct ParametricValuesSlot
+struct ParametrisedValuesSlot
 {
     std::string file;
     int line;
@@ -27,12 +27,12 @@ struct ParametricValuesSlot
 };
 
 template <typename ValueType>
-class ParametricValueSequence
+class ParametrisedValueSequence
 {
 public:
     using ResolvedValueType = ValueType;
 
-    explicit ParametricValueSequence (std::vector<ValueType> values):
+    explicit ParametrisedValueSequence (std::vector<ValueType> values):
         m_values (std::move (values))
     {
     }
@@ -54,8 +54,8 @@ private:
 /// @brief Value sequence factory for variadic arguments, as in `HART_GEVERATE_VALUE (11, 22, 33)`
 /// @private
 template <typename FirstValueType, typename... OtherValueTypes>
-auto makeParametricValueSet (FirstValueType&& firstValue, OtherValueTypes&&... otherValues)
-    -> ParametricValueSequence<typename std::common_type<typename std::decay<FirstValueType>::type, typename std::decay<OtherValueTypes>::type...>::type>
+auto makeParametrisedValueSet (FirstValueType&& firstValue, OtherValueTypes&&... otherValues)
+    -> ParametrisedValueSequence<typename std::common_type<typename std::decay<FirstValueType>::type, typename std::decay<OtherValueTypes>::type...>::type>
 {
     using ResolvedValueType = typename std::common_type<typename std::decay<FirstValueType>::type, typename std::decay<OtherValueTypes>::type...>::type;
     std::vector<ResolvedValueType> values;
@@ -66,17 +66,17 @@ auto makeParametricValueSet (FirstValueType&& firstValue, OtherValueTypes&&... o
     const int dummy[] = { 42, (values.push_back (static_cast<ResolvedValueType> (std::forward<OtherValueTypes> (otherValues))), 42)... };
     (void) dummy;
 
-    return ParametricValueSequence<ResolvedValueType> (std::move (values));
+    return ParametrisedValueSequence<ResolvedValueType> (std::move (values));
 }
 
 /// @brief Value sequence factory for a pair of iterators, as in `HART_GEVERATE_VALUE (x.begin(), x.end())`
 /// @private
 template <typename IteratorType>
-auto makeParametricValueSet (IteratorType begin, IteratorType end)
-    -> ParametricValueSequence<typename std::iterator_traits<IteratorType>::value_type>
+auto makeParametrisedValueSet (IteratorType begin, IteratorType end)
+    -> ParametrisedValueSequence<typename std::iterator_traits<IteratorType>::value_type>
 {
     using ValueType = typename std::iterator_traits<IteratorType>::value_type;
-    return ParametricValueSequence<ValueType> (std::vector<ValueType> (begin, end));
+    return ParametrisedValueSequence<ValueType> (std::vector<ValueType> (begin, end));
 }
 
 /// @brief A helper to determine if something is an iterable container with `begin()` and `end()` methods
@@ -105,14 +105,14 @@ public:
 template <typename IterableType>
 typename std::enable_if<
     IsIterable<IterableType>::value,
-    ParametricValueSequence<typename IterableType::value_type>
+    ParametrisedValueSequence<typename IterableType::value_type>
 >::type
-makeParametricValueSet (const IterableType& iterable)
+makeParametrisedValueSet (const IterableType& iterable)
 {
-    return makeParametricValueSet (iterable.begin(), iterable.end());
+    return makeParametrisedValueSet (iterable.begin(), iterable.end());
 }
 
-class ParametricTaskContext
+class ParametrisedTaskContext
 {
 public:
     template <typename ValueSequenceType>
@@ -129,15 +129,15 @@ public:
 
         if (m_isFirstPermutation)
         {
-            m_parametricValuesSlots.push_back (ParametricValuesSlot { file, line, sequence.size() });
+            m_parametrisedValuesSlots.push_back (ParametrisedValuesSlot { file, line, sequence.size() });
             m_currentIndices.push_back (0);
         }
         else
         {
             // HART_GENERATE_VALUE() call sites changed between value permutations?
-            hassert (slotIndex < m_parametricValuesSlots.size());
+            hassert (slotIndex < m_parametrisedValuesSlots.size());
 
-            const ParametricValuesSlot& slot = m_parametricValuesSlots[slotIndex];
+            const ParametrisedValuesSlot& slot = m_parametrisedValuesSlots[slotIndex];
 
             // HART_GENERATE_VALUE() call sites changed between value permutations?
             hassert (slot.file == file && slot.line == line)
@@ -163,14 +163,14 @@ public:
     void endPermutation()
     {
         // HART_GENERATE_VALUES() call sites changed between value permutations?
-        hassert (m_isFirstPermutation || m_cursor == m_parametricValuesSlots.size());
+        hassert (m_isFirstPermutation || m_cursor == m_parametrisedValuesSlots.size());
 
         m_isFirstPermutation = false;
     }
 
     void advanceToNextValuePermutation()
     {
-        if (m_parametricValuesSlots.empty())
+        if (m_parametrisedValuesSlots.empty())
         {
             m_isExhausted = true;
             return;
@@ -181,7 +181,7 @@ public:
             const size_t index = i - 1;
             ++m_currentIndices[index];
 
-            if (m_currentIndices[index] < m_parametricValuesSlots[index].size)
+            if (m_currentIndices[index] < m_parametrisedValuesSlots[index].size)
                 return;
 
             m_currentIndices[index] = 0;
@@ -191,25 +191,25 @@ public:
     }
 
 private:
-    std::vector<ParametricValuesSlot> m_parametricValuesSlots;
+    std::vector<ParametrisedValuesSlot> m_parametrisedValuesSlots;
     std::vector<size_t> m_currentIndices;
     size_t m_cursor = 0;
     bool m_isFirstPermutation = true;
     bool m_isExhausted = false;
 };
 
-class ActiveParametricTaskContext
+class ActiveParametrisedTaskContext
 {
 public:
-    static ParametricTaskContext& get()
+    static ParametrisedTaskContext& get()
     {
         if (currentContext == nullptr)
         {
-            static ParametricTaskContext fallbackContext;
+            static ParametrisedTaskContext fallbackContext;
 
             HART_THROW_OR_RETURN (
                 hart::ConfigurationError,
-                "HART_GENERATE_VALUES() can only be used inside a parametric task - use HART_PARAMETRIC_TEST(), or someother macro from parametric family",
+                "HART_GENERATE_VALUE() can only be used inside a parametrised task - use HART_PARAMETRISED_TEST(), or another macro from the parametrised family",
                 fallbackContext
             );
         }
@@ -222,29 +222,29 @@ public:
         return currentContext != nullptr;
     }
 
-    static thread_local ParametricTaskContext* currentContext;
+    static thread_local ParametrisedTaskContext* currentContext;
 };
 
-class ParametricTaskContextScope
+class ParametrisedTaskContextScope
 {
 public:
-    explicit ParametricTaskContextScope (ParametricTaskContext& context)
+    explicit ParametrisedTaskContextScope (ParametrisedTaskContext& context)
     {
-        m_previousContext = ActiveParametricTaskContext::currentContext;
-        ActiveParametricTaskContext::currentContext = &context;
+        m_previousContext = ActiveParametrisedTaskContext::currentContext;
+        ActiveParametrisedTaskContext::currentContext = &context;
     }
 
-    ~ParametricTaskContextScope()
+    ~ParametrisedTaskContextScope()
     {
-        ActiveParametricTaskContext::currentContext = m_previousContext;
+        ActiveParametrisedTaskContext::currentContext = m_previousContext;
     }
 
 private:
-    ParametricTaskContext* m_previousContext = nullptr;
+    ParametrisedTaskContext* m_previousContext = nullptr;
 };
 
 #if defined (HART_IMPLEMENTATION)
-thread_local ParametricTaskContext* ActiveParametricTaskContext::currentContext = nullptr;
+thread_local ParametrisedTaskContext* ActiveParametrisedTaskContext::currentContext = nullptr;
 #endif
 
 }  // namespace hart

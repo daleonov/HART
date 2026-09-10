@@ -758,7 +758,7 @@ HART_TEST ("Metrics - Quinn's Second Estimator")
     }
 }
 
-HART_PARAMETRIC_TEST ("Metrics - Jacobsen's Estimator - getCandan1Correction() helper")
+HART_PARAMETRISED_TEST ("Metrics - Jacobsen's Estimator - getCandan1Correction() helper")
 {
     constexpr size_t largestPowerOfTwoOnThisPlatform = std::numeric_limits<size_t>::digits - 1;
 
@@ -777,7 +777,7 @@ HART_PARAMETRIC_TEST ("Metrics - Jacobsen's Estimator - getCandan1Correction() h
     HART_EXPECT_FLOAT_EQ (expectedValue, observedValue, 1e-16);
 }
 
-HART_PARAMETRIC_TEST ("Metrics - Jacobsen's Estimator - Vanilla version")
+HART_PARAMETRISED_TEST ("Metrics - Jacobsen's Estimator - Vanilla version")
 {
     using AnalysisContext = hart::AnalysisContext<float>;
     using hart::jacobsen;
@@ -810,7 +810,7 @@ HART_PARAMETRIC_TEST ("Metrics - Jacobsen's Estimator - Vanilla version")
         .process();
 }
 
-HART_PARAMETRIC_TEST ("Metrics - Jacobsen's Estimator - Candan's corrections")
+HART_PARAMETRISED_TEST ("Metrics - Jacobsen's Estimator - Candan's corrections")
 {
     using std::abs;
     using hart::Spectrum;

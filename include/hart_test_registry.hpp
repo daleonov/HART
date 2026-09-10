@@ -29,9 +29,9 @@ enum class TaskCategory
     generate
 };
 
-/// @brief States whether the task is parametric or not
+/// @brief States whether the task is parametrised or not
 /// @private
-enum class IsParametric
+enum class IsParametrised
 {
     no,
     yes
@@ -54,7 +54,7 @@ public:
     /// @brief Adds a task (test or generator)
     /// @details Gets called when a test case is declared with a macro like @ref HART_TEST()
     /// @private
-    void add (const IsParametric isParametric, const std::string& name, const std::string& tags, const std::string& file, int line, TaskCategory testCategory, void (*func)())
+    void add (const IsParametrised isParametrised, const std::string& name, const std::string& tags, const std::string& file, int line, TaskCategory testCategory, void (*func)())
     {
         std::unordered_set<std::string>& registeredNamesContainer =
             testCategory == TaskCategory::test
@@ -72,7 +72,7 @@ public:
                 ? tests
                 : generators;
 
-        tasks.emplace_back (TaskInfo {isParametric, name, tags, file, line, func});
+        tasks.emplace_back (TaskInfo {isParametrised, name, tags, file, line, func});
     }
 
     /// @brief Runs all tests or generators
@@ -137,7 +137,7 @@ public:
 private:
     struct TaskInfo
     {
-        IsParametric isParametric;
+        IsParametrised isParametrised;
         std::string name;
         std::string tags;
         std::string file;
@@ -170,8 +170,8 @@ private:
         const auto timestampStart = std::chrono::high_resolution_clock::now();
 
         TaskRunResult taskRunResult =
-            task.isParametric == IsParametric::yes
-                ? runParametricTask (task)
+            task.isParametrised == IsParametrised::yes
+                ? runParametrisedTask (task)
                 : runOneShotTask (task);
 
         const auto timestampFinish = std::chrono::high_resolution_clock::now();
@@ -190,7 +190,7 @@ private:
             std::ostringstream taskSignatureStream;
             taskSignatureStream
                 << "HART_"
-                << (task.isParametric == IsParametric::yes ? "PARAMETRIC_" : "")
+                << (task.isParametrised == IsParametrised::yes ? "PARAMETRISED_" : "")
                 << (isGenerateTask ? "GENERATE" : "TEST")
                 << (task.tags.empty() ? " (" : "_WITH_TAGS (")
                 << quoted (task.name)
@@ -228,7 +228,7 @@ private:
         {
             std::ostringstream numFuncRunsLabel;
 
-            if (task.isParametric == IsParametric::yes)
+            if (task.isParametrised == IsParametrised::yes)
             {
                 // We actually don't know number of total permutations vs number of successful run permutations,
                 // as those values are lazily generated. But if the run did not throw a HART_ASSERT, and all
@@ -268,14 +268,14 @@ private:
         }
     }
 
-    TaskRunResult runParametricTask (const TaskInfo& task)
+    TaskRunResult runParametrisedTask (const TaskInfo& task)
     {
         size_t numFuncRuns = 0;
         CapturedValuesContext capturedValuesContext;
 
         try
         {
-            ParametricTaskContext context;
+            ParametrisedTaskContext context;
 
             while (context.hasUnusedValuePermutations())
             {
@@ -284,7 +284,7 @@ private:
 
                 {
                     const CapturedValuesContextScope capturedValuesScope (capturedValuesContext);
-                    const ParametricTaskContextScope scope (context);
+                    const ParametrisedTaskContextScope scope (context);
                     task.func();
                 }
 
