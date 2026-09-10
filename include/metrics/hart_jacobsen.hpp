@@ -20,10 +20,33 @@ namespace hart
 namespace Jacobsen
 {
 
+/// @brief Selects an optional bias correction for Jacobsen's three-bin frequency estimator.
 enum class Correction
 {
+    /// @brief The original Jacobsen estimator. The fastest of the lot.
+    /// @details @see Jacobsen E., Kootsookos P.,
+    /// "Fast, Accurate Frequency Estimators",
+    /// IEEE Signal Processing Magazine, Vol. 24, Issue 3, pp. 123-125, May, 2007.
     none,
+
+    /// @brief First Candan correction
+    /// @details A correction proposed by Cagatay Candan to inprove the accuracy of
+    /// frequency estimation. Under the hood, it uses pre-calculated values, and
+    /// comes at a cost of just one multiplication operation, as compared to "vanilla"
+    /// Jacobsen's estimator (as in `Correction::none`).
+    /// @see C. Candan,
+    /// "A Method for Fine Resolution Frequency Estimation From Three DFT Samples",
+    /// IEEE Signal Processing Letters, Vol. 18, No. 6, pp. 351-354, June 2011.
     candan1,
+
+    /// @brief Second Candan correction
+    /// @details Additionally applies the bias-removal refinement. Significantly more
+    /// costly than other two options, due to runtime `atan()` calculation, but the
+    /// most precise of the lot.
+    ///  @see C. Candan,
+    /// "Analysis and Further Improvement of Fine Resolution Frequency Estimation
+    /// Method From Three DFT Samples",
+    /// IEEE Signal Processing Letters, vol. 20, No. 9, pp. 913-916, September, 2013.
     candan2
 };
 
@@ -89,6 +112,41 @@ static inline double getCandan1Correction (size_t fftSize)
 
 }  // namespace Jacobsen
 
+
+/// @brief Estimates the frequency of a spectral peak using Jacobsen's three-bin frequency estimator.
+///
+/// @details
+/// Finds the bin with the greatest magnitude within the requested spectrum
+/// slice and refines its frequency estimate using that bin and its two
+/// neighbouring DFT bins.
+///
+/// The optional @p correction argument can be used to apply either of
+/// Candan's refinements to the original Jacobsen estimator. By default,
+/// no correction is applied.
+///
+/// The estimate is not defined when the detected peak is at a boundary of
+/// the available spectrum, since both neighbouring DFT bins are required.
+///
+/// This is a spectral peak-frequency estimator rather than a general
+/// fundamental-frequency detector. For signals containing multiple spectral
+/// components, the estimated frequency corresponds to the strongest peak in
+/// the selected spectrum slice
+/// (via `jacobsen (spectrum).at (Slice (startHz, stopHz))`).
+///
+/// Supports `Unit::Hz`, this is the only supported unit, and a default (native) one.
+///
+/// For a detailed comparison of this method and Candan's corrections, see
+/// [A Brief Examination of Current and a Proposed Fine Frequency Estimator Using Three DFT Samples](https://www.ericjacobsen.org/Files/Jacobsen_2015_estimator_comparison.pdf)
+/// by Eric Jacobsen, as well as the original papers, referenced in it.
+///
+/// For other accurate peak frequency estimations, you may also check Quinn's
+/// second estimator metric: `quinns2()`.
+///
+/// @param spectrum Spectrum to analyse.
+/// @param correction Optional correction applied to the original Jacobsen
+/// estimate. Defaults to Jacobsen::Correction::none.
+/// @return Chainable `MetricQuery` object, calculates per-channel estimated
+/// peak frequencies in Hz.
 /// @ingroup Metrics
 inline MetricQuery<double> jacobsen (const Spectrum& spectrum, Jacobsen::Correction correction = Jacobsen::Correction::none)
 {
