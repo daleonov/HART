@@ -15,7 +15,7 @@
 namespace hart
 {
 
-/// @brief Returns somewhat accurate loudest frequency in the spectrum
+/// @brief Estimates the frequency of a spectral peak using Quinn's second estimator.
 /// @details
 /// Implements algorithm commonly referred to as "Quinn's Second Estimator",
 /// described by B. G. Quinn in "Estimating frequency by interpolation
@@ -34,6 +34,9 @@ namespace hart
 /// This metric operates on FFT bins exactly as stored in the Spectrum.
 /// In a not-so-likely event where multiple bins have exactly the same
 /// magnitube, the lowest frequency will be returned.
+///
+/// For another accurate peak frequency estimator, but at lower CPU cost,
+/// you may consider using Jacobsen/Candan estimator metric: `jacobsen()`.
 /// 
 /// Usage examples:
 /// @code
