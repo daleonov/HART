@@ -11,7 +11,7 @@
 #include "hart_audio_buffer.hpp"
 #include "dsp/hart_dsp.hpp"
 #include "hart_exceptions.hpp"
-#include "hart_utils.hpp"  // floatsNotEqual(), roundToSizeT()
+#include "hart_utils.hpp"  // floatsNotEqual(), roundToSizeT(), HART_INTENTIONALLY_UNUSED()
 
 /// @defgroup Signals Signals
 /// @brief Generate signals
@@ -133,14 +133,22 @@ public:
     /// @note This method should only care about the Signal itself, and not the attached effects in DSP chain - they'll be queried separately
     /// @param numChannels Number of output channels that will need to be filled
     /// @return true if signal is capable of filling this many channels with audio, false otherwise
-    virtual bool supportsNumChannels (size_t /* numChannels */) const { return true; };
+    virtual bool supportsNumChannels (size_t numChannels) const
+    {
+        HART_INTENTIONALLY_UNUSED (numChannels);
+        return true;
+    };
 
     /// @brief Tells whether this Signal supports given sample rate
     /// @details It is guaranteed to be called before @ref prepare()
     /// @note This method should only care about the Signal itself, and not the attached effects in DSP chain - they'll be queried separately
     /// @param sampleRateHz sample rate at which the audio should be generated
     /// @return true if signal is capable of generating audio at a given sample rate, false otherwise
-    virtual bool supportsSampleRate (double /* sampleRateHz */) const { return true; }
+    virtual bool supportsSampleRate (double sampleRateHz) const
+    {
+        HART_INTENTIONALLY_UNUSED (sampleRateHz);
+        return true;
+    }
 
     /// @brief Prepare the signal for rendering 
     /// @details This method is guaranteed to be called after @ref supportsNumChannels() and supportsSampleRate(),

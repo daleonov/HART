@@ -9,7 +9,7 @@
 #include "hart_audio_buffer.hpp"
 #include "hart_channel_flags.hpp"
 #include "envelopes/hart_envelope.hpp"
-#include "hart_utils.hpp"  // make_unique()
+#include "hart_utils.hpp"  // make_unique(), HART_INTENTIONALLY_UNUSED()
 
 namespace hart
 {
@@ -89,8 +89,9 @@ public:
     /// @return The value of requested parameter in a unit that your subclass understands
     /// @note This method is only intended for parameters that don't have an automation envelope attached to this specific instance.
     /// To get values for automated parameters, use @c envelopeBuffers provided in @ref process() callback.
-    virtual double getValue (int /* paramId */) const
+    virtual double getValue (int paramId) const
     {
+        HART_INTENTIONALLY_UNUSED (paramId);
         return 0.0;
     }
 
@@ -106,6 +107,7 @@ public:
     /// @throws hart::ValueError If param name is incorrect or illegal
     virtual int getParamId (const std::string readableParamName) const
     {
+        HART_INTENTIONALLY_UNUSED (readableParamName);
         return 0;
     }
 
@@ -128,13 +130,21 @@ public:
     /// @brief Tells whether this effect accepts automation envelopes for a particular parameter
     /// @param paramId Some ID that your subclass understands
     /// @return true if your subclass can process automation for this parameter, false otherwise
-    virtual bool supportsEnvelopeFor (int /* paramId */) const { return false; }
+    virtual bool supportsEnvelopeFor (int paramId) const
+    {
+        HART_INTENTIONALLY_UNUSED (paramId);
+        return false;
+    }
 
     /// @brief Tells whether this effect supports given sample rate
     /// @details It is guaranteed to be called before @ref prepare()
     /// @param sampleRateHz Sample rate in question
     /// @return true if effect is capable of interpreting and processing in a given sample rate, false otherwise
-    virtual bool supportsSampleRate (double /* sampleRateHz */) const { return true; }
+    virtual bool supportsSampleRate (double sampleRateHz) const
+    {
+        HART_INTENTIONALLY_UNUSED (sampleRateHz);
+        return true;
+    }
 
     /// @brief Returns a smart pointer with a copy of this object
     virtual std::unique_ptr<DSPBase<SampleType>> copy() const { return nullptr; }

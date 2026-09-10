@@ -421,6 +421,9 @@ inline static bool isExceptionUnwinding()
         stream << #ClassName "()"; \
     }
 
+/// @brief States that some function argument is intentionally unused, to avoid "unused local variable" warnings
+#define HART_INTENTIONALLY_UNUSED(argument) ((void)(argument))
+
 /// @private
 #if defined(__GNUC__) || defined(__clang__)
     #define HART_DEPRECATED(msg) __attribute__((deprecated(msg)))

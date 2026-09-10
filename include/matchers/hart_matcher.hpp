@@ -9,7 +9,7 @@
 #include "hart_channel_flags.hpp"
 #include "hart_exceptions.hpp"
 #include "hart_matcher_failure_details.hpp"
-#include "hart_utils.hpp"  // make_unique(), HART_DEPRECATED()
+#include "hart_utils.hpp"  // make_unique(), HART_INTENTIONALLY_UNUSED()
 
 /// @defgroup Matchers Matchers
 /// @brief Check audio
@@ -89,13 +89,22 @@ public:
     /// @param numInputChannels Number of channels in input (reference) buffer that will need to be processed
     /// @param numOutputChannels Number of channels in output (observed) buffer that will need to be processed
     /// @return true if signal is capable of processing audio with requested number of channels, false otherwise
-    virtual bool supportsChannelLayout (size_t /* numInputChannels */, size_t /* numOutputChannels */) const { return true; }
+    virtual bool supportsChannelLayout (size_t numInputChannels, size_t numOutputChannels) const
+    {
+        HART_INTENTIONALLY_UNUSED (numInputChannels);
+        HART_INTENTIONALLY_UNUSED (numOutputChannels);
+        return true;
+    }
 
     /// @brief Tells whether this Matcher supports given sample rate
     /// @details It is guaranteed to be called before @ref prepare()
     /// @param sampleRateHz sample rate at which the audio will be presented
     /// @return true if matcher is capable of processing audio with a given sample rate, false otherwise
-    virtual bool supportsSampleRate (double /* sampleRateHz */) const { return true; }
+    virtual bool supportsSampleRate (double sampleRateHz) const
+    {
+        HART_INTENTIONALLY_UNUSED (sampleRateHz);
+        return true;
+    }
 
     /// @brief Returns a smart pointer with a copy of this object
     /// @return Copy of this object wrapped in a smart pointer
