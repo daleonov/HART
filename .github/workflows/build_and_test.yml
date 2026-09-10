@@ -20,33 +20,28 @@ jobs:
             cxx: g++-13
             build_type: Debug
             generator: "Unix Makefiles"
-            cpp_compatibility_test: OFF
 
           - name: Ubuntu ARM64 GCC
             os: ubuntu-24.04-arm
             cxx: g++-13
             build_type: Debug
             generator: "Unix Makefiles"
-            cpp_compatibility_test: OFF
 
           - name: Ubuntu AMD64 Clang
             os: ubuntu-latest
             cxx: clang++-18
             build_type: Debug
             generator: "Unix Makefiles"
-            cpp_compatibility_test: OFF
 
           - name: Windows AMD64 MSVC
             os: windows-latest
             build_type: Release
             generator: "Visual Studio 18 2026"
-            cpp_compatibility_test: ON
 
           - name: macOS ARM64 Apple-Clang
             os: macos-latest
             build_type: Debug
             generator: "Unix Makefiles"
-            cpp_compatibility_test: OFF
 
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}
@@ -67,7 +62,6 @@ jobs:
         cmake -B build
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DHART_BUILD_TESTS=ON
-        -DHART_CHECK_CPP_STANDARDS_COMPATIBILITY=${{ matrix.cpp_compatibility_test }}
         -G "${{ matrix.generator }}"
 
     - name: Build

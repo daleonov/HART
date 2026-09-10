@@ -1,0 +1,187 @@
+name: C++ Standard Compatibility
+
+on:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: GCC C++11
+            os: ubuntu-latest
+            cxx: g++-14
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 11
+
+          - name: GCC C++14
+            os: ubuntu-latest
+            cxx: g++-14
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 14
+
+          - name: GCC C++17
+            os: ubuntu-latest
+            cxx: g++-14
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 17
+
+          - name: GCC C++20
+            os: ubuntu-latest
+            cxx: g++-14
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 20
+
+          - name: GCC C++23
+            os: ubuntu-latest
+            cxx: g++-14
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 23
+
+          - name: GCC C++26
+            os: ubuntu-latest
+            cxx: g++-14
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 26
+
+          - name: Clang C++11
+            os: ubuntu-latest
+            cxx: clang++-18
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 11
+
+          - name: Clang C++14
+            os: ubuntu-latest
+            cxx: clang++-18
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 14
+
+          - name: Clang C++17
+            os: ubuntu-latest
+            cxx: clang++-18
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 17
+
+          - name: Clang C++20
+            os: ubuntu-latest
+            cxx: clang++-18
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 20
+
+          - name: Clang C++23
+            os: ubuntu-latest
+            cxx: clang++-18
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 23
+
+          - name: Clang C++26
+            os: ubuntu-latest
+            cxx: clang++-18
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 26
+
+          - name: Apple Clang C++11
+            os: macos-latest
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 11
+
+          - name: Apple Clang C++14
+            os: macos-latest
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 14
+
+          - name: Apple Clang C++17
+            os: macos-latest
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 17
+
+          - name: Apple Clang C++20
+            os: macos-latest
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 20
+
+          - name: Apple Clang C++23
+            os: macos-latest
+            build_type: Debug
+            generator: "Unix Makefiles"
+            cpp_standard: 23
+
+          - name: MSVC C++14
+            os: windows-latest
+            build_type: Debug
+            generator: "Visual Studio 18 2026"
+            cpp_standard: 14
+
+          - name: MSVC C++17
+            os: windows-latest
+            build_type: Debug
+            generator: "Visual Studio 18 2026"
+            cpp_standard: 17
+
+          - name: MSVC C++20
+            os: windows-latest
+            build_type: Debug
+            generator: "Visual Studio 18 2026"
+            cpp_standard: 20
+
+          - name: MSVC C++23 Preview
+            os: windows-latest
+            build_type: Debug
+            generator: "Visual Studio 18 2026"
+            cpp_standard: 23preview
+
+          - name: MSVC C++ Latest
+            os: windows-latest
+            build_type: Debug
+            generator: "Visual Studio 18 2026"
+            cpp_standard: latest
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.name }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+
+    - name: Install and set up Linux compilers
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ${{ matrix.cxx }}
+        echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
+
+    - name: Configure CMake
+      run: >
+        cmake -B build
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DHART_BUILD_TESTS=OFF
+        -DHART_CHECK_CPP_STANDARDS_COMPATIBILITY=${{ matrix.cpp_standard }}
+        -G "${{ matrix.generator }}"
+
+    - name: Build compatibility target
+      run: >
+        cmake --build build
+        --config ${{ matrix.build_type }}
+        --target HART_CompatibilityCheckForCpp${{ matrix.cpp_standard }}
+        --parallel 1

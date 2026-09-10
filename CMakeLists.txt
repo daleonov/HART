@@ -53,17 +53,29 @@ if(HART_BUILD_TESTS)
     )
 endif()  # HART_BUILD_TESTS
 
-option(HART_CHECK_CPP_STANDARDS_COMPATIBILITY "Build a bunch of dummy targets to check compatibility with major C++ standards" OFF)
+set(HART_CHECK_CPP_STANDARDS_COMPATIBILITY "" CACHE STRING "Build one dummy target to check compatibility with the requested C++ standard")
+set_property(CACHE HART_CHECK_CPP_STANDARDS_COMPATIBILITY PROPERTY STRINGS "" OFF 11 14 17 20 23 26 23preview latest)
 
-if(HART_CHECK_CPP_STANDARDS_COMPATIBILITY)
-    foreach(STD 11 14 17 20)
-        add_executable(HART_CompatibilityCheckForCpp${STD} ${HART_TEST_SOURCES})
-        target_link_libraries(HART_CompatibilityCheckForCpp${STD} PRIVATE HART)
-        set_target_properties(HART_CompatibilityCheckForCpp${STD} PROPERTIES CXX_STANDARD ${STD})
-        target_compile_features(HART_CompatibilityCheckForCpp${STD} PRIVATE cxx_std_${STD})
-        target_compile_options(HART_CompatibilityCheckForCpp${STD} PRIVATE
-            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O0>
-            $<$<CXX_COMPILER_ID:MSVC>:/Od>
+if(HART_CHECK_CPP_STANDARDS_COMPATIBILITY AND NOT HART_CHECK_CPP_STANDARDS_COMPATIBILITY STREQUAL "OFF")
+    set(HART_CPP_COMPATIBILITY_TARGET HART_CompatibilityCheckForCpp${HART_CHECK_CPP_STANDARDS_COMPATIBILITY})
+    add_executable(${HART_CPP_COMPATIBILITY_TARGET} ${HART_TEST_SOURCES})
+    target_link_libraries(${HART_CPP_COMPATIBILITY_TARGET} PRIVATE HART)
+    target_compile_options(${HART_CPP_COMPATIBILITY_TARGET} PRIVATE
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O0>
+        $<$<CXX_COMPILER_ID:MSVC>:/Od>
+    )
+
+    if(HART_CHECK_CPP_STANDARDS_COMPATIBILITY MATCHES "^[0-9]+$")
+        set_target_properties(${HART_CPP_COMPATIBILITY_TARGET} PROPERTIES
+            CXX_STANDARD ${HART_CHECK_CPP_STANDARDS_COMPATIBILITY}
+            CXX_STANDARD_REQUIRED ON
+            CXX_EXTENSIONS OFF
         )
-    endforeach()
+    elseif(MSVC AND HART_CHECK_CPP_STANDARDS_COMPATIBILITY STREQUAL "23preview")
+        # This target version is passed as MSVC compiler flag, rather than CMake option
+        target_compile_options(${HART_CPP_COMPATIBILITY_TARGET} PRIVATE /std:c++23preview)
+    elseif(MSVC AND HART_CHECK_CPP_STANDARDS_COMPATIBILITY STREQUAL "latest")
+        # This target version is passed as MSVC compiler flag, rather than CMake option
+        target_compile_options(${HART_CPP_COMPATIBILITY_TARGET} PRIVATE /std:c++latest)
+    endif()
 endif()
