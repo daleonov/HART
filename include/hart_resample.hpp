@@ -13,7 +13,6 @@
 #include "dependencies/r8brain-free-src/CDSPResampler.h"
 #include "dependencies/choc/platform/choc_ReenableAllWarnings.h"
 
-#include "hart_audio_buffer.hpp"
 #include "hart_utils.hpp"  // roundToSizeT(), floatsEqual()
 
 namespace hart
