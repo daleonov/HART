@@ -777,7 +777,7 @@ HART_PARAMETRIC_TEST ("Metrics - Jacobsen's Estimator - getCandan1Correction() h
     HART_EXPECT_FLOAT_EQ (expectedValue, observedValue, 1e-16);
 }
 
-HART_PARAMETRIC_TEST ("Metrics - Jacobsen's Estimator")
+HART_PARAMETRIC_TEST ("Metrics - Jacobsen's Estimator - Vanilla version")
 {
     using AnalysisContext = hart::AnalysisContext<float>;
     using hart::jacobsen;
@@ -808,8 +808,55 @@ HART_PARAMETRIC_TEST ("Metrics - Jacobsen's Estimator")
             "Estimated sawtooth frequency ~= Actual frequency"
         )
         .process();
+}
 
-    // TODO: Test different correction types
+HART_PARAMETRIC_TEST ("Metrics - Jacobsen's Estimator - Candan's corrections")
+{
+    using std::abs;
+    using hart::Spectrum;
+    using hart::jacobsen;
+    using hart::ratioToCents;
+    using namespace hart::Jacobsen;
+
+    const double expectedFundamentalHz = HART_GENERATE_VALUE (123_Hz, 456_Hz, 1_kHz, 5_kHz, 15_kHz);
+    HART_CAPTURE_VALUE (expectedFundamentalHz);
+
+    AudioBuffer audioBuffer;
+    processAudioWith (Bypass())
+        .withInputSignal (SineWave (expectedFundamentalHz))
+        .inMono()
+        .saveOutputTo (audioBuffer)
+        .process();
+
+    Spectrum spectrum (audioBuffer);
+    const double jacobsenEstimationHz = jacobsen (spectrum, Correction::none);
+    const double candan1EstimationHz = jacobsen (spectrum, Correction::candan1);
+    const double candan2EstimationHz = jacobsen (spectrum, Correction::candan2);
+
+    HART_CAPTURE_VALUE (jacobsenEstimationHz);
+    HART_CAPTURE_VALUE (candan1EstimationHz);
+    HART_CAPTURE_VALUE (candan2EstimationHz);
+
+    const double jacobsenErrorCents = abs (ratioToCents (jacobsenEstimationHz / expectedFundamentalHz));
+    const double candan1ErrorCents = abs (ratioToCents (candan1EstimationHz / expectedFundamentalHz));
+    const double candan2ErrorCents = abs (ratioToCents (candan2EstimationHz / expectedFundamentalHz));
+
+    HART_CAPTURE_VALUE (jacobsenErrorCents);
+    HART_CAPTURE_VALUE (candan1ErrorCents);
+    HART_CAPTURE_VALUE (candan2ErrorCents);
+
+    // They're expected to be numerically slightly different
+    // (Unless it's a very long FFT)
+    HART_EXPECT_FLOAT_NE (jacobsenEstimationHz, candan1EstimationHz, 1e-16);
+    HART_EXPECT_FLOAT_NE (candan1EstimationHz, candan2EstimationHz, 1e-16);
+
+    // They all estimate the same frequency
+    HART_EXPECT_FREQ_EQ (jacobsenEstimationHz, expectedFundamentalHz, 10_cents);
+    HART_EXPECT_FREQ_EQ (candan1EstimationHz, expectedFundamentalHz, 10_cents);
+    HART_EXPECT_FREQ_EQ (candan2EstimationHz, expectedFundamentalHz, 10_cents);
+
+    // Each consecutive correction is statistically better than previous
+    // one, but we're not testing it as a part of the metric's contract.
 }
 
 HART_TEST ("Metrics - Loudest Bin Frequency")
