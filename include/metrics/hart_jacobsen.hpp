@@ -31,8 +31,8 @@ enum class Correction
 /// @private
 constexpr std::array<double, 28> candan1Corrections =
 {{
-    nan<double>(),  // N = 1 (2 ** 0) - Estimator is designed for N >= 3
-    nan<double>(),  // N = 2 (2 ** 1) - Estimator is designed for N >= 3
+    nan<double>(),  // N = 1 (2 ** 0) - Too small for this three-bin estimator
+    nan<double>(),  // N = 2 (2 ** 1) - Too small for this three-bin estimator
     1.2732395447351625,  // N = 4 (2 ** 2)
     1.0547861751580989,  // N = 8 (2 ** 3)
     1.0130523683386767,  // N = 16 (2 ** 4)
@@ -65,9 +65,6 @@ constexpr std::array<double, 28> candan1Corrections =
 /// @private 
 static inline double getCandan1Correction (size_t fftSize)
 {
-    if (fftSize > 134217728ull)  // 2 ** 27
-        return 1.0;
-    
     if (! isPowerOfTwo (fftSize))
     {
         // Technically, it's still correct, but HART's
@@ -80,6 +77,9 @@ static inline double getCandan1Correction (size_t fftSize)
         const double piOverN = pi / n;
         return std::tan (piOverN) / (piOverN);
     }
+
+    if (fftSize > 134217728ull)  // 2 ** 27
+        return 1.0;
 
     const size_t i = integerLog2 (fftSize);
     hassert (i < candan1Corrections.size());
