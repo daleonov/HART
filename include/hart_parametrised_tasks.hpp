@@ -9,7 +9,23 @@
 
 #include "hart_exceptions.hpp"
 
-// TODO: Document this macro
+/// @brief Returns one generated value for the current parametrised test permutation.
+/// @details Use this macro inside a test declared with `HART_PARAMETRISED_TEST()` or
+/// `HART_PARAMETRISED_TEST_WITH_TAGS()`. Multiple calls in one test body produce a Cartesian
+/// product of their value sequences, so the test body is invoked once per value combination.
+///
+/// Values may be provided directly, as a begin/end iterator pair, or as an STL-like container:
+/// @code
+/// const int valueA = HART_GENERATE_VALUE (1, 2, 3);
+/// const int valueB = HART_GENERATE_VALUE (someContainer.begin(), someContainer.end());
+/// const int valueC = HART_GENERATE_VALUE (someContainer);
+/// @endcode
+///
+/// Keep calls to this macro at the top level of the test body, and avoid expressions with
+/// important side effects inside the value list.
+///
+/// See @ref ParametrisedTests for more details.
+/// @ingroup TestRunner
 #define HART_GENERATE_VALUE(...) \
     ::hart::ActiveParametrisedTaskContext::get().values( \
         __FILE__, \
@@ -19,6 +35,7 @@
 namespace hart
 {
 
+/// @private
 struct ParametrisedValuesSlot
 {
     std::string file;
@@ -26,6 +43,7 @@ struct ParametrisedValuesSlot
     size_t size;
 };
 
+/// @private
 template <typename ValueType>
 class ParametrisedValueSequence
 {
@@ -112,6 +130,7 @@ makeParametrisedValueSet (const IterableType& iterable)
     return makeParametrisedValueSet (iterable.begin(), iterable.end());
 }
 
+/// @private
 class ParametrisedTaskContext
 {
 public:
@@ -195,6 +214,7 @@ private:
     bool m_isExhausted = false;
 };
 
+/// @private
 class ActiveParametrisedTaskContext
 {
 public:
@@ -222,6 +242,7 @@ public:
     static thread_local ParametrisedTaskContext* currentContext;
 };
 
+/// @private
 class ParametrisedTaskContextScope
 {
 public:

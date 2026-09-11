@@ -8,12 +8,27 @@
 #include "hart_exceptions.hpp"
 #include "hart_stringify.hpp"
 
-// TODO: Document this macro
+/// @brief Captures an expression's current value for failure reports.
+/// @details When a HART assertion or a matcher fails, captured values are
+/// appended to the failure message. Capturing the same expression token more
+/// than once overwrites the previously captured value.
+///
+/// This macro can be used in both regular and parametrised test cases:
+/// @code
+/// HART_CAPTURE_VALUE (inputLevelDb);
+/// HART_CAPTURE_VALUE (samplePeak (output).as (dB).get());
+/// @endcode
+///
+/// The expression is evaluated once when this macro is reached.
+///
+/// See @ref ParametrisedTests for more details.
+/// @ingroup TestRunner
 #define HART_CAPTURE_VALUE(expression) ::hart::ActiveCapturedValuesContext::get().capture (#expression, expression)
 
 namespace hart
 {
 
+/// @private
 class CapturedValuesContext
 {
 public:
@@ -52,6 +67,7 @@ private:
     std::map<std::string, std::string> m_capturedValues;
 };
 
+/// @private
 class ActiveCapturedValuesContext
 {
 public:
@@ -79,6 +95,7 @@ public:
     static thread_local CapturedValuesContext* currentContext;
 };
 
+/// @private
 class CapturedValuesContextScope
 {
 public:

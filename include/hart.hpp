@@ -64,6 +64,7 @@ namespace hart
 /// @brief Declares a parametrised test case with tags
 /// @param name Name for the test case
 /// @param tags Tags like "[my-tag-1][my-tag-2]"
+/// @see @ref ParametrisedTests for more details
 /// @ingroup TestRunner
 #define HART_PARAMETRISED_TEST_WITH_TAGS(name, tags) HART_ITEM_WITH_TAGS(hart::IsParametrised::yes, name, tags, hart::TaskCategory::test)
 
@@ -81,6 +82,7 @@ namespace hart
 
 /// @brief Declares a parametrised test case
 /// @param name Name for the test case
+/// @see @ref ParametrisedTests for more details
 /// @ingroup TestRunner
 #define HART_PARAMETRISED_TEST(name) HART_PARAMETRISED_TEST_WITH_TAGS(name, "")
 
