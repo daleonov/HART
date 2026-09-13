@@ -85,6 +85,8 @@ constexpr double operator""_deg (long double val) { return static_cast<double> (
 constexpr double operator""_deg (unsigned long long val) { return static_cast<double>(val) * hart::pi / 180.0; }
 constexpr double operator""_cents (long double val) { return static_cast<double> (val); }
 constexpr double operator""_cents (unsigned long long val) { return static_cast<double>(val); }
+constexpr double operator""_semitones (long double val) { return static_cast<double> (val); }
+constexpr double operator""_semitones (unsigned long long val) { return static_cast<double>(val); }
 
 inline double operator""_dB_as_ratio (long double val) { return hart::decibelsToRatio (static_cast<double> (val)); }
 inline double operator""_dB_as_ratio (unsigned long long int val) { return hart::decibelsToRatio (static_cast<double> (val)); }
