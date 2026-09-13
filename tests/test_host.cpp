@@ -122,6 +122,25 @@ HART_TEST ("Move audio output to an external buffer")
     HART_EXPECT_TRUE (hart::floatsEqual (bufferB.getLengthSeconds(), 1_ms, 5_us));
 }
 
+HART_TEST ("processAndGetOutputAudio() returns correct audio from the test tunner")
+{
+    hart::CLIConfig& cliConfig = hart::CLIConfig::getInstance();
+    hart::AudioBuffer<float> expectedAudio (
+        cliConfig.getDefaultNumInputChannels(),
+        cliConfig.getDefaultRenderDurationFrames(),
+        cliConfig.getDefaultSampleRateHz()
+    );
+    expectedAudio
+        .fillWith (WhiteNoise())
+        .processWith (GainDb (-3_dB));
+    
+    const hart::AudioBuffer<float> returnedAudio = processAudioWith (GainDb (-3_dB))
+        .withInputSignal (WhiteNoise())
+        .processAndGetOutputAudio();
+    
+    HART_EXPECT_EQ (returnedAudio, expectedAudio);
+}
+
 HART_TEST ("Re-using the input signal")
 {
     const auto gainEnvelope = SegmentedEnvelope (decibelsToRatio (-10_dB))

@@ -718,7 +718,22 @@ public:
         return *this;
     }
 
-    /// @brief Performs the test
+    /// @brief Performs the tests, and returns the rendered output audio buffer
+    /// @return The output audio buffer
+    hart::AudioBuffer<SampleType> processAndGetOutputAudio()
+    {
+        if (m_outputBufferSink != nullptr)
+            HART_THROW_OR_RETURN (ConfigurationError, "Do not call this method with saveOutputTo(), use process() instead", {});
+
+        AudioBuffer<SampleType> outputBuffer;
+        saveOutputTo (outputBuffer);
+        hassert (m_outputBufferSink != nullptr);
+
+        process();
+        return outputBuffer;
+    }
+
+    /// @brief Performs the test, and returns your used DSP instance
     /// @details Call this after setting all the test parameters
     std::unique_ptr<DSPBase<SampleType>> process()
     {
