@@ -124,15 +124,10 @@ HART_TEST ("Move audio output to an external buffer")
 
 HART_TEST ("processAndGetOutputAudio() returns correct audio from the test tunner")
 {
-    hart::CLIConfig& cliConfig = hart::CLIConfig::getInstance();
-    hart::AudioBuffer<float> expectedAudio (
-        cliConfig.getDefaultNumInputChannels(),
-        cliConfig.getDefaultRenderDurationFrames(),
-        cliConfig.getDefaultSampleRateHz()
-    );
-    expectedAudio
-        .fillWith (WhiteNoise())
-        .processWith (GainDb (-3_dB));
+    const hart::AudioBuffer<float> expectedAudio =
+        hart::AudioBuffer<float>::inDefaultOutputShape()
+            .fillWith (WhiteNoise())
+            .processWith (GainDb (-3_dB));
     
     const hart::AudioBuffer<float> returnedAudio = processAudioWith (GainDb (-3_dB))
         .withInputSignal (WhiteNoise())

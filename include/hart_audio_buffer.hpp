@@ -128,6 +128,42 @@ public:
             : AudioBuffer (other.getNumChannels(), other.getNumFrames());
     }
 
+    /// @brief Constructs a buffer representing a default-shaped input buffer
+    /// @details
+    /// Number of channels equal to default number of input channels,
+    /// duration equal to default render duration,
+    /// sample rate equal to default sample rate.
+    /// Default values are set through CLI interface. 
+    /// @return A new buffer of described shape
+    static AudioBuffer inDefaultInputShape()
+    {
+        const hart::CLIConfig& cliConfig = hart::CLIConfig::getInstance();
+
+        return hart::AudioBuffer<SampleType> (
+            cliConfig.getDefaultNumInputChannels(),
+            cliConfig.getDefaultRenderDurationFrames(),
+            cliConfig.getDefaultSampleRateHz()
+            );
+    }
+
+    /// @brief Constructs a buffer representing a default-shaped output buffer
+    /// @details
+    /// Number of channels equal to default number of output channels,
+    /// duration equal to default render duration,
+    /// sample rate equal to default sample rate.
+    /// Default values are set through CLI interface. 
+    /// @return A new buffer of described shape
+    static AudioBuffer inDefaultOutputShape()
+    {
+        const hart::CLIConfig& cliConfig = hart::CLIConfig::getInstance();
+
+        return hart::AudioBuffer<SampleType> (
+            cliConfig.getDefaultNumOutputChannels(),
+            cliConfig.getDefaultRenderDurationFrames(),
+            cliConfig.getDefaultSampleRateHz()
+            );
+    }
+
     /// @brief Get number of channels
     /// @return Number of allocated channels
     size_t getNumChannels() const { return m_numChannels; }
