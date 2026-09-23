@@ -499,3 +499,24 @@ HART_TEST ("TruePeaksBelow")
         .expectFalse (TruePeaksBelow (2.5_dB, Oversampling::x8, FilterQuality::medium, Strictness::strict))
         .process();
 }
+
+HART_TEST ("NoInfinities")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+
+    processAudioWith (Bypass())
+        .withInputSignal (WhiteNoise())
+        .expectTrue (NoInfinities())
+        .process();
+
+    AudioBuffer bufferWithInfinities = AudioBuffer::inDefaultOutputShape();
+    HART_ASSERT_GT (bufferWithInfinities.getNumChannels(), 0);
+    HART_ASSERT_GT (bufferWithInfinities.getNumFrames(), 0);
+    bufferWithInfinities.clear();
+    bufferWithInfinities[0][bufferWithInfinities.getNumFrames() - 1] = static_cast<float> (hart::inf);
+
+    processAudioWith (Bypass())
+        .withInputSignal (AudioBufferSignal (bufferWithInfinities))
+        .expectFalse (NoInfinities())
+        .process();
+}

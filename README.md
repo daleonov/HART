@@ -64,6 +64,7 @@ Matchers are similar to their namesakes from Catch2. In HART, they represent som
 | `FundamentalEquals`   | Estimated fundamental frequency matches the expected value
 | `LatencyBelow`        | Measured latency stays below a specified time amount
 | `NoDenormals`         | Output contains no subnormal floating-point samples
+| `NoInfinities`        | Output contains no infinity values
 | `PolarityPreserved`   | Output retains the input polarity, instead of flipping it
 | `MatcherFunction`     | Inline custom matcher from a lambda or callable object
 
