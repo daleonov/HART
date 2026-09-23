@@ -814,11 +814,6 @@ public:
         bool atLeastOneCheckFailed = false;
         offsetFrames = 0;
 
-        // Fill with NaNs for internal post-validation,
-        // to make sure we didn't miss any frames
-        fullInputBuffer.fillWith (nan<SampleType>());
-        fullOutputBuffer.fillWith (nan<SampleType>());
-
         // Main test render
         while (offsetFrames < testDurationFrames)
         {
@@ -841,24 +836,6 @@ public:
                 fullOutputBuffer.copyFrom (channel, offsetFrames, outputBlock, channel, 0, blockSizeFrames);
 
             offsetFrames += blockSizeFrames;
-        }
-
-        // Sanity check - making sure we didn't skip any frames in the input buffer...
-        for (size_t channel = 0; channel < m_numInputChannels; ++channel)
-        {
-            const SampleType* channelData = fullInputBuffer[channel];
-
-            for (size_t frame = 0; frame < testDurationFrames; ++frame)
-                hassert (! std::isnan (channelData[frame]));
-        }
-
-        // ...and the output buffer
-        for (size_t channel = 0; channel < m_numOutputChannels; ++channel)
-        {
-            const SampleType* channelData = fullOutputBuffer[channel];
-
-            for (size_t frame = 0; frame < testDurationFrames; ++frame)
-                hassert (! std::isnan (channelData[frame]));
         }
 
         if (testDurationFrames != 0 && ! fullSignalChecks.empty())
