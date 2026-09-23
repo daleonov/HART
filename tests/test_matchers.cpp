@@ -520,3 +520,24 @@ HART_TEST ("NoInfinities")
         .expectFalse (NoInfinities())
         .process();
 }
+
+HART_TEST ("NoNaNs")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+
+    processAudioWith (Bypass())
+        .withInputSignal (WhiteNoise())
+        .expectTrue (NoNaNs())
+        .process();
+
+    AudioBuffer bufferWithNaNs = AudioBuffer::inDefaultOutputShape();
+    HART_ASSERT_GT (bufferWithNaNs.getNumChannels(), 0);
+    HART_ASSERT_GT (bufferWithNaNs.getNumFrames(), 0);
+    bufferWithNaNs.clear();
+    bufferWithNaNs[0][bufferWithNaNs.getNumFrames() - 1] = hart::nan<float>();
+
+    processAudioWith (Bypass())
+        .withInputSignal (AudioBufferSignal (bufferWithNaNs))
+        .expectFalse (NoNaNs())
+        .process();
+}
