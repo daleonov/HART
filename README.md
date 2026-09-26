@@ -110,6 +110,7 @@ Signals are stimuli for HART test cases. Signals can be processed with built-in 
 | `Sawtooth`                  | Band-limited sawtooth wave
 | `WhiteNoise`                | White noise, constructed in time domain, with parametric seed
 | `PinkNoise`                 | Pink noise, constructed in time domain, with parametric seed
+| `BinaryNoise`               | Noise with all samples being either `-1` or `+1`, a.k.a. Rademacher noise
 | `Spectrum::colouredNoise()` | Ideal coloured noise, constructed in frequency domain, with parametric seed
 | `Impulse`                   | Single-sample impulse (`{1, 0, 0, 0, ...}` sequence)
 | `DC`                        | Constant-value signal, a.k.a. "direct current"

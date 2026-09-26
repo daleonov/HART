@@ -548,3 +548,54 @@ HART_TEST ("Signal - PinkNoise - Has correct spectrum")
     HART_EXPECT_FREQ_EQ (spectralCentroid (observedPinkNoiseSpectrum).get (mean()), expectedSpectralCentroidHz, 100_cents)
         << "Pink noise's spectral centroid is close to ideal one";
 }
+
+HART_TEST ("Signal - Binary Noise - Peaks at unity gain")
+{
+    processAudioWith (Bypass())
+        .withInputSignal (BinaryNoise())
+        .expectTrue (PeaksAt (0_dB))
+        .process();
+}
+
+HART_TEST ("Signal - Binary Noise - RMS = Sample peak")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::rms;
+    using hart::min;
+
+    processAudioWith (Bypass())
+        .withInputSignal (BinaryNoise())
+        .expectTrue ([] (const AudioBuffer& output) { return HART_FLOAT_EQ (rms (output).as (dB).get (min()), 0_dB, 1e-8); }, "RMS = Sample peak")
+        .process();
+}
+
+HART_TEST ("Signal - Binary Noise - Has high ZCR")
+{
+    // There's a very tiny probability that ZCR will be low, or even zero,
+    // but generally we expect a fairly high ZCR with this kind of noise.
+
+    using AudioBuffer = hart::AudioBuffer<float>;
+    using hart::zcr;
+    using hart::min;
+
+    processAudioWith (Bypass())
+        .withInputSignal (BinaryNoise())
+        .expectTrue ([] (const AudioBuffer& output) { return HART_GT (zcr (output).get (min()), 5_kHz); }, "ZCR > 1 kHz")
+        .process();
+}
+
+HART_PARAMETRISED_TEST ("Signal - Binary Noise - Is deterministic")
+{
+    using AudioBuffer = hart::AudioBuffer<float>;
+    const uint_fast32_t seed = HART_GENERATE_VALUE (0u, 123u, 456789u);
+    HART_CAPTURE_VALUE (seed);
+
+    const AudioBuffer bufferA = AudioBuffer::inDefaultOutputShape()
+        .fillWith (BinaryNoise (seed));
+
+    const AudioBuffer bufferB = AudioBuffer::inDefaultOutputShape()
+        .fillWith (BinaryNoise (seed));
+
+    HART_EXPECT_EQ (bufferA, bufferB)
+        << "Identical seeds produce identical signal realisations";
+}
