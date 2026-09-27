@@ -162,3 +162,21 @@ HART_TEST ("Reducers - Size")
         HART_EXPECT_EQ (size() (values.begin(), values.end()), expectedSize);
     }
 }
+
+HART_TEST ("Reducers - 2D reducer")
+{
+    using hart::min;
+    using hart::max;
+    using hart::reduce2d;
+
+    const std::vector<std::vector<int>> values = {
+        {1, 2, 3, 5},
+        {44, 22, 99, 66},
+        {111, 222, 888, 555},
+    };
+
+    HART_EXPECT_EQ (reduce2d (min(), min()) (values.begin(), values.end()), 1);
+    HART_EXPECT_EQ (reduce2d (max(), max()) (values.begin(), values.end()), 888);
+    HART_EXPECT_EQ (reduce2d (min(), max()) (values.begin(), values.end()), 5);
+    HART_EXPECT_EQ (reduce2d (max(), min()) (values.begin(), values.end()), 111);
+}

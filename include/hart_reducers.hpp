@@ -7,6 +7,7 @@
 
 #include "hart_accurate_sum.hpp"
 #include "hart_exceptions.hpp"
+#include "metrics/hart_metrics_common.hpp"  // ReducerResultType, InnerReducerResultType
 #include "hart_utils.hpp"  // nan(), floatsNotEqual(), Interpolation
 
 namespace hart
@@ -336,6 +337,57 @@ struct range
         return largestValue - smallestValue;
     }
 };
+
+/// @private
+template <typename OuterReducerType, typename InnerReducerType>
+struct Reduce2D
+{
+    Reduce2D (OuterReducerType outerReducer_, InnerReducerType innerReducer_) :
+        outerReducer (outerReducer_),
+        innerReducer (innerReducer_)
+    {
+    }
+
+    template <typename IteratorType>
+    auto operator() (IteratorType begin, IteratorType end) const
+        -> ReducerResultType<
+        OuterReducerType,
+        typename std::vector<
+            InnerReducerResultType<InnerReducerType, IteratorType>
+            >::const_iterator
+        >
+    {
+        typedef decltype ((*std::declval<IteratorType>()).begin()) InnerIteratorType;
+        typedef ReducerResultType<InnerReducerType, InnerIteratorType> InnerResultType;
+
+        std::vector<InnerResultType> outerValues;
+        outerValues.reserve (static_cast<size_t> (std::distance (begin, end)));
+
+        for (IteratorType innerContainerIterator = begin;
+            innerContainerIterator != end;
+            ++innerContainerIterator)
+        {
+            outerValues.push_back (
+                innerReducer (
+                    (*innerContainerIterator).begin(),
+                    (*innerContainerIterator).end()
+                )
+            );
+        }
+
+        return outerReducer (outerValues.begin(), outerValues.end());
+    }
+
+private:
+    OuterReducerType outerReducer;
+    InnerReducerType innerReducer;
+};
+
+template <typename OuterReducerType, typename InnerReducerType>
+Reduce2D<OuterReducerType, InnerReducerType> reduce2d (OuterReducerType outerReducer, InnerReducerType innerReducer)
+{
+    return Reduce2D <OuterReducerType, InnerReducerType> (outerReducer, innerReducer);
+}
 
 /// @brief Returns the number of elements (values) in the range
 struct size

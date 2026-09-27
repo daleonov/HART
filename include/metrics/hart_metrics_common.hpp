@@ -71,6 +71,15 @@ template <typename Reducer, typename Iterator>
 using ReducerResultType =
     typename ReducerResult<Reducer, Iterator>::type;
 
+/// @brief Unner reducer result type helper, for 2D reducers
+/// @private
+template <typename InnerReducerType, typename IteratorType>
+using InnerReducerResultType =
+    ReducerResultType<
+        InnerReducerType,
+        decltype ((*std::declval<IteratorType>()).begin())
+    >;
+
 // TODO: Replace this method with std::vector generator(s)
 /// @brief A helper to get an iterable of channel indices to process
 /// @ingroup Metrics
