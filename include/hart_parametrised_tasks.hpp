@@ -171,6 +171,19 @@ public:
         return ! m_isExhausted;
     }
 
+    size_t getTotalValuePermutations() const
+    {
+        if (m_isFirstPermutation || m_parametrisedValuesSlots.empty())
+            return 0;
+
+        size_t totalValuePermutations = 1;
+
+        for (const ParametrisedValuesSlot& slot : m_parametrisedValuesSlots)
+            totalValuePermutations *= slot.size;
+
+        return totalValuePermutations;
+    }
+
     void beginPermutation()
     {
         m_cursor = 0;

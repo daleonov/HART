@@ -164,14 +164,15 @@ private:
 
     void runTask (const TaskInfo& task)
     {
-        std::cout << "[  ...   ] Running " << task.name;
+        const std::string progressLabel = "[  ...   ] Running " + task.name;
+        std::cout << progressLabel;
         ExpectationFailureMessages::clear();
 
         const auto timestampStart = std::chrono::high_resolution_clock::now();
 
         TaskRunResult taskRunResult =
             task.isParametrised == IsParametrised::yes
-                ? runParametrisedTask (task)
+                ? runParametrisedTask (task, progressLabel)
                 : runOneShotTask (task);
 
         const auto timestampFinish = std::chrono::high_resolution_clock::now();
@@ -268,7 +269,7 @@ private:
         }
     }
 
-    TaskRunResult runParametrisedTask (const TaskInfo& task)
+    TaskRunResult runParametrisedTask (const TaskInfo& task, const std::string& progressLabel)
     {
         size_t numFuncRuns = 0;
         CapturedValuesContext capturedValuesContext;
@@ -279,6 +280,18 @@ private:
 
             while (context.hasUnusedValuePermutations())
             {
+                const size_t currentPermutation = numFuncRuns + 1;
+                const size_t totalPermutations = context.getTotalValuePermutations();
+
+                std::cout
+                    << '\r' << progressLabel << " - "
+                    << currentPermutation << "/";
+
+                if (totalPermutations != 0)
+                    std::cout << totalPermutations;
+                else
+                    std::cout << '?';
+
                 capturedValuesContext.clear();
                 context.beginPermutation();
 
