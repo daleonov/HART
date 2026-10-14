@@ -45,6 +45,26 @@ enum Channel
     right = 1
 };
 
+/// @brief Identifies a low-frequency effects speaker channel
+enum class LFE
+{
+    no,  ///< Indicates that the channel or speaker is not LFE
+    yes  ///< Indicates that the channel or speaker is LFE
+};
+
+/// @brief Position and role of a speaker in a channel-based layout.
+/// @details Angles are in radians; HART's _deg literal converts degrees to radians.
+/// Azimuth is zero in front, positive to the left, and negative to the right.
+/// Elevation is zero in the horizontal plane and positive above it.
+/// Descriptors follow the order of channels selected by MetricQuery::ch().
+/// Each metric decides how positions and LFE channels affect its measurement.
+struct SpeakerPosition
+{
+    double azimuthRadians;
+    double elevationRadians;
+    LFE isLfe;
+};
+
 /// @brief Helper values for mid-side channel indices
 enum MidSideChannel
 {
