@@ -373,6 +373,26 @@ HART_EXPECT_FLOAT_NE (valueA, valueB, 1e-6);
 
 Unless all channels peak at the same value, `valueA` and `ValueB` will be different. In first case, values are converted to dB for each channel, and then mean value is calculated. If latter case, mean value is calculated in linear domain, and only then converted to dB. Mathematically, those are different types of averaging, and you have means to perform either of those.
 
+# Reducers for windowed metrics
+
+Rolling window metrics may produce a vector of values per channel, instead of a single value per channel. In such cases, you can use `reduce2d()` reducer:
+
+```cpp
+const double maxAmongMeans = someMetric (audio).get (reduce2d (max(), mean()));
+```
+
+# Metric-specific reducers
+
+Some metrics may respect speaker positions im spatial audio setups, or simply take the whole programme into account. Such metrics are expected to come with their own reducers. For example, LUFS metric (`hart::lufs()`) requires the use of LUFS-specific reducers to get appropriate LUFS-I, LUFS-M and LUFS-S readings:
+
+```cpp
+const double i = lufs (audio).get (integrated());
+const double s = lufs (audio).get (shortTerm());
+const double m = lufs (audio).get (momentary (hart::percentile (0.5)));
+```
+
+Check the specific metric's docs for more details.
+
 # When to use metrics
 
 Metrics are especially handy when:
