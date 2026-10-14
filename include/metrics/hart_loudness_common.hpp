@@ -119,14 +119,20 @@ struct PerChannelLoudnessData
     std::vector<double>::const_iterator end() const { return momentaryEnergies.end(); }
 };
 
+// Ten momentary observations per 100 ms integrated gating step.
+constexpr size_t momentaryObservationsPerIntegratedHop = 10;
+
 class LoudnessEnergyWindow
 {
 public:
-    LoudnessEnergyWindow (size_t windowFrames, size_t hopFrames, size_t numFrames) :
-        m_history (windowFrames, 0.0), m_hopFrames (hopFrames)
+    LoudnessEnergyWindow (size_t windowFrames, size_t hopFrames, size_t numFrames,
+        size_t observationsPerHop = 1) :
+        m_history (windowFrames, 0.0), m_hopFrames (hopFrames),
+        m_observationsPerHop (observationsPerHop), m_nextObservationFrame (windowFrames)
     {
         if (numFrames >= windowFrames)
-            m_energies.reserve (1 + (numFrames - windowFrames) / hopFrames);
+            m_energies.reserve (1 + (numFrames - windowFrames) / hopFrames * observationsPerHop
+                + observationsPerHop - 1);
     }
 
     void push (double squaredSample, size_t frame)
@@ -136,8 +142,19 @@ public:
         m_sum += squaredSample;
         m_history[index] = squaredSample;
         const size_t elapsed = frame + 1;
-        if (elapsed >= m_history.size() && (elapsed - m_history.size()) % m_hopFrames == 0)
-            m_energies.push_back (std::max (0.0, m_sum.getValue()) / m_history.size());
+        if (elapsed != m_nextObservationFrame)
+            return;
+
+        m_energies.push_back (std::max (0.0, m_sum.getValue()) / m_history.size());
+        ++m_observationIndex;
+
+        // Subdivide each whole hop so every tenth momentary observation stays
+        // exactly on the integrated grid, even when 10 ms is not an integer frame count.
+        const size_t wholeHops = m_observationIndex / m_observationsPerHop;
+        const size_t subdivision = m_observationIndex % m_observationsPerHop;
+        const size_t subdivisionFrames = static_cast<size_t> (std::round (
+            static_cast<double> (subdivision) * m_hopFrames / m_observationsPerHop));
+        m_nextObservationFrame = m_history.size() + wholeHops * m_hopFrames + subdivisionFrames;
     }
 
     std::vector<double> finish (size_t numFrames)
@@ -151,6 +168,9 @@ public:
 private:
     std::vector<double> m_history;
     const size_t m_hopFrames;
+    const size_t m_observationsPerHop;
+    size_t m_observationIndex = 0;
+    size_t m_nextObservationFrame;
     AccurateSum<double> m_sum;
     std::vector<double> m_energies;
 };
@@ -166,7 +186,8 @@ PerChannelLoudnessData measureLoudnessEnergies (const SampleType* input, size_t 
     result.momentaryFrames = static_cast<size_t> (std::round (0.4 * sampleRateHz));
     result.shortTermFrames = static_cast<size_t> (std::round (3.0 * sampleRateHz));
     result.hopFrames = static_cast<size_t> (std::round (0.1 * sampleRateHz));
-    LoudnessEnergyWindow momentary (result.momentaryFrames, result.hopFrames, numFrames);
+    LoudnessEnergyWindow momentary (result.momentaryFrames, result.hopFrames, numFrames,
+        momentaryObservationsPerIntegratedHop);
     LoudnessEnergyWindow shortTerm (result.shortTermFrames, result.hopFrames, numFrames);
     BiquadFilter preFilter = makeLoudnessPreFilter (sampleRateHz);
     BiquadFilter rlbFilter = makeLoudnessRlbFilter (sampleRateHz);
@@ -277,10 +298,18 @@ std::vector<double> combineLoudnessEnergies (IteratorType begin, IteratorType en
         return { hart::nan<double>() };
 
     const size_t windowFrames = shortTerm ? first.shortTermFrames : first.momentaryFrames;
-    const size_t numWindows =
-        first.numFrames < windowFrames
-            ? 1
-            : 1 + (first.numFrames - windowFrames) / first.hopFrames;
+    const bool integrated = window == LoudnessWindow::integrated;
+    const size_t observationStride = integrated ? momentaryObservationsPerIntegratedHop : 1;
+    const size_t observationsPerHop = window == LoudnessWindow::momentary
+        ? momentaryObservationsPerIntegratedHop : 1;
+    const size_t completeHops = first.numFrames < windowFrames
+        ? 0 : (first.numFrames - windowFrames) / first.hopFrames;
+    const size_t remainingFrames = first.numFrames < windowFrames
+        ? 0 : (first.numFrames - windowFrames) % first.hopFrames;
+    // Include subdivisions whose nearest-frame position is within the clip.
+    const size_t observationsInLastHop = static_cast<size_t> (std::ceil (
+        (remainingFrames + 0.5) * observationsPerHop / first.hopFrames));
+    const size_t numWindows = completeHops * observationsPerHop + observationsInLastHop;
 
     std::vector<AccurateSum<double>> sums (numWindows);
     size_t channel = 0;
@@ -311,15 +340,24 @@ std::vector<double> combineLoudnessEnergies (IteratorType begin, IteratorType en
         if (energies.size() == 1 && std::isnan (energies.front()))
             return { hart::nan<double>() };
 
-        if (energies.size() != numWindows)
+        const size_t sourceObservationsPerHop = shortTerm ? 1 : momentaryObservationsPerIntegratedHop;
+        const size_t expectedSourceWindows = first.numFrames < windowFrames ? 1
+            : completeHops * sourceObservationsPerHop + static_cast<size_t> (std::ceil (
+                (remainingFrames + 0.5) * sourceObservationsPerHop / first.hopFrames));
+        if (energies.size() != expectedSourceWindows)
             HART_THROW_OR_RETURN (hart::SizeError, "Loudness window counts must match", {});
 
         for (size_t index = 0; index < numWindows; ++index)
         {
-            if (! std::isfinite (energies[index]) || energies[index] < 0.0)
+            const size_t sourceIndex = index * observationStride;
+            if (sourceIndex >= energies.size())
+                HART_THROW_OR_RETURN (hart::SizeError, "Loudness observations must cover every gating block", {});
+
+            const double energy = energies[sourceIndex];
+            if (! std::isfinite (energy) || energy < 0.0)
                 return { hart::nan<double>() };
 
-            sums[index] += weights[channel] * energies[index];
+            sums[index] += weights[channel] * energy;
         }
     }
 

@@ -2639,8 +2639,7 @@ HART_PARAMETRISED_TEST_WITH_TAGS ("Metrics - LUFS - Satisfies requirements for E
         .inStereo()
         .processAndGetOutputAudio();
 
-    // FIXME: This is a looser tolerance than Tech 3341 requires. It doesn't hit the target 0.1 LUFS tolerance.
-    HART_EXPECT_FLOAT_EQ (lufs (audio).get (momentary()), -23_LUFS, 0.5_LU);
+    HART_EXPECT_FLOAT_EQ (lufs (audio).get (momentary()), -23_LUFS, 0.1_LU);
 }
 
 HART_TEST_WITH_TAGS ("Metrics - LUFS - Explicit temporal reducers differ from the default maximum", "[Metrics][LUFS]")
