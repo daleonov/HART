@@ -21,7 +21,7 @@ enum class Unit
 {
     native,  ///< Default (native) unit of whatever returns some value 
     linear,  ///< Value of a sample (voltage) in a linear domain
-    dB,  ///< Value of something in decibels. Can represent voltage, power, or a domain-specific unit like "LUFS" or "dB TP"
+    dB,  ///< Value of something in decibels. Can represent voltage, power, or a domain-specific unit like "dB TP"
     dB_per_decade,  ///< Slope of something in decibels per decade
     dB_per_octave,  ///< Slope of something in decibels per octave
     frames,  ///< Value of something in frames (samples)
@@ -29,7 +29,9 @@ enum class Unit
     Hz,  ///< Hertz
     ratio,  ///< Generic ratio
     percent,  ///< Percentage
-    none  ///< Unitless value
+    none,  ///< Unitless value
+    LUFS,  ///< Absolute K-weighted programme loudness relative to full scale
+    LU  ///< Relative loudness; for EBU-mode readings, 0 LU corresponds to -23 LUFS
 };
 
 namespace aliases_units
@@ -45,6 +47,8 @@ namespace aliases_units
     constexpr Unit ratio = Unit::ratio;
     constexpr Unit percent = Unit::percent;
     constexpr Unit none = Unit::none;
+    constexpr Unit LUFS = Unit::LUFS;
+    constexpr Unit LU = Unit::LU;
 }  // namespace aliases_units
 
 }  // namespace hart
@@ -69,6 +73,10 @@ constexpr double operator""_ns (long double val) { return static_cast<double> (1
 constexpr double operator""_ns (unsigned long long int val) { return static_cast<double> (1e-9 * val); }
 constexpr double operator""_dB (long double val) { return static_cast<double> (val); }
 constexpr double operator""_dB (unsigned long long int val) { return static_cast<double> (val); }
+constexpr double operator""_LUFS (long double val) { return static_cast<double> (val); }
+constexpr double operator""_LUFS (unsigned long long int val) { return static_cast<double> (val); }
+constexpr double operator""_LU (long double val) { return static_cast<double> (val); }
+constexpr double operator""_LU (unsigned long long int val) { return static_cast<double> (val); }
 constexpr double operator""_dBTP (long double val) { return static_cast<double> (val); }
 constexpr double operator""_dBTP (unsigned long long int val) { return static_cast<double> (val); }
 constexpr double operator""_dB_per_octave (long double val) { return static_cast<double> (val); }
