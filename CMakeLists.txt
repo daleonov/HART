@@ -40,7 +40,7 @@ set(HART_TEST_SOURCES
         tests/test_utils.cpp
     )
 
-option(HART_BUILD_TESTS "Build HART tests" ON)
+option(HART_BUILD_TESTS "Build HART tests" OFF)
 
 if(HART_BUILD_TESTS)
     add_executable(HART_Tests ${HART_TEST_SOURCES})
@@ -49,7 +49,7 @@ if(HART_BUILD_TESTS)
     enable_testing()
     add_test(
         NAME HART_Tests
-        COMMAND HART_Tests "--data-root-path" "${CMAKE_SOURCE_DIR}/tests/data/"
+        COMMAND HART_Tests "--data-root-path" "${CMAKE_CURRENT_SOURCE_DIR}/tests/data/"
     )
 endif()  # HART_BUILD_TESTS
 
