@@ -2994,3 +2994,106 @@ HART_TEST_WITH_TAGS ("Metrics - LUFS - An empty analysis range returns undefined
     HART_EXPECT_IS_NAN (query.get (shortTerm()));
     HART_EXPECT_IS_NAN (query.get (momentary()));
 }
+
+HART_TEST_WITH_TAGS ("Metrics - PLR - Mono 1 kHz sine reads approximately 3 dB", "[Metrics][PLR]")
+{
+    using hart::plr;
+    using hart::PLR::reduce;
+
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (SineWave (1_kHz) >> GainDb (-20_dB))
+        .withDuration (3_s)
+        .inMono()
+        .processAndGetOutputAudio();
+
+    HART_EXPECT_FLOAT_EQ (plr (audio).get (reduce()), 3_dB, 0.2_dB);
+}
+
+HART_TEST_WITH_TAGS ("Metrics - PLR - Uniform attenuation preserves PLR", "[Metrics][PLR]")
+{
+    using hart::plr;
+    using hart::PLR::reduce;
+
+    // Both levels stay above the absolute loudness gate, without clipping.
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (SineWave (1_kHz) >> GainDb (-20_dB))
+        .withDuration (3_s)
+        .inMono()
+        .processAndGetOutputAudio();
+
+    const AudioBuffer quieterAudio = processAudioWith (GainDb (-6_dB))
+        .withInputSignal (AudioBufferSignal (audio))
+        .withDuration (3_s)
+        .inMono()
+        .processAndGetOutputAudio();
+
+    HART_EXPECT_FLOAT_EQ (
+        plr (quieterAudio).get (reduce()),
+        plr (audio).get (reduce()),
+        0.01_dB
+        );
+
+}
+
+HART_TEST_WITH_TAGS ("Metrics - PLR - Stereo uses programme loudness instead of per-channel PLRs", "[Metrics][PLR]")
+{
+    using hart::plr;
+    using hart::PLR::reduce;
+
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (SineWave (1_kHz) >> GainDb (-20_dB))
+        .withDuration (3_s)
+        .inStereo()
+        .processAndGetOutputAudio();
+
+    HART_EXPECT_FLOAT_EQ (plr (audio).get (reduce()), 0_dB, 0.2_dB);
+    HART_EXPECT_FLOAT_EQ (plr (audio).ch (hart::left).get (reduce()), 3_dB, 0.2_dB);
+}
+
+HART_TEST_WITH_TAGS ("Metrics - PLR - LFE contributes to true peak but not programme loudness", "[Metrics][PLR]")
+{
+    using hart::plr;
+    using hart::PLR::reduce;
+
+    // L/R/C/LFE/Ls/Rs: LFE is 20 dB louder than all other channels.
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (SineWave (1_kHz) >> GainDb (-20_dB).atChannels ({ 0, 1, 2, 4, 5 }))
+        .withDuration (3_s)
+        .withInputChannels (6)
+        .withOutputChannels (6)
+        .processAndGetOutputAudio();
+
+    const double withLfe = plr (audio).get (reduce());
+    const double withoutLfe = plr (audio).ch ({ 0, 1, 2, 4, 5 }).get (reduce());
+    HART_EXPECT_FLOAT_EQ (withLfe - withoutLfe, 20_dB, 0.01_dB);
+}
+
+HART_TEST_WITH_TAGS ("Metrics - PLR - Silence has no defined peak-to-loudness ratio", "[Metrics][PLR]")
+{
+    using hart::plr;
+    using hart::PLR::reduce;
+
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (Silence())
+        .inMono()
+        .processAndGetOutputAudio();
+
+    HART_EXPECT_IS_NAN (plr (audio).get (reduce()));
+}
+
+HART_TEST_WITH_TAGS ("Metrics - PLR - Default unit is dB", "[Metrics][PLR][Unit]")
+{
+    using hart::plr;
+    using hart::PLR::reduce;
+
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (WhiteNoise())
+        .processAndGetOutputAudio();
+
+    const double plrDefault = plr (audio).ch (hart::left).get (reduce());
+    const double plrNative = plr (audio).ch (hart::left).as (native).get (reduce());
+    const double plrDb = plr (audio).ch (hart::left).as (dB).get (reduce());
+
+    HART_EXPECT_FLOAT_EQ (plrDefault, plrDb, 1e-8);
+    HART_EXPECT_FLOAT_EQ (plrNative, plrDb, 1e-8);
+}
