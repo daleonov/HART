@@ -2111,3 +2111,221 @@ HART_TEST_WITH_TAGS ("Metrics - PLR - Default unit is dB", "[Metrics][PLR][Unit]
     HART_EXPECT_FLOAT_EQ (plrDefault, plrDb, 1e-8);
     HART_EXPECT_FLOAT_EQ (plrNative, plrDb, 1e-8);
 }
+
+// Reference: EBU Tech 3342, section 4, Table 1.
+// https://tech.ebu.ch/docs/tech/tech3342.pdf
+
+HART_PARAMETRISED_TEST_WITH_TAGS ("Metrics - LRA - Satisfies requirements for EBU Tech 3342 test case #1", "[Metrics][LRA]")
+{
+    using hart::lra;
+    using hart::LRA::reduce;
+
+    // Approximates seq-3342-1-16bit.wav from EBU Tech 3342 test case #1.
+    const auto volumeEnvelope = SegmentedEnvelope (-20_dB)
+        .hold (20_s)
+        .rampTo (-30_dB, 0_s);
+
+    AudioBuffer oneSequence = processAudioWith (Bypass())
+        .withInputSignal (SineWave (1_kHz) >> GainDb().withEnvelope (GainDb::gainDb, volumeEnvelope))
+        .withDuration (40_s)
+        .withSampleRate (48_kHz)
+        .inStereo()
+        .processAndGetOutputAudio();
+
+    // Repeating the complete reference sequence must preserve its LRA.
+    const double repetitions = HART_GENERATE_VALUE (1.0, 2.0);
+    HART_CAPTURE_VALUE (repetitions);
+
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (AudioBufferSignal (std::move (oneSequence), hart::Loop::yes))
+        .withDuration (40_s * repetitions)
+        .withSampleRate (48_kHz)
+        .inStereo()
+        .processAndGetOutputAudio();
+
+    HART_EXPECT_FLOAT_EQ (lra (audio).get (reduce()), 10_LU, 1_LU);
+}
+
+HART_PARAMETRISED_TEST_WITH_TAGS ("Metrics - LRA - Satisfies requirements for EBU Tech 3342 test case #2", "[Metrics][LRA]")
+{
+    using hart::lra;
+    using hart::LRA::reduce;
+
+    // Approximates seq-3342-2-16bit.wav from EBU Tech 3342 test case #2.
+    const auto volumeEnvelope = SegmentedEnvelope (-20_dB)
+        .hold (20_s)
+        .rampTo (-15_dB, 0_s);
+
+    AudioBuffer oneSequence = processAudioWith (Bypass())
+        .withInputSignal (SineWave (1_kHz) >> GainDb().withEnvelope (GainDb::gainDb, volumeEnvelope))
+        .withDuration (40_s)
+        .withSampleRate (48_kHz)
+        .inStereo()
+        .processAndGetOutputAudio();
+
+    // Repeating the complete reference sequence must preserve its LRA.
+    const double repetitions = HART_GENERATE_VALUE (1.0, 2.0);
+    HART_CAPTURE_VALUE (repetitions);
+
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (AudioBufferSignal (std::move (oneSequence), hart::Loop::yes))
+        .withDuration (40_s * repetitions)
+        .withSampleRate (48_kHz)
+        .inStereo()
+        .processAndGetOutputAudio();
+
+    HART_EXPECT_FLOAT_EQ (lra (audio).get (reduce()), 5_LU, 1_LU);
+}
+
+HART_PARAMETRISED_TEST_WITH_TAGS ("Metrics - LRA - Satisfies requirements for EBU Tech 3342 test case #3", "[Metrics][LRA]")
+{
+    using hart::lra;
+    using hart::LRA::reduce;
+
+    // Approximates seq-3342-3-16bit.wav from EBU Tech 3342 test case #3.
+    const auto volumeEnvelope = SegmentedEnvelope (-40_dB)
+        .hold (20_s)
+        .rampTo (-20_dB, 0_s);
+
+    AudioBuffer oneSequence = processAudioWith (Bypass())
+        .withInputSignal (SineWave (1_kHz) >> GainDb().withEnvelope (GainDb::gainDb, volumeEnvelope))
+        .withDuration (40_s)
+        .withSampleRate (48_kHz)
+        .inStereo()
+        .processAndGetOutputAudio();
+
+    // Repeating the complete reference sequence must preserve its LRA.
+    const double repetitions = HART_GENERATE_VALUE (1.0, 2.0);
+    HART_CAPTURE_VALUE (repetitions);
+
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (AudioBufferSignal (std::move (oneSequence), hart::Loop::yes))
+        .withDuration (40_s * repetitions)
+        .withSampleRate (48_kHz)
+        .inStereo()
+        .processAndGetOutputAudio();
+
+    HART_EXPECT_FLOAT_EQ (lra (audio).get (reduce()), 20_LU, 1_LU);
+}
+
+HART_PARAMETRISED_TEST_WITH_TAGS ("Metrics - LRA - Satisfies requirements for EBU Tech 3342 test case #4", "[Metrics][LRA]")
+{
+    using hart::lra;
+    using hart::LRA::reduce;
+
+    // Approximates seq-3342-4-16bit.wav from EBU Tech 3342 test case #4.
+    const auto volumeEnvelope = SegmentedEnvelope (-50_dB)
+        .hold (20_s)
+        .rampTo (-35_dB, 0_s)
+        .hold (20_s)
+        .rampTo (-20_dB, 0_s)
+        .hold (20_s)
+        .rampTo (-35_dB, 0_s)
+        .hold (20_s)
+        .rampTo (-50_dB, 0_s);
+
+    AudioBuffer oneSequence = processAudioWith (Bypass())
+        .withInputSignal (SineWave (1_kHz) >> GainDb().withEnvelope (GainDb::gainDb, volumeEnvelope))
+        .withDuration (100_s)
+        .withSampleRate (48_kHz)
+        .inStereo()
+        .processAndGetOutputAudio();
+
+    // Repeating the complete reference sequence must preserve its LRA.
+    const double repetitions = HART_GENERATE_VALUE (1.0, 2.0);
+    HART_CAPTURE_VALUE (repetitions);
+
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (AudioBufferSignal (std::move (oneSequence), hart::Loop::yes))
+        .withDuration (100_s * repetitions)
+        .withSampleRate (48_kHz)
+        .inStereo()
+        .processAndGetOutputAudio();
+
+    HART_EXPECT_FLOAT_EQ (lra (audio).get (reduce()), 15_LU, 1_LU);
+}
+
+HART_TEST_WITH_TAGS ("Metrics - LRA - Virtual tail defaults to 1.5 seconds and can be disabled", "[Metrics][LRA]")
+{
+    using hart::lra;
+    using hart::LRA::reduce;
+    using hart::Channel;
+
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (SineWave())
+        .withDuration (3_s)
+        .processAndGetOutputAudio();
+
+    const double lraWithDefaultTail = lra (audio).ch (Channel::left).get (reduce());
+    const double lraWithExplicitTail = lra (audio, 1.5_s).ch (Channel::left).get (reduce());
+    const double lraWithNoTail = lra (audio, 0_s).ch (Channel::left).get (reduce());
+
+    HART_EXPECT_FLOAT_EQ (lraWithDefaultTail, lraWithExplicitTail, 1e-8);
+    HART_EXPECT_FLOAT_EQ (lraWithNoTail, 0_LU, 1e-8);
+    HART_EXPECT_GT (lraWithDefaultTail, lraWithNoTail);
+}
+
+HART_PARAMETRISED_TEST_WITH_TAGS ("Metrics - LRA - Original audio shorter than 3 seconds has no defined range", "[Metrics][LRA]")
+{
+    using hart::lra;
+    using hart::LRA::reduce;
+    using hart::Channel;
+
+    const double duration = HART_GENERATE_VALUE (100_ms, 2.99_s);
+    HART_CAPTURE_VALUE (duration);
+
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (SineWave())
+        .withDuration (duration)
+        .processAndGetOutputAudio();
+
+    HART_EXPECT_IS_NAN (lra (audio).ch (Channel::left).get (reduce()));
+}
+
+HART_TEST_WITH_TAGS ("Metrics - LRA - Silence has no defined loudness range", "[Metrics][LRA]")
+{
+    using hart::lra;
+    using hart::LRA::reduce;
+    using hart::Channel;
+
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (Silence())
+        .withDuration (3_s)
+        .processAndGetOutputAudio();
+
+    HART_EXPECT_IS_NAN (lra (audio).ch (Channel::left).get (reduce()));
+}
+
+HART_TEST_WITH_TAGS ("Metrics - LRA - Default and native units return LU", "[Metrics][LRA][Units]")
+{
+    using hart::lra;
+    using hart::LRA::reduce;
+    using hart::Channel;
+
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (SineWave())
+        .withDuration (3_s)
+        .processAndGetOutputAudio();
+
+    const double lraDefault = lra (audio).ch (Channel::left).get (reduce());
+    const double lraNative = lra (audio).ch (Channel::left).as (native).get (reduce());
+    const double lraLU = lra (audio).ch (Channel::left).as (LU).get (reduce());
+
+    HART_EXPECT_FLOAT_EQ (lraDefault, lraLU, 1e-8);
+    HART_EXPECT_FLOAT_EQ (lraNative, lraLU, 1e-8);
+}
+
+HART_TEST_WITH_TAGS ("Metrics - LRA - An empty analysis range has no defined loudness range", "[Metrics][LRA]")
+{
+    using hart::lra;
+    using hart::LRA::reduce;
+    using hart::Channel;
+
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (SineWave())
+        .withDuration (3_s)
+        .processAndGetOutputAudio();
+
+    const auto range = hart::Slice::frames (audio.getNumFrames(), audio.getNumFrames() + 1);
+    HART_EXPECT_IS_NAN (lra (audio).ch (Channel::left).at (range).get (reduce()));
+}
