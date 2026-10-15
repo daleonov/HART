@@ -141,7 +141,7 @@ MetricQuery<hart::internal::PerChannelLoudnessData> lra (
         const size_t shortTermFrames = static_cast<size_t> (std::round (3.0 * sampleRateHz));
 
         if (numFrames < shortTermFrames)
-            HART_THROW_OR_RETURN (hart::SizeError, "The piece audio is too short", {});
+            return {};  // The piece audio is too short
 
         const double tailFrames = std::round (tailDurationSeconds * sampleRateHz);
 
