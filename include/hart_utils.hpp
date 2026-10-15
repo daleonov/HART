@@ -98,7 +98,8 @@ enum Oversampling
 enum class Interpolation
 {
     nearest,
-    linear
+    linear,
+    ceiling
 };
 
 inline std::ostream& operator<< (std::ostream& os, Oversampling oversampling)

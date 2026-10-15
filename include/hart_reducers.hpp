@@ -261,10 +261,10 @@ private:
 
 /// @brief Returns the percentile value
 /// @param quantile Quantile value, in 0..1 range
-/// @param interpolation Type of interpolation, nearest or linear
+/// @param interpolation Ceiling (the backwards-compatible default), nearest, or linear
 struct percentile
 {
-    percentile (double quantile, Interpolation interpolation = Interpolation::nearest) :
+    percentile (double quantile, Interpolation interpolation = Interpolation::ceiling) :
         m_quantile (quantile),
         m_interpolation (interpolation)
     {
@@ -274,11 +274,12 @@ struct percentile
     auto operator() (IteratorType begin, IteratorType end) const
         -> IteratedValueType<IteratorType>
     {
-        hassert (m_interpolation == Interpolation::nearest || m_interpolation == Interpolation::linear)
+        hassert (m_interpolation == Interpolation::ceiling || m_interpolation == Interpolation::nearest
+            || m_interpolation == Interpolation::linear)
 
         using ValueType = IteratedValueType<IteratorType>;
 
-        if (m_quantile < 0 || m_quantile > 1)
+        if (! std::isfinite (m_quantile) || m_quantile < 0 || m_quantile > 1)
             HART_THROW_OR_RETURN (hart::ValueError, "Quantile value should be in 0..1 range", hart::nan<ValueType>());
 
         if (begin == end)
@@ -287,10 +288,11 @@ struct percentile
         const size_t n = static_cast<size_t> (std::distance (begin, end));
         std::vector<ValueType> data (begin, end);
 
-        if (m_interpolation == Interpolation::nearest)
+        if (m_interpolation != Interpolation::linear)
         {
-            // Nearest-rank method, get an actual observed value
-            const size_t index = static_cast<size_t> (std::ceil (m_quantile * (n - 1)));
+            const double position = m_quantile * (n - 1);
+            const size_t index = static_cast<size_t> (m_interpolation == Interpolation::ceiling
+                ? std::ceil (position) : std::round (position));
 
             std::nth_element (data.begin(), data.begin() + index, data.end());
             return data[index];

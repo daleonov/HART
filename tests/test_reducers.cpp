@@ -31,7 +31,7 @@ HART_TEST ("Reducers - Percentile")
 
     const std::vector<double> values { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
 
-    // Nearest (default)
+    // Ceiling (default)
 
     // median (q = 0.5)
     // pos = 0.5 * (10 - 1) = 4.5 
@@ -179,4 +179,96 @@ HART_TEST ("Reducers - 2D reducer")
     HART_EXPECT_EQ (reduce2d (max(), max()) (values.begin(), values.end()), 888);
     HART_EXPECT_EQ (reduce2d (min(), max()) (values.begin(), values.end()), 5);
     HART_EXPECT_EQ (reduce2d (max(), min()) (values.begin(), values.end()), 111);
+}
+
+HART_TEST ("Reducers - Percentile - Ceiling preserves the default result")
+{
+    const std::vector<double> values { 40.0, 0.0, 30.0, 10.0 };
+
+    HART_EXPECT_FLOAT_EQ (hart::percentile (0.1) (values.begin(), values.end()), 10.0, 1e-12);
+    HART_EXPECT_FLOAT_EQ (
+        hart::percentile (0.1, hart::Interpolation::ceiling) (values.begin(), values.end()),
+        10.0,
+        1e-12
+        );
+
+}
+
+HART_TEST ("Reducers - Percentile - Nearest rounds to the closest observation")
+{
+    const std::vector<double> values { 40.0, 0.0, 30.0, 10.0 };
+
+    HART_EXPECT_FLOAT_EQ (
+        hart::percentile (0.1, hart::Interpolation::nearest) (values.begin(), values.end()),
+        0.0,
+        1e-12
+        );
+
+    // Halfway indices round upward, matching the EBU Tech 3342 reference.
+    HART_EXPECT_FLOAT_EQ (
+        hart::percentile (0.5, hart::Interpolation::nearest) (values.begin(), values.end()),
+        30.0,
+        1e-12
+        );
+
+}
+
+HART_TEST ("Reducers - Percentile - Linear interpolates between observations")
+{
+    const std::vector<double> values { 40.0, 0.0, 30.0, 10.0 };
+
+    HART_EXPECT_FLOAT_EQ (
+        hart::percentile (0.1, hart::Interpolation::linear) (values.begin(), values.end()),
+        3.0,
+        1e-12
+        );
+
+    HART_EXPECT_FLOAT_EQ (
+        hart::percentile (0.5, hart::Interpolation::linear) (values.begin(), values.end()),
+        20.0,
+        1e-12
+        );
+
+}
+
+HART_TEST ("Reducers - Percentile - All interpolation methods preserve endpoints")
+{
+    const std::vector<double> values { 40.0, 0.0, 30.0, 10.0 };
+
+    HART_EXPECT_FLOAT_EQ (
+        hart::percentile (0.0, hart::Interpolation::ceiling) (values.begin(), values.end()),
+        0.0,
+        1e-12
+        );
+
+    HART_EXPECT_FLOAT_EQ (
+        hart::percentile (1.0, hart::Interpolation::ceiling) (values.begin(), values.end()),
+        40.0,
+        1e-12
+        );
+
+    HART_EXPECT_FLOAT_EQ (
+        hart::percentile (0.0, hart::Interpolation::nearest) (values.begin(), values.end()),
+        0.0,
+        1e-12
+        );
+
+    HART_EXPECT_FLOAT_EQ (
+        hart::percentile (1.0, hart::Interpolation::nearest) (values.begin(), values.end()),
+        40.0,
+        1e-12
+        );
+
+    HART_EXPECT_FLOAT_EQ (
+        hart::percentile (0.0, hart::Interpolation::linear) (values.begin(), values.end()),
+        0.0,
+        1e-12
+        );
+
+    HART_EXPECT_FLOAT_EQ (
+        hart::percentile (1.0, hart::Interpolation::linear) (values.begin(), values.end()),
+        40.0,
+        1e-12
+        );
+
 }
