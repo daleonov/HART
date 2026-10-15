@@ -111,7 +111,7 @@ namespace hart
 /// with an appropriate `hart::Slice` to measure only an interior, settled slice
 /// of audio.
 ///
-/// See `tests/test_metrics.cpp`, in particular the
+/// See `tests/test_metrics_time_domain.cpp`, in particular the
 /// "Metrics - SNRa - Distortion effect with aliasing" and
 /// "Metrics - SNRa - Clean effect with no aliasing" tests, for complete
 /// experiment examples.
