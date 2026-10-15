@@ -103,7 +103,8 @@ private:
 /// plr (audio).at (slice).get (PLR::reduce (speakerPositions));
 /// @endcode
 ///
-/// @note For a more simple dynamic range metric, see `hart::crestFactor()`.
+/// For a more simple dynamic range metric, see `hart::crestFactor()`. Also, see
+/// `hart::lra()` for another high-level dynamic range metric.
 /// @returns A chainable metric query object containing raw per-channel PLR data.
 /// @ingroup Metrics
 template <typename SampleType>

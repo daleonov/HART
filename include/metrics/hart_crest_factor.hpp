@@ -45,6 +45,8 @@ namespace hart
 /// const double cfMaxDb = crestFactor (multiChannelBuffer).as (dB).ch ({0, 3, 5}).get (max());
 /// @endcode
 ///
+/// For higher-level dynamic range metrics, see `hart::plr()` and `hart::lra()`.
+///
 /// @param buffer Input audio buffer
 /// @return  Chainable `MetricQuery`, which calculates crest factor in linear ratio units or dB
 ///   - Returns `NaN` if the audio buffer contains zero frames.
