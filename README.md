@@ -86,6 +86,9 @@ Metrics are made for constructing more granular statements, as opposed to matche
 | `esr`                        | ratio                | time      | Error-to-signal ratio against a reference audio
 | `snr`                        | ratio, dB            | time      | Signal-to-noise ratio against a reference audio
 | `snra`                       | ratio, dB            | time      | Signal-to-aliasing-noise ratio against a high-sample-rate reference
+| `lufs`                       | LUFS, LU             | time      | Perceived loudness, based on ITU-R BS.1770-5
+| `lra`                        | LU                   | time      | Loudness range, based on ITU-R BS.1770-5
+| `plr`                        | dB                   | time      | Peat-to-loudness ratio, based on AES AESTD1008.1.21-9
 | `thd`                        | ratio, dB, percent   | FFT       | Total harmonic distortion in a spectrum, assuming pure sine stimulus
 | `spectralCentroid`           | Hz                   | FFT       | Spectral centroid, useful for expressing perceived brightness of audio
 | `spectralFlatness`           | linear, dB           | FFT       | Spectral flatness, iseful for expressing how noise-like or tonal a spectrum is
@@ -95,6 +98,7 @@ Metrics are made for constructing more granular statements, as opposed to matche
 | `loudestBinMagnitude`        | linear, dB           | FFT       | Magnitude of the loudest FFT bin
 | `interpolatedPeakFrequency`  | Hz                   | FFT       | Interpolated frequency of the loudest FFT bin
 | `quinns2`                    | Hz                   | FFT       | Fundamental frequency estimation, using Quinn's second estimator
+| `jacobsen`                   | Hz                   | FFT       | Fundamental frequency estimation, using Jacobsen/Candan estimator
 | `rt60`                       | frames, seconds      | IR        | Reverb decay time estimated from an impulse response, based on ISO 3382
 | `centreTime`                 | frames, seconds      | IR        | Energy centre of an impulse response
 
