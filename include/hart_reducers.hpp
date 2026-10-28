@@ -344,9 +344,9 @@ struct range
 template <typename OuterReducerType, typename InnerReducerType>
 struct Reduce2D
 {
-    Reduce2D (OuterReducerType outerReducer_, InnerReducerType innerReducer_) :
-        outerReducer (outerReducer_),
-        innerReducer (innerReducer_)
+    Reduce2D (OuterReducerType outerReducer, InnerReducerType innerReducer) :
+        m_outerReducer (outerReducer),
+        m_innerReducer (innerReducer)
     {
     }
 
@@ -370,19 +370,19 @@ struct Reduce2D
             ++innerContainerIterator)
         {
             outerValues.push_back (
-                innerReducer (
+                m_innerReducer (
                     (*innerContainerIterator).begin(),
                     (*innerContainerIterator).end()
                 )
             );
         }
 
-        return outerReducer (outerValues.begin(), outerValues.end());
+        return m_outerReducer (outerValues.begin(), outerValues.end());
     }
 
 private:
-    OuterReducerType outerReducer;
-    InnerReducerType innerReducer;
+    OuterReducerType m_outerReducer;
+    InnerReducerType m_innerReducer;
 };
 
 template <typename OuterReducerType, typename InnerReducerType>
