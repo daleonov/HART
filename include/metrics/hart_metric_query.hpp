@@ -321,6 +321,17 @@ public:
         return get (first());
     }
 
+    /// @brief Query and collect all per-channel values of a calculated metric
+    /// @details Basically equivalent to `get (collect())`.
+    /// Supposed to be used with windowed metric queries.
+    /// @return 
+    std::vector<ValueType> collect()
+    {
+        ensureCache();
+        preprocessIfNeeded();
+        return m_query->cachedValues;
+    }
+
 private:
     struct Query
     {

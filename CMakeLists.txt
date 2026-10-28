@@ -31,6 +31,7 @@ set(HART_TEST_SOURCES
         tests/test_impulse_response.cpp
         tests/test_main.cpp
         tests/test_matchers.cpp
+        tests/test_metrics_core.cpp
         tests/test_metrics_time_domain.cpp
         tests/test_metrics_fft_domain.cpp
         tests/test_metrics_ir_domain.cpp
