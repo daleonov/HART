@@ -26,6 +26,7 @@
 #include "hart_test_registry.hpp"
 #include "hart_units.hpp"
 #include "hart_wavwriter.hpp"
+#include "metrics/hart_windowed.hpp"
 
 namespace hart
 {
