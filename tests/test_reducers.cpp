@@ -2,7 +2,7 @@
 
 #include "hart.hpp"
 
-HART_TEST ("Reducers - Argmin and argmax")
+HART_TEST_WITH_TAGS ("Reducers - Argmin and argmax", "[Reducers]")
 {
     using hart::argmax;
     using hart::argmin;
@@ -13,7 +13,7 @@ HART_TEST ("Reducers - Argmin and argmax")
     HART_EXPECT_TRUE (argmin() (values.begin(), values.end()) == 1);
 }
 
-HART_TEST ("Reducers - First and last")
+HART_TEST_WITH_TAGS ("Reducers - First and last", "[Reducers]")
 {
     using hart::first;
     using hart::last;
@@ -24,7 +24,7 @@ HART_TEST ("Reducers - First and last")
     HART_EXPECT_TRUE (last() (values.begin(), values.end()) == 2.0);
 }
 
-HART_TEST ("Reducers - Percentile")
+HART_TEST_WITH_TAGS ("Reducers - Percentile", "[Reducers]")
 {
     using hart::percentile;
     using hart::Interpolation;
@@ -97,7 +97,7 @@ HART_TEST ("Reducers - Percentile")
     HART_EXPECT_LE (p95, p99);
 }
 
-HART_TEST ("Reducers - Numeric")
+HART_TEST_WITH_TAGS ("Reducers - Numeric", "[Reducers]")
 {
     using hart::floatsEqual;
     using hart::max;
@@ -115,7 +115,7 @@ HART_TEST ("Reducers - Numeric")
     HART_EXPECT_FLOAT_EQ (range() (values.begin(), values.end()), 6.0, 1e-8);
 }
 
-HART_TEST ("Reducers - Collect")
+HART_TEST_WITH_TAGS ("Reducers - Collect", "[Reducers]")
 {
     using hart::collect;
 
@@ -130,7 +130,7 @@ HART_TEST ("Reducers - Collect")
     HART_EXPECT_TRUE (collected[2] == -2.0);
 }
 
-HART_TEST ("Reducers - Boolean")
+HART_TEST_WITH_TAGS ("Reducers - Boolean", "[Reducers]")
 {
     using hart::allFloatsEqualToEachOther;
     using hart::allNaN;
@@ -152,7 +152,7 @@ HART_TEST ("Reducers - Boolean")
     HART_EXPECT_TRUE (allFloatsEqualToEachOther (0.001) (differentValues.begin(), differentValues.end()) == false);
 }
 
-HART_TEST ("Reducers - Size")
+HART_TEST_WITH_TAGS ("Reducers - Size", "[Reducers]")
 {
     using hart::size;
 
@@ -163,7 +163,7 @@ HART_TEST ("Reducers - Size")
     }
 }
 
-HART_TEST ("Reducers - 2D reducer")
+HART_TEST_WITH_TAGS ("Reducers - 2D reducer", "[Reducers]")
 {
     using hart::min;
     using hart::max;
@@ -181,7 +181,7 @@ HART_TEST ("Reducers - 2D reducer")
     HART_EXPECT_EQ (reduce2d (max(), min()) (values.begin(), values.end()), 111);
 }
 
-HART_TEST ("Reducers - Percentile - Ceiling preserves the default result")
+HART_TEST_WITH_TAGS ("Reducers - Percentile - Ceiling preserves the default result", "[Reducers]")
 {
     const std::vector<double> values { 40.0, 0.0, 30.0, 10.0 };
 
@@ -194,7 +194,7 @@ HART_TEST ("Reducers - Percentile - Ceiling preserves the default result")
 
 }
 
-HART_TEST ("Reducers - Percentile - Nearest rounds to the closest observation")
+HART_TEST_WITH_TAGS ("Reducers - Percentile - Nearest rounds to the closest observation", "[Reducers]")
 {
     const std::vector<double> values { 40.0, 0.0, 30.0, 10.0 };
 
@@ -213,7 +213,7 @@ HART_TEST ("Reducers - Percentile - Nearest rounds to the closest observation")
 
 }
 
-HART_TEST ("Reducers - Percentile - Linear interpolates between observations")
+HART_TEST_WITH_TAGS ("Reducers - Percentile - Linear interpolates between observations", "[Reducers]")
 {
     const std::vector<double> values { 40.0, 0.0, 30.0, 10.0 };
 
@@ -231,7 +231,7 @@ HART_TEST ("Reducers - Percentile - Linear interpolates between observations")
 
 }
 
-HART_TEST ("Reducers - Percentile - All interpolation methods preserve endpoints")
+HART_TEST_WITH_TAGS ("Reducers - Percentile - All interpolation methods preserve endpoints", "[Reducers]")
 {
     const std::vector<double> values { 40.0, 0.0, 30.0, 10.0 };
 
