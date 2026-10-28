@@ -7,8 +7,8 @@
 
 #include "hart_accurate_sum.hpp"
 #include "hart_exceptions.hpp"
-#include "metrics/hart_metrics_common.hpp"  // ReducerResultType, InnerReducerResultType
-#include "hart_utils.hpp"  // nan(), floatsNotEqual(), Interpolation
+#include "metrics/hart_metrics_common.hpp"  // ReducerResultType
+#include "hart_utils.hpp"  // nan(), floatsNotEqual(), Interpolation, Axis
 
 namespace hart
 {
@@ -341,54 +341,107 @@ struct range
 };
 
 /// @private
-template <typename OuterReducerType, typename InnerReducerType>
+template <typename ReducerAType, typename ReducerBType>
 struct Reduce2D
 {
-    Reduce2D (OuterReducerType outerReducer, InnerReducerType innerReducer) :
-        m_outerReducer (outerReducer),
-        m_innerReducer (innerReducer)
+    Reduce2D (ReducerAType reducerA, ReducerBType reducerB, Axis axis) :
+        m_reducerA (reducerA),
+        m_reducerB (reducerB),
+        m_axis (axis)
     {
     }
 
-    template <typename IteratorType>
-    auto operator() (IteratorType begin, IteratorType end) const
+    template <typename ChannelIteratorType>
+    auto operator() (ChannelIteratorType begin, ChannelIteratorType end) const
         -> ReducerResultType<
-        OuterReducerType,
+        ReducerAType,
         typename std::vector<
-            InnerReducerResultType<InnerReducerType, IteratorType>
+            ReducerResultType<ReducerBType, decltype ((*std::declval<ChannelIteratorType>()).begin())>
             >::const_iterator
         >
     {
-        typedef decltype ((*std::declval<IteratorType>()).begin()) InnerIteratorType;
-        typedef ReducerResultType<InnerReducerType, InnerIteratorType> InnerResultType;
+        typedef decltype ((*std::declval<ChannelIteratorType>()).begin()) FrameIteratorType;
+        typedef ReducerResultType<ReducerBType, FrameIteratorType> ResultBType;
 
-        std::vector<InnerResultType> outerValues;
-        outerValues.reserve (static_cast<size_t> (std::distance (begin, end)));
+        std::vector<ResultBType> reducerBResults;
 
-        for (IteratorType innerContainerIterator = begin;
-            innerContainerIterator != end;
-            ++innerContainerIterator)
+        if (m_axis == Axis::channels)
         {
-            outerValues.push_back (
-                m_innerReducer (
-                    (*innerContainerIterator).begin(),
-                    (*innerContainerIterator).end()
-                )
-            );
+            reducerBResults.reserve (static_cast<size_t> (std::distance (begin, end)));
+
+            for (ChannelIteratorType channel = begin; channel != end; ++channel)
+            {
+                reducerBResults.push_back (
+                    m_reducerB (
+                        (*channel).begin(),
+                        (*channel).end()
+                    )
+                );
+            }
+
+            return m_reducerA (reducerBResults.begin(), reducerBResults.end());
         }
 
-        return m_outerReducer (outerValues.begin(), outerValues.end());
+        // Else: m_axis == Axis::frames
+        const size_t numFrames =
+            begin == end
+                ? 0
+                : static_cast<size_t> (std::distance ((*begin).begin(), (*begin).end()));
+
+        for (ChannelIteratorType channel = begin; channel != end; ++channel)
+        {
+            if (static_cast<size_t> (std::distance ((*channel).begin(), (*channel).end())) != numFrames)
+            {
+                // There can be legitimate cases where the input is not an evenly sized 2D vector,
+                // so if you're triggering this exception, it might be a sign that it's time
+                // to get reducer2d() to properly support those.
+                HART_THROW_OR_RETURN (hart::SizeError, "All channels must have the same number of frames", {});
+            }
+        }
+
+        reducerBResults.reserve (numFrames);
+
+        std::vector<FrameIteratorType> channelPositions;
+        channelPositions.reserve (static_cast<size_t> (std::distance (begin, end)));
+
+        for (ChannelIteratorType channel = begin; channel != end; ++channel)
+            channelPositions.push_back ((*channel).begin());
+
+        std::vector<IteratedValueType<FrameIteratorType>> frameValues;
+        frameValues.reserve (channelPositions.size());
+
+        for (size_t frame = 0; frame < numFrames; ++frame)
+        {
+            frameValues.clear();
+
+            for (auto& position : channelPositions)
+            {
+                frameValues.push_back (*position);
+                ++position;
+            }
+
+            reducerBResults.push_back (m_reducerB (frameValues.cbegin(), frameValues.cend()));
+        }
+
+        return m_reducerA (reducerBResults.begin(), reducerBResults.end());
     }
 
 private:
-    OuterReducerType m_outerReducer;
-    InnerReducerType m_innerReducer;
+    ReducerAType m_reducerA;
+    ReducerBType m_reducerB;
+    Axis m_axis;
 };
 
-template <typename OuterReducerType, typename InnerReducerType>
-Reduce2D<OuterReducerType, InnerReducerType> reduce2d (OuterReducerType outerReducer, InnerReducerType innerReducer)
+/// @brief Reduces each channel or frame, then reduces the intermediate results
+/// @details Requires equally sized channels. reducerB reduces each channel with
+/// Axis::channels, or each frame across channels with Axis::frames.
+/// reducerA then reduces the results from reducerB.
+/// Empty ranges are handled by the corresponding reducer.
+/// @throws hart::SizeError if channels have different frame counts
+template <typename ReducerAType, typename ReducerBType>
+Reduce2D<ReducerAType, ReducerBType> reduce2d (ReducerAType reducerA, ReducerBType reducerB, Axis axis = Axis::channels)
 {
-    return Reduce2D <OuterReducerType, InnerReducerType> (outerReducer, innerReducer);
+    return Reduce2D <ReducerAType, ReducerBType> (reducerA, reducerB, axis);
 }
 
 /// @brief Returns the number of elements (values) in the range

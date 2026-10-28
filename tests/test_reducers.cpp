@@ -1,3 +1,4 @@
+#include <list>
 #include <vector>
 
 #include "hart.hpp"
@@ -163,8 +164,9 @@ HART_TEST_WITH_TAGS ("Reducers - Size", "[Reducers]")
     }
 }
 
-HART_TEST_WITH_TAGS ("Reducers - 2D reducer", "[Reducers]")
+HART_TEST_WITH_TAGS ("Reducers - reduce2d() - Along channels axis", "[Reducers]")
 {
+    using hart::Axis;
     using hart::min;
     using hart::max;
     using hart::reduce2d;
@@ -175,10 +177,110 @@ HART_TEST_WITH_TAGS ("Reducers - 2D reducer", "[Reducers]")
         {111, 222, 888, 555},
     };
 
-    HART_EXPECT_EQ (reduce2d (min(), min()) (values.begin(), values.end()), 1);
-    HART_EXPECT_EQ (reduce2d (max(), max()) (values.begin(), values.end()), 888);
-    HART_EXPECT_EQ (reduce2d (min(), max()) (values.begin(), values.end()), 5);
-    HART_EXPECT_EQ (reduce2d (max(), min()) (values.begin(), values.end()), 111);
+    HART_EXPECT_EQ (reduce2d (min(), min(), Axis::channels) (values.begin(), values.end()), 1);
+    HART_EXPECT_EQ (reduce2d (max(), max(), Axis::channels) (values.begin(), values.end()), 888);
+    HART_EXPECT_EQ (reduce2d (min(), max(), Axis::channels) (values.begin(), values.end()), 5);
+    HART_EXPECT_EQ (reduce2d (max(), min(), Axis::channels) (values.begin(), values.end()), 111);
+}
+
+HART_TEST_WITH_TAGS ("Reducers - reduce2d() - Along frames axis", "[Reducers]")
+{
+    using hart::Axis;
+    using hart::min;
+    using hart::max;
+    using hart::reduce2d;
+
+    const std::vector<std::vector<int>> values = {
+        {11, 12, 13, 15},
+        {333, 222, 888, 777},
+        {1000, 2000, 8000, 5000},
+    };
+
+    HART_EXPECT_EQ (reduce2d (min(), min(), Axis::frames) (values.begin(), values.end()), 11);
+    HART_EXPECT_EQ (reduce2d (max(), max(), Axis::frames) (values.begin(), values.end()), 8000);
+    HART_EXPECT_EQ (reduce2d (min(), max(), Axis::frames) (values.begin(), values.end()), 1000);
+    HART_EXPECT_EQ (reduce2d (max(), min(), Axis::frames) (values.begin(), values.end()), 15);
+}
+
+HART_TEST_WITH_TAGS ("Reducers - reduce2d() - Axis defaults to channels", "[Reducers]")
+{
+    using hart::Axis;
+    using hart::min;
+    using hart::max;
+    using hart::reduce2d;
+
+    const std::vector<std::vector<int>> values = { {42, 67}, {123, 456} };
+
+    HART_EXPECT_EQ (
+        reduce2d (min(), max()) (values.begin(), values.end()),
+        reduce2d (min(), max(), Axis::channels) (values.begin(), values.end())
+    );
+
+    HART_EXPECT_NE (
+        reduce2d (min(), max()) (values.begin(), values.end()),
+        reduce2d (min(), max(), Axis::frames) (values.begin(), values.end())
+    );
+}
+
+HART_TEST_WITH_TAGS ("Reducers - reduce2d() - Applies the second reducer before the first on either axis", "[Reducers]")
+{
+    using hart::Axis;
+    using hart::min;
+    using hart::max;
+    using hart::reduce2d;
+    using std::vector;
+
+    const vector<vector<int>> values { { 1, 100 }, { 50, 2 } };
+
+    HART_EXPECT_EQ (reduce2d (min(), max(), Axis::frames) (values.begin(), values.end()), 50);
+    HART_EXPECT_EQ (reduce2d (max(), min(), Axis::frames) (values.begin(), values.end()), 2);
+    HART_EXPECT_EQ (reduce2d (min(), max(), Axis::channels) (values.begin(), values.end()), 50);
+    HART_EXPECT_EQ (reduce2d (max(), min(), Axis::channels) (values.begin(), values.end()), 2);
+}
+
+HART_TEST_WITH_TAGS ("Reducers - reduce2d() - Frames preserve order", "[Reducers]")
+{
+    using hart::Axis;
+    using hart::reduce2d;
+    using hart::collect;
+    using std::vector;
+
+    const vector<vector<int>> values { { 1, 100, 7 }, { 50, 2, 8 } };
+
+    const vector<vector<int>> observedValues = reduce2d (collect(), collect(), Axis::frames) (values.begin(), values.end());
+    const vector<vector<int>> expectedValues { { 1, 50 }, { 100, 2 }, { 7, 8 } };
+
+    HART_EXPECT_TRUE (observedValues == expectedValues);
+}
+
+HART_TEST_WITH_TAGS ("Reducers - reduce2d() - Frames support non-indexed channels", "[Reducers]")
+{
+    using hart::Axis;
+    using hart::min;
+    using hart::max;
+    using hart::reduce2d;
+    using std::list;
+
+    const list<list<int>> values { { 1, 100, 7 }, { 50, 2, 8 } };
+
+    HART_EXPECT_EQ (reduce2d (min(), max(), Axis::frames) (values.begin(), values.end()), 8);
+}
+
+HART_TEST_WITH_TAGS ("Reducers - reduce2d() - Empty frames", "[Reducers]")
+{
+    using hart::Axis;
+    using hart::collect;
+    using hart::max;
+    using hart::reduce2d;
+    using std::vector;
+
+    const auto reducer = reduce2d (collect(), max(), Axis::frames);
+
+    const vector<vector<int>> noChannels;
+    const vector<vector<int>> noFrames (3);
+
+    HART_EXPECT_TRUE (reducer (noChannels.begin(), noChannels.end()).empty());
+    HART_EXPECT_TRUE (reducer (noFrames.begin(), noFrames.end()).empty());
 }
 
 HART_TEST_WITH_TAGS ("Reducers - Percentile - Ceiling preserves the default result", "[Reducers]")

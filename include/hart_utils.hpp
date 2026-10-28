@@ -102,6 +102,13 @@ enum class Interpolation
     ceiling
 };
 
+/// @brief Axis of 2D audio data
+enum class Axis
+{
+    channels,
+    frames
+};
+
 inline std::ostream& operator<< (std::ostream& os, Oversampling oversampling)
 {
     return os << "Oversampling::x" << static_cast<int> (oversampling);
