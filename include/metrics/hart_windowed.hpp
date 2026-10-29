@@ -10,6 +10,8 @@
 #include "hart_reducers.hpp"
 
 // TODO: Come up with handling occasional NaN returns from the metric
+// TODO: Add an option for partial window handling
+// TODO: Add support for non-rectangular window shapes
 
 namespace hart
 {
@@ -433,6 +435,7 @@ private:
 /// obeying the optional window settings, then the metric will be calculated
 /// independently for each window, then the result can be reduced to a scalar
 /// via `WindowedSingleBufferMetricQuery::get()`. See `WindowedSingleBufferMetricQuery` for more details.
+/// @ingroup Metrics
 template <typename SampleType>
 WindowedSingleBufferMetricQuery<SampleType> windowed (const AudioBuffer<SampleType>& audioBuffer)
 {
@@ -447,6 +450,7 @@ WindowedSingleBufferMetricQuery<SampleType> windowed (const AudioBuffer<SampleTy
 /// via `WindowedBufferPairMetricQuery::get()`. See `WindowedBufferPairMetricQuery` for more details.
 /// Both buffers must have equal positive finite sample rates and equal frame counts.
 /// Channel counts may differ. Both buffers must remain alive until get() completes.
+/// @ingroup Metrics
 template <typename SampleType>
 WindowedBufferPairMetricQuery<SampleType> windowed (
     const AudioBuffer<SampleType>& audioBufferA,
