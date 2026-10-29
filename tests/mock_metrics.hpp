@@ -16,10 +16,8 @@
 template <typename ValueType>
 hart::MetricQuery<ValueType> mockMetric (const std::vector<ValueType>& values)
 {
-    const size_t numMockChannels = values.size();
-
     typename hart::MetricQuery<ValueType>::SingleChannelMetricEvaluator evaluator =
-        [&values, numMockChannels]
+        [&values]
         (size_t channel, hart::Slice, hart::Unit)
         -> ValueType
     {
@@ -27,6 +25,7 @@ hart::MetricQuery<ValueType> mockMetric (const std::vector<ValueType>& values)
         return values[channel];
     };
 
+    const size_t numMockChannels = values.size();
     return hart::MetricQuery<ValueType> (
         std::move (evaluator),
         numMockChannels,

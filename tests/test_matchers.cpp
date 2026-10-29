@@ -510,8 +510,8 @@ HART_TEST ("NoInfinities")
         .process();
 
     AudioBuffer bufferWithInfinities = AudioBuffer::inDefaultOutputShape();
-    HART_ASSERT_GT (bufferWithInfinities.getNumChannels(), 0);
-    HART_ASSERT_GT (bufferWithInfinities.getNumFrames(), 0);
+    HART_ASSERT_GT (bufferWithInfinities.getNumChannels(), 0ul);
+    HART_ASSERT_GT (bufferWithInfinities.getNumFrames(), 0ul);
     bufferWithInfinities.clear();
     bufferWithInfinities[0][bufferWithInfinities.getNumFrames() - 1] = static_cast<float> (hart::inf);
 
@@ -531,8 +531,8 @@ HART_TEST ("NoNaNs")
         .process();
 
     AudioBuffer bufferWithNaNs = AudioBuffer::inDefaultOutputShape();
-    HART_ASSERT_GT (bufferWithNaNs.getNumChannels(), 0);
-    HART_ASSERT_GT (bufferWithNaNs.getNumFrames(), 0);
+    HART_ASSERT_GT (bufferWithNaNs.getNumChannels(), 0ul);
+    HART_ASSERT_GT (bufferWithNaNs.getNumFrames(), 0ul);
     bufferWithNaNs.clear();
     bufferWithNaNs[0][bufferWithNaNs.getNumFrames() - 1] = hart::nan<float>();
 
