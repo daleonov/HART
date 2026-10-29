@@ -373,14 +373,6 @@ HART_EXPECT_FLOAT_NE (valueA, valueB, 1e-6);
 
 Unless all channels peak at the same value, `valueA` and `ValueB` will be different. In first case, values are converted to dB for each channel, and then mean value is calculated. If latter case, mean value is calculated in linear domain, and only then converted to dB. Mathematically, those are different types of averaging, and you have means to perform either of those.
 
-# Reducers for windowed metrics
-
-Rolling window metrics may produce a vector of values per channel, instead of a single value per channel. In such cases, you can use `reduce2d()` reducer:
-
-```cpp
-const double maxAmongMeans = someMetric (audio).get (reduce2d (max(), mean()));
-```
-
 # Metric-specific reducers
 
 Some metrics may respect speaker positions im spatial audio setups, or simply take the whole programme into account. Such metrics are expected to come with their own reducers. For example, LUFS metric (`hart::lufs()`) requires the use of LUFS-specific reducers to get appropriate LUFS-I, LUFS-M and LUFS-S readings:
@@ -392,6 +384,67 @@ const double m = lufs (audio).get (momentary (hart::percentile (0.5)));
 ```
 
 Check the specific metric's docs for more details.
+
+# Windowed metrics
+
+Most HART metrics summarize a property of the entire piece of audio, or a slice of it. Sometimes we need to express a test statement based on how some audio feature behaves over time. To do this, you can use `windowed()` on top of a metric:
+
+```cpp
+const double lowestRmsDb = windowed (audio)
+    .metric ([] (const AudioBuffer& window) { return rms (window).as (dB).collect(); })
+    .size (100_ms)
+    .step (5_ms)
+    .get (min(), min());
+
+HART_EXPECT_GT (lowestRmsDb, -60_dB)
+    << "No significant volume drop-outs in the signal";
+```
+
+In the example above, the `audio` buffer will be cut into a number of overlapping 100 ms windows, which will be passed as `window` to the `rms()` metric. RMS will be measured for each 100 ms window independently, and then you can reduce it to a scalar value in the `get()` method, similar to regular metrics.
+
+Since you get an internal 2D vector of results (with per-channel and per-window axes), you'll typically need two reducers to get to a single scalar value. The `get()` method here is identical in its interface to the `reduce2d()` reducer.
+
+There are also metrics that take a pair of audio buffers (or spectra, or IRs). The `windowed()` statement can also facilitate those:
+
+```cpp
+const double worstEsr = windowed (referenceAudio, observedAudio)
+    .metric (
+        [] (const AudioBuffer& windowReference, const AudioBuffer& windowObserved)
+        {
+            return esr (windowReference, windowObserved).collect();
+        }
+    )
+    .size (50_ms)
+    .step (10_ms)
+    .get (max(), max());
+
+HART_EXPECT_LT (worstEsr, 0.05)
+    << "No significant deviation from reference signal";
+```
+
+In this case, both `referenceAudio` and `observedAudio` will be cut into smaller windows, and passed as synchronised pairs (`windowReference` and `windowObserved`) to the `esr()` metric.
+
+For frequency-domain and IR-based metrics, just use the same `windowed()` statements, converting the signal into the desired domain before passing to the metric:
+
+```cpp
+const double worstDeviationCents = windowed (audio)
+    .metric (
+        [] (const AudioBuffer& audio)
+        {
+            return quinns2 (Spectrum (audio))
+                .apply (
+                    [] (double f) { return abs (ratioToCents (f / 440_Hz)); })
+                .collect();
+        }
+    )
+    .size (500_ms)
+    .get (max(), max());
+
+HART_EXPECT_LT (worstDeviationCents, 10_cents)
+    << "Deviation from A440 is under 10 cents across the board";
+```
+
+Here, the signal is still cut into windows in time domain, and then you can do an FFT on each individual frame (using `Spectrum()` ctor), thus expressing a statement that would normally require an STFT.
 
 # When to use metrics
 
