@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "hart_accurate_sum.hpp"
 #include "hart_audio_buffer.hpp"
 #include "hart_reducers.hpp"
 
@@ -37,6 +38,24 @@ public:
             ReducerResultType<ReducerBType, typename std::vector<ValueType>::const_iterator>
             >::const_iterator>;
 
+    /// @brief Requests a window size in seconds
+    /// @details The window size defaults to 100 ms. Only complete windows are processed.
+    /// Window boundaries are converted from time to frames independently, so window
+    /// lengths may differ by one frame without leaving gaps or using a frame twice.
+    /// @return A copy of this query with the requested window size.
+    DerivedQueryType size (double windowSizeSeconds) const
+    {
+        const auto& query = static_cast<const DerivedQueryType&> (*this);
+
+        if (! std::isfinite (windowSizeSeconds) || windowSizeSeconds <= 0.0)
+            HART_THROW_OR_RETURN (ValueError, "Window size must be positive and finite", query);
+
+        DerivedQueryType copy (query);
+        copy.m_windowSizeSeconds = windowSizeSeconds;
+
+        return copy;
+    }
+
     /// @brief Reduce the results of windowed metric
     /// @details Call this at the end of building this chain windowed metric query.
     /// The metric callback set with `metric()` method will be called repeatedly, with
@@ -54,15 +73,24 @@ public:
     }
 
 protected:
+    double m_windowSizeSeconds = 0.1;
+
     WindowedMetricQueryBase() = default;
+    explicit WindowedMetricQueryBase (double windowSizeSeconds) : m_windowSizeSeconds (windowSizeSeconds) {}
     ~WindowedMetricQueryBase() = default;
 
-    static bool validateWindowedAudioSource (const AudioBuffer<SampleType>& source)
+    WindowedMetricQueryBase (const WindowedMetricQueryBase&) = default;
+    WindowedMetricQueryBase (WindowedMetricQueryBase&&) = default;
+    WindowedMetricQueryBase& operator= (const WindowedMetricQueryBase&) = default;
+    WindowedMetricQueryBase& operator= (WindowedMetricQueryBase&&) = default;
+
+    static bool isWindowedAudioSourceValid (const AudioBuffer<SampleType>& source)
     {
         if (! source.hasSampleRate())
             HART_THROW_OR_RETURN (SampleRateError, "Windowing requires a sample rate", false);
 
         const double sampleRate = source.getSampleRateHz();
+
         if (! std::isfinite (sampleRate) || sampleRate <= 0.0)
             HART_THROW_OR_RETURN (SampleRateError, "Windowing requires a positive finite sample rate", false);
 
@@ -80,22 +108,47 @@ private:
             return {};
 
         const auto& source = query.primaryBuffer();
-        const size_t windowFrames = roundToSizeT (source.getSampleRateHz() * 0.1);
+        const double requestedWindowFrames = source.getSampleRateHz() * m_windowSizeSeconds;
+
+        if (! std::isfinite (requestedWindowFrames) || requestedWindowFrames > static_cast<double> (source.getNumFrames()) + 0.5)
+            HART_THROW_OR_RETURN (SizeError, "No complete window fits in the buffer", {});
+
+        const size_t windowFrames = roundToSizeT (requestedWindowFrames);
+
         if (windowFrames == 0 || windowFrames > source.getNumFrames())
             HART_THROW_OR_RETURN (SizeError, "No complete window fits in the buffer", {});
 
-        const size_t numWindows = source.getNumFrames() / windowFrames;
         // Scratch buffers and a copy of the callback live only for this get().
         auto execution = query.createWindowExecution (windowFrames);
         std::vector<std::vector<ValueType>> results;
-        for (size_t window = 0; window < numWindows; ++window)
+        AccurateSum<double> windowStopSeconds;
+        size_t startFrame = 0;
+        bool hasWindow = false;
+
+        while (startFrame < source.getNumFrames())
         {
-            const auto values = execution.calculateWindow (window * windowFrames);
-            if (window == 0)
+            // Accumulate time, not rounded frame counts. Adjacent windows share
+            // one converted boundary, so rounding cannot leave gaps or overlaps.
+            windowStopSeconds += m_windowSizeSeconds;
+            const double stopFramePosition = windowStopSeconds.getValue() * source.getSampleRateHz();
+    
+            if (! std::isfinite (stopFramePosition) || stopFramePosition > static_cast<double> (source.getNumFrames()) + 0.5)
+                break;
+
+            const size_t stopFrame = roundToSizeT (stopFramePosition);
+
+            if (stopFrame > source.getNumFrames())
+                break;  // Skip a partial window.
+
+            if (stopFrame <= startFrame)
+                HART_THROW_OR_RETURN (SizeError, "Window size must produce non-empty windows", {});
+
+            const auto values = execution.calculateWindow (startFrame, stopFrame);
+
+            if (! hasWindow)
             {
                 results.resize (values.size());
-                for (auto& channelResults : results)
-                    channelResults.reserve (numWindows);
+                hasWindow = true;
             }
 
             if (values.size() != results.size())
@@ -103,7 +156,13 @@ private:
 
             for (size_t channel = 0; channel < values.size(); ++channel)
                 results[channel].push_back (values[channel]);
+
+            startFrame = stopFrame;
         }
+
+        if (! hasWindow)
+            HART_THROW_OR_RETURN (SizeError, "No complete window fits in the buffer", {});
+
         return results;
     }
 };
@@ -149,7 +208,7 @@ public:
     auto metric (SingleBufferPerWindowMetricFunctor calculateMetricForOneWindow) const
         -> WindowedSingleBufferMetricQuery<SampleType, PerWindowMetricValueType<SingleBufferPerWindowMetricFunctor>>
     {
-        WindowedSingleBufferMetricQuery<SampleType, PerWindowMetricValueType<SingleBufferPerWindowMetricFunctor>> query (m_audioBuffer);
+        WindowedSingleBufferMetricQuery<SampleType, PerWindowMetricValueType<SingleBufferPerWindowMetricFunctor>> query (m_audioBuffer, this->m_windowSizeSeconds);
         query.setMetric (std::move (calculateMetricForOneWindow));
         return query;
     }
@@ -158,6 +217,12 @@ private:
     // metric() can change ValueType, so specializations need each other's setter.
     template <typename, typename> friend class WindowedSingleBufferMetricQuery;
     friend BaseType;
+
+    WindowedSingleBufferMetricQuery (const AudioBuffer<SampleType>& audioBuffer, double windowSizeSeconds) :
+        BaseType (windowSizeSeconds),
+        m_audioBuffer (audioBuffer)
+    {
+    }
 
     struct WindowExecution
     {
@@ -168,8 +233,9 @@ private:
         {
         }
 
-        std::vector<ValueType> calculateWindow (size_t startFrame)
+        std::vector<ValueType> calculateWindow (size_t startFrame, size_t stopFrame)
         {
+            frame.setNumFrames (stopFrame - startFrame);
             internal::copyWindowedAudioFrame (source, frame, startFrame);
             return calculateMetric (frame);
         }
@@ -181,7 +247,7 @@ private:
 
     bool hasMetric() const { return m_calculateMetricForOneWindow != nullptr; }
     const AudioBuffer<SampleType>& primaryBuffer() const { return m_audioBuffer; }
-    bool validateInputBuffers() const { return BaseType::validateWindowedAudioSource (m_audioBuffer); }
+    bool validateInputBuffers() const { return BaseType::isWindowedAudioSourceValid (m_audioBuffer); }
 
     WindowExecution createWindowExecution (size_t windowFrames) const
     {
@@ -239,7 +305,7 @@ public:
     auto metric (BufferPairPerWindowMetricFunctor calculateMetricForOneWindow) const
         -> WindowedBufferPairMetricQuery<SampleType, PerWindowMetricValueType<BufferPairPerWindowMetricFunctor>>
     {
-        WindowedBufferPairMetricQuery<SampleType, PerWindowMetricValueType<BufferPairPerWindowMetricFunctor>> query (m_audioBufferA, m_audioBufferB);
+        WindowedBufferPairMetricQuery<SampleType, PerWindowMetricValueType<BufferPairPerWindowMetricFunctor>> query (m_audioBufferA, m_audioBufferB, this->m_windowSizeSeconds);
         query.setMetric (std::move (calculateMetricForOneWindow));
         return query;
     }
@@ -248,10 +314,24 @@ private:
     template <typename, typename> friend class WindowedBufferPairMetricQuery;
     friend BaseType;
 
+    WindowedBufferPairMetricQuery (
+        const AudioBuffer<SampleType>& audioBufferA,
+        const AudioBuffer<SampleType>& audioBufferB,
+        double windowSizeSeconds
+        ) :
+        BaseType (windowSizeSeconds),
+        m_audioBufferA (audioBufferA),
+        m_audioBufferB (audioBufferB)
+    {
+    }
+
     struct WindowExecution
     {
-        WindowExecution (const AudioBuffer<SampleType>& bufferA, const AudioBuffer<SampleType>& bufferB,
-                         size_t windowFrames, BufferPairPerWindowMetricEvaluator evaluator) :
+        WindowExecution (
+            const AudioBuffer<SampleType>& bufferA,
+            const AudioBuffer<SampleType>& bufferB,
+            size_t windowFrames, BufferPairPerWindowMetricEvaluator evaluator
+            ) :
             sourceA (bufferA),
             sourceB (bufferB),
             frameA (sourceA.getNumChannels(), windowFrames, sourceA.getSampleRateHz()),
@@ -260,8 +340,10 @@ private:
         {
         }
 
-        std::vector<ValueType> calculateWindow (size_t startFrame)
+        std::vector<ValueType> calculateWindow (size_t startFrame, size_t stopFrame)
         {
+            frameA.setNumFrames (stopFrame - startFrame);
+            frameB.setNumFrames (stopFrame - startFrame);
             internal::copyWindowedAudioFrame (sourceA, frameA, startFrame);
             internal::copyWindowedAudioFrame (sourceB, frameB, startFrame);
             return calculateMetric (frameA, frameB);
@@ -279,14 +361,15 @@ private:
 
     bool validateInputBuffers() const
     {
-        if (! BaseType::validateWindowedAudioSource (m_audioBufferA)
-            || ! BaseType::validateWindowedAudioSource (m_audioBufferB))
+        if (! BaseType::isWindowedAudioSourceValid (m_audioBufferA) || ! BaseType::isWindowedAudioSourceValid (m_audioBufferB))
             return false;
 
         if (m_audioBufferA.getSampleRateHz() != m_audioBufferB.getSampleRateHz())
             HART_THROW_OR_RETURN (SampleRateError, "Windowed buffers must have equal sample rates", false);
+
         if (m_audioBufferA.getNumFrames() != m_audioBufferB.getNumFrames())
             HART_THROW_OR_RETURN (SizeError, "Windowed buffers must have equal lengths", false);
+
         return true;
     }
 
@@ -299,6 +382,7 @@ private:
     {
         if (evaluator == nullptr)
             HART_THROW_OR_RETURN_VOID (NullPointerError, "The provided functor is null");
+
         m_calculateMetricForOneWindow = std::move (evaluator);
     }
 

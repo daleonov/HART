@@ -9,6 +9,7 @@
 #include "metrics/hart_metrics_common.hpp"  // ChannelSubsets
 #include "hart_slice.hpp"
 #include "hart_units.hpp"  // Unit
+#include "hart_utils.hpp"  // floatIsZero()
 
 /// @brief Mock test double that is designed to be called once per each channel
 /// @private
@@ -74,4 +75,58 @@ template <typename ValueType>
 MockWindowedMetric<ValueType> mockWindowedMetric (const std::vector<std::vector<ValueType>>& values)
 {
     return MockWindowedMetric<ValueType> (values);
+}
+
+template <typename SampleType>
+hart::MetricQuery<double> justReturnZeros (const hart::AudioBuffer<SampleType>& buffer)
+{
+    hart::MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
+        []
+        (size_t, hart::Slice, hart::Unit)
+        -> double
+    {
+        return 0.0;
+    };
+
+    const size_t numChannels = buffer.getNumChannels();
+    return hart::MetricQuery<double> (
+        std::move (evaluator),
+        numChannels,
+        hart::ChannelSubsets::allChannels (numChannels)
+    );
+}
+
+template <typename SampleType>
+hart::MetricQuery<double> justReturnBufferSizes (const hart::AudioBuffer<SampleType>& buffer)
+{
+    hart::MetricQuery<double>::SingleChannelMetricEvaluator evaluator =
+        [&buffer]
+        (size_t, hart::Slice, hart::Unit unit)
+        -> double
+    {
+        const double bufferSizeFrames = static_cast<double> (buffer.getNumFrames());
+
+        switch (unit)
+        {
+            case hart::Unit::native:
+            case hart::Unit::frames:
+                return bufferSizeFrames;
+
+            case hart::Unit::seconds:
+                hassert (buffer.hasSampleRate());
+                hassert (! hart::floatIsZero (buffer.getSampleRateHz()));
+                return bufferSizeFrames / buffer.getSampleRateHz();
+
+            default:
+                hassertfalse;  // Unexpected unit
+                return hart::nan<double>();
+        }
+    };
+
+    const size_t numChannels = buffer.getNumChannels();
+    return hart::MetricQuery<double> (
+        std::move (evaluator),
+        numChannels,
+        hart::ChannelSubsets::allChannels (numChannels)
+    );
 }

@@ -357,3 +357,253 @@ HART_TEST_WITH_TAGS ("Windowed MetricQuery - Buffer pair - Works with multi-chan
         0.2
     ) << "Signals are poorly correlated in last window on left channel";
 }
+
+HART_PARAMETRISED_TEST_WITH_TAGS ("Windowed MetricQuery - Single buffer - Setting window size results in correct amount of windows if buffer size is a multiple of window size", "[Metrics][WindowedMetricQuery]")
+{
+    using hart::first;
+    using hart::size;
+
+    const double windowSizeSeconds = HART_GENERATE_VALUE (1_ms, 4_ms, 11_ms, 44_ms, 88_ms);
+    HART_CAPTURE_VALUE (windowSizeSeconds);
+
+    const AudioBuffer buffer = processAudioWith (Bypass())
+        .withInputSignal (Silence())
+        .withDuration (88_ms)
+        .inMono()
+        .processAndGetOutputAudio();
+
+    const size_t numWindowsObserved = windowed (buffer)
+        .metric ([] (const AudioBuffer& window) { return justReturnZeros (window).collect(); })
+        .size (windowSizeSeconds)
+        .get (first(), size());
+
+    HART_EXPECT_FLOAT_EQ (static_cast<double> (numWindowsObserved), 88_ms / windowSizeSeconds, 1e-8);
+}
+
+HART_PARAMETRISED_TEST_WITH_TAGS ("Windowed MetricQuery - Buffer pair - Setting window size results in correct amount of windows if buffer size is a multiple of window size", "[Metrics][WindowedMetricQuery]")
+{
+    using hart::first;
+    using hart::size;
+
+    const double windowSizeSeconds = HART_GENERATE_VALUE (1_ms, 5_ms, 12_ms, 20_ms, 60_ms);
+    HART_CAPTURE_VALUE (windowSizeSeconds);
+
+    const AudioBuffer bufferA = processAudioWith (Bypass())
+        .withInputSignal (Silence())
+        .withDuration (60_ms)
+        .inMono()
+        .processAndGetOutputAudio();
+    const AudioBuffer bufferB (bufferA);
+
+    const size_t numWindowsObserved = windowed (bufferA, bufferB)
+        .metric ([] (const AudioBuffer& windowA, const AudioBuffer& /* windowB */) { return justReturnZeros (windowA).collect(); })
+        .size (windowSizeSeconds)
+        .get (first(), size());
+
+    HART_EXPECT_FLOAT_EQ (static_cast<double> (numWindowsObserved), 60_ms / windowSizeSeconds, 1e-8);
+}
+
+HART_PARAMETRISED_TEST_WITH_TAGS ("Windowed MetricQuery - Single buffer - Setting window size results in correct window sizes if buffer size is a multiple of window size", "[Metrics][WindowedMetricQuery]")
+{
+    using hart::allFloatsEqualTo;
+    using hart::first;
+
+    const double windowSizeSeconds = HART_GENERATE_VALUE (1_ms, 5_ms, 10_ms, 25_ms, 50_ms);
+    HART_CAPTURE_VALUE (windowSizeSeconds);
+
+    const AudioBuffer buffer = processAudioWith (Bypass())
+        .withInputSignal (Silence())
+        .withDuration (50_ms)
+        .inMono()
+        .processAndGetOutputAudio();
+
+    // Allow one sample, without specifying a rounding rule for durations.
+    const double toleranceSeconds = 1.0 / buffer.getSampleRateHz();
+    const bool allWindowSizesAreCorrect = windowed (buffer)
+        .metric ([] (const AudioBuffer& window) { return justReturnBufferSizes (window).as (seconds).collect(); })
+        .size (windowSizeSeconds)
+        .get (first(), allFloatsEqualTo (windowSizeSeconds, toleranceSeconds));
+
+    HART_EXPECT_TRUE (allWindowSizesAreCorrect);
+}
+
+HART_PARAMETRISED_TEST_WITH_TAGS ("Windowed MetricQuery - Buffer pair - Setting window size results in correct window sizes if buffer size is a multiple of window size", "[Metrics][WindowedMetricQuery]")
+{
+    using hart::allFloatsEqualTo;
+    using hart::first;
+
+    const double windowSizeSeconds = HART_GENERATE_VALUE (1_ms, 9_ms, 10_ms, 30_ms, 90_ms);
+    HART_CAPTURE_VALUE (windowSizeSeconds);
+
+    const AudioBuffer bufferA = processAudioWith (Bypass())
+        .withInputSignal (Silence())
+        .withDuration (90_ms)
+        .inMono()
+        .processAndGetOutputAudio();
+    const AudioBuffer bufferB (bufferA);
+
+    const double toleranceSeconds = 1_frames / bufferA.getSampleRateHz();
+    const auto query = windowed (bufferA, bufferB).size (windowSizeSeconds);
+
+    const bool allWindowASizesAreCorrect = query
+        .metric ([] (const AudioBuffer& windowA, const AudioBuffer& /* windowB */) { return justReturnBufferSizes (windowA).as (seconds).collect(); })
+        .get (first(), allFloatsEqualTo (windowSizeSeconds, toleranceSeconds));
+
+    const bool allWindowBSizesAreCorrect = query
+        .metric ([] (const AudioBuffer& /* windowA */, const AudioBuffer& windowB) { return justReturnBufferSizes (windowB).as (seconds).collect(); })
+        .get (first(), allFloatsEqualTo (windowSizeSeconds, toleranceSeconds));
+
+    HART_EXPECT_TRUE (allWindowASizesAreCorrect);
+    HART_EXPECT_TRUE (allWindowBSizesAreCorrect);
+}
+
+HART_TEST_WITH_TAGS ("Windowed MetricQuery - Configuration survives query copy", "[Metrics][WindowedMetricQuery]")
+{
+    using hart::first;
+    using hart::size;
+
+    const AudioBuffer buffer = processAudioWith (Bypass())
+        .withInputSignal (Silence())
+        .withDuration (100_ms)
+        .inMono()
+        .processAndGetOutputAudio();
+
+    const auto singleQuery = windowed (buffer)
+        .size (20_ms)
+        .metric ([] (const AudioBuffer& window) { return justReturnZeros (window).collect(); });
+
+    const auto singleCopy = singleQuery;
+    const auto resizedSingleCopy = singleCopy.size (10_ms);
+
+    HART_EXPECT_EQ (singleCopy.get (first(), size()), 5ul);
+    HART_EXPECT_EQ (resizedSingleCopy.get (first(), size()), 10ul);
+    HART_EXPECT_EQ (singleQuery.get (first(), size()), 5ul);
+
+    const auto pairQuery = windowed (buffer, buffer)
+        .size (20_ms)
+        .metric ([] (const AudioBuffer& windowA, const AudioBuffer&) { return justReturnZeros (windowA).collect(); });
+
+    const auto pairCopy = pairQuery;
+    const auto resizedPairCopy = pairCopy.size (10_ms);
+
+    HART_EXPECT_EQ (pairCopy.get (first(), size()), 5ul);
+    HART_EXPECT_EQ (resizedPairCopy.get (first(), size()), 10ul);
+    HART_EXPECT_EQ (pairQuery.get (first(), size()), 5ul);
+}
+
+HART_TEST_WITH_TAGS ("Windowed MetricQuery - Configuration survives value type change", "[Metrics][WindowedMetricQuery]")
+{
+    const AudioBuffer buffer = processAudioWith (Bypass())
+        .withInputSignal (Silence())
+        .withDuration (100_ms)
+        .inMono()
+        .processAndGetOutputAudio();
+    const std::vector<int> values { 0 };
+
+    const auto singleQuery = windowed (buffer)
+        .size (20_ms)
+        .metric ([] (const AudioBuffer& window) { return justReturnZeros (window).collect(); });
+
+    const auto singleIntQuery = singleQuery
+        .metric ([&values] (const AudioBuffer&) { return mockMetric (values).collect(); });
+
+    HART_EXPECT_EQ (singleIntQuery.get (hart::first(), hart::size()), size_t (5));
+
+    const auto pairQuery = windowed (buffer, buffer).size (20_ms)
+        .metric ([] (const AudioBuffer& windowA, const AudioBuffer&) { return justReturnZeros (windowA).collect(); });
+
+    const auto pairIntQuery = pairQuery
+        .metric ([&values] (const AudioBuffer&, const AudioBuffer&) { return mockMetric (values).collect(); });
+
+    HART_EXPECT_EQ (pairIntQuery.get (hart::first(), hart::size()), size_t (5));
+}
+
+HART_PARAMETRISED_TEST_WITH_TAGS ("Windowed MetricQuery - Single buffer - Each frame is used exactly once", "[Metrics][WindowedMetricQuery]")
+{
+    using hart::first;
+    using hart::size;
+
+    const double windowSizeSeconds = HART_GENERATE_VALUE (1_ms, 5_ms, 25_ms);
+    HART_CAPTURE_VALUE (windowSizeSeconds);
+
+    const auto ramp = SegmentedEnvelope (0.0).rampTo (1.0, 1_s);
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (DC (1.0f) >> GainLinear().withEnvelope (GainLinear::gainLinear, ramp))
+        .withDuration (1_s)
+        .inMono()
+        .processAndGetOutputAudio();
+
+    size_t framesSeen = 0;
+    bool allFramesAreInOrder = true;
+
+    windowed (audio).size (windowSizeSeconds)
+        .metric (
+            [&] (const AudioBuffer& window)
+            {
+                // A DC ramp gives each source frame a distinct value. Check the
+                // concatenated windows against it, rather than just adding samples.
+                for (size_t frame = 0; frame < window.getNumFrames(); ++frame)
+                {
+                    if (framesSeen >= audio.getNumFrames() || window[0][frame] != audio[0][framesSeen])
+                        allFramesAreInOrder = false;
+
+                    ++framesSeen;
+                }
+                return justReturnZeros (window).collect();
+            }
+        )
+        .get (first(), size());
+
+    HART_EXPECT_TRUE (allFramesAreInOrder);
+    HART_EXPECT_EQ (framesSeen, audio.getNumFrames());
+}
+
+HART_PARAMETRISED_TEST_WITH_TAGS ("Windowed MetricQuery - Buffer pair - Each frame is used exactly once", "[Metrics][WindowedMetricQuery]")
+{
+    using hart::first;
+    using hart::size;
+
+    const double windowSizeSeconds = HART_GENERATE_VALUE (1_ms, 5_ms, 25_ms);
+    HART_CAPTURE_VALUE (windowSizeSeconds);
+
+    const auto ramp = SegmentedEnvelope (0.0).rampTo (1.0, 1_s);
+    const AudioBuffer audioA = processAudioWith (Bypass())
+        .withInputSignal (DC (1.0f) >> GainLinear().withEnvelope (GainLinear::gainLinear, ramp))
+        .withDuration (1_s)
+        .inMono()
+        .processAndGetOutputAudio();
+    AudioBuffer audioB (audioA);
+    audioB.processWith (GainLinear (-1.0));
+
+    size_t framesSeen = 0;
+    bool allFramesAreInOrder = true;
+
+    windowed (audioA, audioB).size (windowSizeSeconds)
+        .metric (
+            [&] (const AudioBuffer& windowA, const AudioBuffer& windowB)
+            {
+                HART_EXPECT_EQ (windowA.getNumFrames(), windowB.getNumFrames());
+
+                for (size_t frame = 0; frame < windowA.getNumFrames(); ++frame)
+                {
+                    if (
+                        framesSeen >= audioA.getNumFrames()
+                        || windowA[0][frame] != audioA[0][framesSeen]
+                        || frame >= windowB.getNumFrames()
+                        || windowB[0][frame] != audioB[0][framesSeen]
+                    )
+                    {
+                        allFramesAreInOrder = false;
+                    }
+
+                    ++framesSeen;
+                }
+
+            return justReturnZeros (windowA).collect();
+            }
+        )
+        .get (first(), size());
+
+    HART_EXPECT_TRUE (allFramesAreInOrder);
+    HART_EXPECT_EQ (framesSeen, audioA.getNumFrames());
+}
