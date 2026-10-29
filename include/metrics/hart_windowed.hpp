@@ -41,7 +41,8 @@ public:
     /// @brief Requests a window size in seconds
     /// @details The window size defaults to 100 ms. Only complete windows are processed.
     /// Window boundaries are converted from time to frames independently, so window
-    /// lengths may differ by one frame without leaving gaps or using a frame twice.
+    /// lengths may differ by one frame. With the default step, this does not leave
+    /// gaps or use a frame twice.
     /// @return A copy of this query with the requested window size.
     DerivedQueryType size (double windowSizeSeconds) const
     {
@@ -52,6 +53,33 @@ public:
 
         DerivedQueryType copy (query);
         copy.m_windowSizeSeconds = windowSizeSeconds;
+
+        return copy;
+    }
+
+    /// @brief Requests a window step in seconds
+    /// @details The step defaults to the window size.
+    /// Smaller steps overlap windows, larger steps leave gaps.
+    /// @return A chainable copy of this query with the requested window step.
+    DerivedQueryType step (double windowStepSeconds) const
+    {
+        const auto& query = static_cast<const DerivedQueryType&> (*this);
+
+        // Internally, NaN, which technically fails this check, is
+        // used to indicate default step, but we won't allow to
+        // explicitly set it to NaN via this method.
+        if (! std::isfinite (windowStepSeconds))
+            HART_THROW_OR_RETURN (ValueError, "Window step must be finite", query);
+
+        if (hart::floatIsZero (windowStepSeconds))
+            HART_THROW_OR_RETURN (ValueError, "Window step cannot be zero", query);
+
+        if (windowStepSeconds < 0.0)
+            HART_THROW_OR_RETURN (ValueError, "Window step cannot be negative", query);
+
+        DerivedQueryType copy (query);
+
+        copy.m_windowStepSeconds = windowStepSeconds;
 
         return copy;
     }
@@ -74,9 +102,13 @@ public:
 
 protected:
     double m_windowSizeSeconds = 0.1;
+    double m_windowStepSeconds = hart::nan<double>();
 
     WindowedMetricQueryBase() = default;
-    explicit WindowedMetricQueryBase (double windowSizeSeconds) : m_windowSizeSeconds (windowSizeSeconds) {}
+    explicit WindowedMetricQueryBase (double windowSizeSeconds, double windowStepSeconds) :
+        m_windowSizeSeconds (windowSizeSeconds),
+        m_windowStepSeconds (windowStepSeconds)
+    {}
     ~WindowedMetricQueryBase() = default;
 
     WindowedMetricQueryBase (const WindowedMetricQueryBase&) = default;
@@ -121,20 +153,22 @@ private:
         // Scratch buffers and a copy of the callback live only for this get().
         auto execution = query.createWindowExecution (windowFrames);
         std::vector<std::vector<ValueType>> results;
-        AccurateSum<double> windowStopSeconds;
-        size_t startFrame = 0;
+        const double windowStepSeconds = std::isnan (m_windowStepSeconds) ? m_windowSizeSeconds : m_windowStepSeconds;
+        AccurateSum<double> windowStartSeconds;
+        AccurateSum<double> windowStopSeconds (m_windowSizeSeconds);
         bool hasWindow = false;
 
-        while (startFrame < source.getNumFrames())
+        while (true)
         {
-            // Accumulate time, not rounded frame counts. Adjacent windows share
-            // one converted boundary, so rounding cannot leave gaps or overlaps.
-            windowStopSeconds += m_windowSizeSeconds;
+            // Accumulate start and stop times, not rounded frame counts. The
+            // default step keeps adjacent boundaries equal; custom steps allow
+            // intentional overlaps or gaps without accumulating rounding drift.
             const double stopFramePosition = windowStopSeconds.getValue() * source.getSampleRateHz();
-    
+
             if (! std::isfinite (stopFramePosition) || stopFramePosition > static_cast<double> (source.getNumFrames()) + 0.5)
                 break;
 
+            const size_t startFrame = roundToSizeT (windowStartSeconds.getValue() * source.getSampleRateHz());
             const size_t stopFrame = roundToSizeT (stopFramePosition);
 
             if (stopFrame > source.getNumFrames())
@@ -157,7 +191,8 @@ private:
             for (size_t channel = 0; channel < values.size(); ++channel)
                 results[channel].push_back (values[channel]);
 
-            startFrame = stopFrame;
+            windowStartSeconds += windowStepSeconds;
+            windowStopSeconds += windowStepSeconds;
         }
 
         if (! hasWindow)
@@ -208,7 +243,7 @@ public:
     auto metric (SingleBufferPerWindowMetricFunctor calculateMetricForOneWindow) const
         -> WindowedSingleBufferMetricQuery<SampleType, PerWindowMetricValueType<SingleBufferPerWindowMetricFunctor>>
     {
-        WindowedSingleBufferMetricQuery<SampleType, PerWindowMetricValueType<SingleBufferPerWindowMetricFunctor>> query (m_audioBuffer, this->m_windowSizeSeconds);
+        WindowedSingleBufferMetricQuery<SampleType, PerWindowMetricValueType<SingleBufferPerWindowMetricFunctor>> query (m_audioBuffer, this->m_windowSizeSeconds, this->m_windowStepSeconds);
         query.setMetric (std::move (calculateMetricForOneWindow));
         return query;
     }
@@ -218,8 +253,8 @@ private:
     template <typename, typename> friend class WindowedSingleBufferMetricQuery;
     friend BaseType;
 
-    WindowedSingleBufferMetricQuery (const AudioBuffer<SampleType>& audioBuffer, double windowSizeSeconds) :
-        BaseType (windowSizeSeconds),
+    WindowedSingleBufferMetricQuery (const AudioBuffer<SampleType>& audioBuffer, double windowSizeSeconds, double windowStepSeconds) :
+        BaseType (windowSizeSeconds, windowStepSeconds),
         m_audioBuffer (audioBuffer)
     {
     }
@@ -305,7 +340,7 @@ public:
     auto metric (BufferPairPerWindowMetricFunctor calculateMetricForOneWindow) const
         -> WindowedBufferPairMetricQuery<SampleType, PerWindowMetricValueType<BufferPairPerWindowMetricFunctor>>
     {
-        WindowedBufferPairMetricQuery<SampleType, PerWindowMetricValueType<BufferPairPerWindowMetricFunctor>> query (m_audioBufferA, m_audioBufferB, this->m_windowSizeSeconds);
+        WindowedBufferPairMetricQuery<SampleType, PerWindowMetricValueType<BufferPairPerWindowMetricFunctor>> query (m_audioBufferA, m_audioBufferB, this->m_windowSizeSeconds, this->m_windowStepSeconds);
         query.setMetric (std::move (calculateMetricForOneWindow));
         return query;
     }
@@ -317,9 +352,10 @@ private:
     WindowedBufferPairMetricQuery (
         const AudioBuffer<SampleType>& audioBufferA,
         const AudioBuffer<SampleType>& audioBufferB,
-        double windowSizeSeconds
+        double windowSizeSeconds,
+        double windowStepSeconds
         ) :
-        BaseType (windowSizeSeconds),
+        BaseType (windowSizeSeconds, windowStepSeconds),
         m_audioBufferA (audioBufferA),
         m_audioBufferB (audioBufferB)
     {

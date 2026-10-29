@@ -1,3 +1,7 @@
+#include <array>
+#include <utility>  // pair
+#include <vector>
+
 #include "hart.hpp"
 #include "mock_metrics.hpp"
 
@@ -469,26 +473,26 @@ HART_TEST_WITH_TAGS ("Windowed MetricQuery - Configuration survives query copy",
         .processAndGetOutputAudio();
 
     const auto singleQuery = windowed (buffer)
-        .size (20_ms)
+        .size (20_ms).step (10_ms)
         .metric ([] (const AudioBuffer& window) { return justReturnZeros (window).collect(); });
 
     const auto singleCopy = singleQuery;
     const auto resizedSingleCopy = singleCopy.size (10_ms);
 
-    HART_EXPECT_EQ (singleCopy.get (first(), size()), 5ul);
+    HART_EXPECT_EQ (singleCopy.get (first(), size()), 9ul);
     HART_EXPECT_EQ (resizedSingleCopy.get (first(), size()), 10ul);
-    HART_EXPECT_EQ (singleQuery.get (first(), size()), 5ul);
+    HART_EXPECT_EQ (singleQuery.get (first(), size()), 9ul);
 
     const auto pairQuery = windowed (buffer, buffer)
-        .size (20_ms)
+        .size (20_ms).step (10_ms)
         .metric ([] (const AudioBuffer& windowA, const AudioBuffer&) { return justReturnZeros (windowA).collect(); });
 
     const auto pairCopy = pairQuery;
     const auto resizedPairCopy = pairCopy.size (10_ms);
 
-    HART_EXPECT_EQ (pairCopy.get (first(), size()), 5ul);
+    HART_EXPECT_EQ (pairCopy.get (first(), size()), 9ul);
     HART_EXPECT_EQ (resizedPairCopy.get (first(), size()), 10ul);
-    HART_EXPECT_EQ (pairQuery.get (first(), size()), 5ul);
+    HART_EXPECT_EQ (pairQuery.get (first(), size()), 9ul);
 }
 
 HART_TEST_WITH_TAGS ("Windowed MetricQuery - Configuration survives value type change", "[Metrics][WindowedMetricQuery]")
@@ -501,21 +505,21 @@ HART_TEST_WITH_TAGS ("Windowed MetricQuery - Configuration survives value type c
     const std::vector<int> values { 0 };
 
     const auto singleQuery = windowed (buffer)
-        .size (20_ms)
+        .size (20_ms).step (10_ms)
         .metric ([] (const AudioBuffer& window) { return justReturnZeros (window).collect(); });
 
     const auto singleIntQuery = singleQuery
         .metric ([&values] (const AudioBuffer&) { return mockMetric (values).collect(); });
 
-    HART_EXPECT_EQ (singleIntQuery.get (hart::first(), hart::size()), size_t (5));
+    HART_EXPECT_EQ (singleIntQuery.get (hart::first(), hart::size()), size_t (9));
 
-    const auto pairQuery = windowed (buffer, buffer).size (20_ms)
+    const auto pairQuery = windowed (buffer, buffer).size (20_ms).step (10_ms)
         .metric ([] (const AudioBuffer& windowA, const AudioBuffer&) { return justReturnZeros (windowA).collect(); });
 
     const auto pairIntQuery = pairQuery
         .metric ([&values] (const AudioBuffer&, const AudioBuffer&) { return mockMetric (values).collect(); });
 
-    HART_EXPECT_EQ (pairIntQuery.get (hart::first(), hart::size()), size_t (5));
+    HART_EXPECT_EQ (pairIntQuery.get (hart::first(), hart::size()), size_t (9));
 }
 
 HART_PARAMETRISED_TEST_WITH_TAGS ("Windowed MetricQuery - Single buffer - Each frame is used exactly once", "[Metrics][WindowedMetricQuery]")
@@ -606,4 +610,68 @@ HART_PARAMETRISED_TEST_WITH_TAGS ("Windowed MetricQuery - Buffer pair - Each fra
 
     HART_EXPECT_TRUE (allFramesAreInOrder);
     HART_EXPECT_EQ (framesSeen, audioA.getNumFrames());
+}
+
+HART_PARAMETRISED_TEST_WITH_TAGS ("Windowed MetricQuery - Setting a custom window step results in correct number of windows", "[Metrics][WindowedMetricQuery]")
+{
+    using hart::windowed;
+    using hart::first;
+    using hart::size;
+
+    constexpr double renderDurationSeconds = 100_ms;
+    constexpr double windowSizeSeconds = 10_ms;
+
+    constexpr std::array<std::pair<double, size_t>, 4> windowStepsAndExpectedNumbersOfWindows = {{
+        { 10_ms, 10ul },
+        { 5_ms, 19ul },
+        { 1_ms, 91ul },
+        { 50_ms, 2ul }
+    }};
+
+    const auto windowStepAndExpectedNumberOfWindows = HART_GENERATE_VALUE (windowStepsAndExpectedNumbersOfWindows);
+    const double windowStepSeconds = windowStepAndExpectedNumberOfWindows.first;
+    const size_t expectedNumWindows = windowStepAndExpectedNumberOfWindows.second;
+    HART_CAPTURE_VALUE (windowStepSeconds);
+    HART_CAPTURE_VALUE (expectedNumWindows);
+
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (Silence())
+        .withDuration (renderDurationSeconds)
+        .inMono()
+        .processAndGetOutputAudio();
+
+    const size_t observedNumWindows = windowed (audio)
+        .metric ([] (const AudioBuffer& window) { return justReturnZeros (window).collect(); })
+        .size (windowSizeSeconds)
+        .step (windowStepSeconds)
+        .get (first(), size());
+
+    HART_EXPECT_EQ (observedNumWindows, expectedNumWindows);
+}
+
+HART_PARAMETRISED_TEST_WITH_TAGS ("Windowed MetricQuery - Setting a custom window step results in correct window sizes", "[Metrics][WindowedMetricQuery]")
+{
+    using hart::windowed;
+    using hart::first;
+    using hart::allFloatsEqualTo;
+    using hart::CLIConfig;
+
+    const double windowStepSeconds = HART_GENERATE_VALUE (1_ms, 7_ms, 10_ms, 42_ms, 99_ms, 100_ms, 999_s);
+    HART_CAPTURE_VALUE (windowStepSeconds);
+
+    const AudioBuffer audio = processAudioWith (Bypass())
+        .withInputSignal (Silence())
+        .withDuration (100_ms)
+        .inMono()
+        .processAndGetOutputAudio();
+
+    const double toleranceSeconds = 1_frames / CLIConfig::getInstance().getDefaultSampleRateHz();
+
+    const bool allWindowSizesAreCorrect = windowed (audio)
+        .metric ([] (const AudioBuffer& window) { return justReturnBufferSizes (window).as (seconds).collect(); })
+        .size (10_ms)
+        .step (windowStepSeconds)
+        .get (first(), allFloatsEqualTo (10_ms, toleranceSeconds));
+
+    HART_EXPECT_TRUE (allWindowSizesAreCorrect);
 }
