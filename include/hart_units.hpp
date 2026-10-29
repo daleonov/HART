@@ -71,6 +71,8 @@ constexpr double operator""_us (long double val) { return static_cast<double> (1
 constexpr double operator""_us (unsigned long long int val) { return static_cast<double> (1e-6 * val); }
 constexpr double operator""_ns (long double val) { return static_cast<double> (1e-9 * val); }
 constexpr double operator""_ns (unsigned long long int val) { return static_cast<double> (1e-9 * val); }
+constexpr double operator""_frames (long double val) { return static_cast<double> (val); }
+constexpr size_t operator""_frames (unsigned long long int val) { return static_cast<size_t> (val); }
 constexpr double operator""_dB (long double val) { return static_cast<double> (val); }
 constexpr double operator""_dB (unsigned long long int val) { return static_cast<double> (val); }
 constexpr double operator""_LUFS (long double val) { return static_cast<double> (val); }
