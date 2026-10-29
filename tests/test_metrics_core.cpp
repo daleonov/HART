@@ -1,5 +1,5 @@
 #include "hart.hpp"
-#include "mock_metric.hpp"
+#include "mock_metrics.hpp"
 
 HART_DECLARE_ALIASES_FOR_FLOAT;
 HART_DECLARE_ALIASES_FOR_UNITS;
