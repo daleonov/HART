@@ -385,7 +385,7 @@ const double m = lufs (audio).get (momentary (hart::percentile (0.5)));
 
 Check the specific metric's docs for more details.
 
-# Windowed metrics
+# Windowed metrics {#UsingMetricsAndReducersWindowedMetrics}
 
 Most HART metrics summarize a property of the entire piece of audio, or a slice of it. Sometimes we need to express a test statement based on how some audio feature behaves over time. To do this, you can use `windowed()` on top of a metric:
 

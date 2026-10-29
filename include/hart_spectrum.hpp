@@ -30,6 +30,8 @@ namespace hart
 /// - Real-valued input signal
 /// - One-sided spectrum only (`fftSize / 2 + 1` bins)
 /// - Double floating-point precision, regardless of input signal value types
+/// @note If you're looking for an STFT, you probably just need a `windowed()` query.
+/// See @ref UsingMetricsAndReducersWindowedMetrics "Windowed metrics" for an example.
 /// @ingroup DataStructures
 class Spectrum
 {
