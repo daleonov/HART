@@ -621,7 +621,7 @@ HART_PARAMETRISED_TEST_WITH_TAGS ("Windowed MetricQuery - Setting a custom windo
     constexpr double renderDurationSeconds = 100_ms;
     constexpr double windowSizeSeconds = 10_ms;
 
-    constexpr std::array<std::pair<double, size_t>, 4> windowStepsAndExpectedNumbersOfWindows = {{
+    const std::array<std::pair<double, size_t>, 4> windowStepsAndExpectedNumbersOfWindows = {{
         { 10_ms, 10ul },
         { 5_ms, 19ul },
         { 1_ms, 91ul },
