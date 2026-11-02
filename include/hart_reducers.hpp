@@ -454,6 +454,19 @@ struct size
     }
 };
 
+/// @brief Returns the population standard deviation of all elements in the range
+/// @details Returns the square root of variance().
+/// Requires a forward iterator. The unit of the result is same as whatever was in the provided range.
+struct stddev
+{
+    template <typename IteratorType>
+    IteratedValueType<IteratorType>
+    operator() (IteratorType begin, IteratorType end) const
+    {
+        return std::sqrt (variance() (begin, end));
+    }
+};
+
 /// @brief Returns the sum of all elements in the range
 struct sum
 {
@@ -470,6 +483,34 @@ struct sum
             accurateSum += *it;
         
         return accurateSum;
+    }
+};
+
+/// @brief Returns the population variance of all elements in the range
+/// @details Divides the sum of squared deviations by the number of elements. Requires a forward iterator.
+/// The unit of the result is square of whatever was in the provided range.
+struct variance
+{
+    template <typename IteratorType>
+    IteratedValueType<IteratorType>
+    operator() (IteratorType begin, IteratorType end) const
+    {
+        if (begin == end)
+            HART_THROW_OR_RETURN (hart::SizeError, "The range is empty", hart::nan<IteratedValueType<IteratorType>>());
+
+        using ValueType = IteratedValueType<IteratorType>;
+        const ValueType average = mean() (begin, end);
+        AccurateSum<ValueType> squaredDeviations;
+        size_t count = 0;
+
+        for (IteratorType it = begin; it != end; ++it)
+        {
+            const ValueType deviation = *it - average;
+            squaredDeviations += deviation * deviation;
+            ++count;
+        }
+
+        return squaredDeviations.template get<ValueType>() / static_cast<ValueType> (count);
     }
 };
 

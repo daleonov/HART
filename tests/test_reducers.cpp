@@ -374,3 +374,78 @@ HART_TEST_WITH_TAGS ("Reducers - Percentile - All interpolation methods preserve
         );
 
 }
+
+HART_TEST_WITH_TAGS ("Reducers - Standard deviation - Is zero when all values are the same", "[Reducers]")
+{
+    using hart::stddev;
+    using std::vector;
+
+    const vector<double> zeros { 0.0, 0.0, 0.0, 0.0 };
+    const vector<double> constant { 42.0, 42.0, 42.0, 42.0 };
+
+    HART_EXPECT_FLOAT_EQ (stddev() (zeros.begin(), zeros.end()), 0.0, 1e-8);
+    HART_EXPECT_FLOAT_EQ (stddev() (constant.begin(), constant.end()), 0.0, 1e-8);
+}
+
+HART_TEST_WITH_TAGS ("Reducers - Standard deviation - Correct for uniform distributions", "[Reducers]")
+{
+    // stddev = sqrt ((n ** 2 - 1) / 12)
+
+    using hart::stddev;
+    using std::vector;
+    using std::sqrt;
+
+    const vector<double> d6 { 6.0, 5.0, 4.0, 3.0, 2.0, 1.0 };
+    const vector<double> d20 {
+        1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0,
+        11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0
+    };
+
+    HART_EXPECT_FLOAT_EQ (stddev() (d6.begin(), d6.end()), sqrt ((6.0 * 6.0 - 1) / 12.0), 1e-8);
+    HART_EXPECT_FLOAT_EQ (stddev() (d20.begin(), d20.end()), sqrt ((20.0 * 20.0 - 1) / 12.0), 1e-8);
+}
+
+HART_TEST_WITH_TAGS ("Reducers - Variance - Is zero when all values are the same", "[Reducers]")
+{
+    using hart::stddev;
+    using std::vector;
+
+    const vector<double> zeros { 0.0, 0.0, 0.0, 0.0 };
+    const vector<double> constant { 67.0, 67.0, 67.0, 67.0 };
+
+    HART_EXPECT_FLOAT_EQ (stddev() (zeros.begin(), zeros.end()), 0.0, 1e-8);
+    HART_EXPECT_FLOAT_EQ (stddev() (constant.begin(), constant.end()), 0.0, 1e-8);
+}
+
+HART_TEST_WITH_TAGS ("Reducers - Variance - Correct for uniform distributions", "[Reducers]")
+{
+    // var = (n ** 2 - 1) / 12
+
+    using hart::variance;
+    using std::vector;
+
+    const vector<double> d6 { 6.0, 5.0, 4.0, 3.0, 2.0, 1.0 };
+    const vector<double> d20 {
+        1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0,
+        11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0
+    };
+
+    HART_EXPECT_FLOAT_EQ (variance() (d6.begin(), d6.end()), (6.0 * 6.0 - 1) / 12.0, 1e-8);
+    HART_EXPECT_FLOAT_EQ (variance() (d20.begin(), d20.end()), (20.0 * 20.0 - 1) / 12.0, 1e-8);
+}
+
+HART_TEST_WITH_TAGS ("Reducers - Variance is standard deviation squared", "[Reducers]")
+{
+    using hart::stddev;
+    using hart::variance;
+
+    const std::vector<double> values {
+        -17.5, 3.25, 0.0, 42.0, -0.125, 8.75,
+        101.5, -63.0, 2.0, 19.125, -4.5, 7.0
+    };
+
+    const double sigma = stddev() (values.begin(), values.end());
+    const double var = variance() (values.begin(), values.end());
+
+    HART_EXPECT_FLOAT_EQ (var, sigma * sigma, 1e-8);
+}
