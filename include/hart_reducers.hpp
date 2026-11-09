@@ -454,19 +454,6 @@ struct size
     }
 };
 
-/// @brief Returns the population standard deviation of all elements in the range
-/// @details Returns the square root of variance().
-/// Requires a forward iterator. The unit of the result is same as whatever was in the provided range.
-struct stddev
-{
-    template <typename IteratorType>
-    IteratedValueType<IteratorType>
-    operator() (IteratorType begin, IteratorType end) const
-    {
-        return std::sqrt (variance() (begin, end));
-    }
-};
-
 /// @brief Returns the sum of all elements in the range
 struct sum
 {
@@ -511,6 +498,19 @@ struct variance
         }
 
         return squaredDeviations.template get<ValueType>() / static_cast<ValueType> (count);
+    }
+};
+
+/// @brief Returns the population standard deviation of all elements in the range
+/// @details Returns the square root of variance().
+/// Requires a forward iterator. The unit of the result is same as whatever was in the provided range.
+struct stddev
+{
+    template <typename IteratorType>
+    IteratedValueType<IteratorType>
+    operator() (IteratorType begin, IteratorType end) const
+    {
+        return std::sqrt (variance() (begin, end));
     }
 };
 
