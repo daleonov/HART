@@ -92,7 +92,7 @@ jobs:
 
           - name: Clang C++26
             os: ubuntu-latest
-            cxx: clang++-18
+            cxx: clang++-22
             build_type: Debug
             generator: "Unix Makefiles"
             cpp_standard: 26
